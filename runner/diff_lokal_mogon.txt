@@ -1,0 +1,369 @@
+=== AiiDA: lokal gegen MOGON ===
+4a5
+> import os
+6a8
+> import subprocess
+7a10
+> from concurrent.futures import ThreadPoolExecutor
+20,22c23
+< PIPELINE_SCRIPTS_DIR = (
+<     HOME / "nextflow_pipeline_test" / "benchmark_scripts"
+< )
+---
+> BASE_DIR = HOME / "wms_hpc_benchmark"
+24,26c25
+< SCATTER_SCRIPTS_DIR = (
+<     HOME / "nextflow_scatter_gather_test" / "benchmark_scripts"
+< )
+---
+> PIPELINE_SCRIPTS_DIR = BASE_DIR / "benchmark_scripts" / "pipeline"
+28,33c27
+< RESULTS_DIR = (
+<     HOME
+<     / "wms_benchmark_reference"
+<     / "results"
+<     / "aiida_task_timing"
+< )
+---
+> SCATTER_SCRIPTS_DIR = BASE_DIR / "benchmark_scripts" / "scatter_gather"
+35,40c29
+< SMOKE_RESULTS_DIR = (
+<     HOME
+<     / "wms_benchmark_reference"
+<     / "results"
+<     / "aiida_task_timing_smoke"
+< )
+---
+> RESULTS_DIR = BASE_DIR / "results" / "aiida"
+42,47c31
+< REFERENCE_BASELINE = (
+<     HOME
+<     / "wms_benchmark_reference"
+<     / "reference_inputs"
+<     / "aiida_reference_baseline.csv"
+< )
+---
+> SMOKE_RESULTS_DIR = BASE_DIR / "results" / "aiida_smoke"
+49c33,41
+< CODE_LABEL = "aiida_python312@localhost_aiida"
+---
+> CODE_LABEL = "aiida_python312@mogon-local"
+> 
+> THREAD_LIMITS = {
+>     "OMP_NUM_THREADS": "1",
+>     "OPENBLAS_NUM_THREADS": "1",
+>     "MKL_NUM_THREADS": "1",
+>     "VECLIB_MAXIMUM_THREADS": "1",
+>     "NUMEXPR_NUM_THREADS": "1",
+> }
+370,371c362,373
+< def load_reference_baseline():
+<     if not REFERENCE_BASELINE.is_file():
+---
+> def _run_reference_task(scripts_dir, work_dir, script_name, *arguments):
+>     environment = os.environ.copy()
+>     environment.update(THREAD_LIMITS)
+>     result = subprocess.run(
+>         ["python3", str(scripts_dir / script_name), *arguments],
+>         cwd=work_dir,
+>         env=environment,
+>         text=True,
+>         stdout=subprocess.DEVNULL,
+>         stderr=subprocess.PIPE,
+>     )
+>     if result.returncode:
+373c375
+<             f"Referenz-Baseline fehlt: {REFERENCE_BASELINE}"
+---
+>             f"Referenz-Task fehlgeschlagen ({script_name}): {result.stderr}"
+376d377
+<     references = {}
+378,379c379,392
+<     with REFERENCE_BASELINE.open(newline="") as handle:
+<         reader = csv.DictReader(handle)
+---
+> def _reference_compute_phase(work_dir):
+>     starts = []
+>     ends = []
+>     for path in work_dir.glob("timing_compute_*.txt"):
+>         values = {}
+>         for line in path.read_text().splitlines():
+>             if "=" in line:
+>                 key, value = line.split("=", 1)
+>                 values[key.strip()] = value.strip()
+>         starts.append(int(values["task_start_ns"]))
+>         ends.append(int(values["task_end_ns"]))
+>     if not starts:
+>         raise RuntimeError(f"Keine Compute-Timings in {work_dir}")
+>     return (max(ends) - min(starts)) / 1e9
+381,388d393
+<         required = {
+<             "pattern",
+<             "workload",
+<             "chunks",
+<             "repetition",
+<             "ref_makespan_s",
+<             "ref_compute_phase_s",
+<         }
+390,393c395,396
+<         if not required.issubset(reader.fieldnames or []):
+<             raise RuntimeError(
+<                 "Referenz-Baseline hat nicht die erwarteten Spalten."
+<             )
+---
+> def run_reference_execution(pattern, workload, chunks, work_dir):
+>     """Fuehrt die Referenz (reine Python-Kette) frisch aus.
+395,406c398,405
+<         for row in reader:
+<             key = (
+<                 row["pattern"],
+<                 row["workload"],
+<                 int(row["chunks"]),
+<                 int(row["repetition"]),
+<             )
+< 
+<             if key in references:
+<                 raise RuntimeError(
+<                     f"Doppelte Referenzkonfiguration: {key}"
+<                 )
+---
+>     Identisch zum Vorgehen der StreamFlow-/Nextflow-Benchmarks, damit der
+>     Overhead in allen Systemen gegen dieselbe Referenzart gemessen wird.
+>     """
+>     compute_file = {
+>         "short": "compute.py",
+>         "medium": "compute_medium.py",
+>         "long": "compute_long.py",
+>     }[workload]
+408,415c407,409
+<             references[key] = {
+<                 "makespan_s": float(row["ref_makespan_s"]),
+<                 "compute_phase_s": (
+<                     float(row["ref_compute_phase_s"])
+<                     if row["ref_compute_phase_s"] != ""
+<                     else ""
+<                 ),
+<             }
+---
+>     scripts_dir = (
+>         PIPELINE_SCRIPTS_DIR if pattern == "pipeline" else SCATTER_SCRIPTS_DIR
+>     )
+417c411,413
+<     expected_count = sum(REPETITIONS.values()) * (1 + len(CHUNKS))
+---
+>     if work_dir.exists():
+>         shutil.rmtree(work_dir)
+>     work_dir.mkdir(parents=True)
+419,422c415,423
+<     if len(references) != expected_count:
+<         raise RuntimeError(
+<             f"Referenz-Baseline enthält {len(references)} statt "
+<             f"{expected_count} Konfigurationen."
+---
+>     start = time.perf_counter()
+>     _run_reference_task(scripts_dir, work_dir, "generate_input.py", "raw_input.txt")
+>     _run_reference_task(
+>         scripts_dir, work_dir, "preprocess.py", "raw_input.txt", "prepared_input.txt"
+>     )
+> 
+>     if pattern == "pipeline":
+>         _run_reference_task(
+>             scripts_dir, work_dir, compute_file, "prepared_input.txt", "result.txt"
+423a425,429
+>         _run_reference_task(
+>             scripts_dir, work_dir, "postprocess.py", "result.txt", "summary.txt"
+>         )
+>         makespan = time.perf_counter() - start
+>         return {"makespan_s": makespan, "compute_phase_s": ""}
+425c431,433
+<     return references
+---
+>     _run_reference_task(
+>         scripts_dir, work_dir, "split.py", "prepared_input.txt", str(chunks)
+>     )
+426a435,442
+>     def compute(index):
+>         _run_reference_task(
+>             scripts_dir,
+>             work_dir,
+>             compute_file,
+>             f"chunk_{index}.txt",
+>             f"result_{index}.txt",
+>         )
+428,429c444,445
+< def get_reference(references, pattern, workload, chunks, repetition):
+<     key = (pattern, workload, chunks, repetition)
+---
+>     with ThreadPoolExecutor(max_workers=chunks) as executor:
+>         list(executor.map(compute, range(1, chunks + 1)))
+431,434c447,459
+<     if key not in references:
+<         raise RuntimeError(f"Referenzwert fehlt: {key}")
+< 
+<     return references[key]
+---
+>     _run_reference_task(
+>         scripts_dir,
+>         work_dir,
+>         "aggregate.py",
+>         *[f"result_{index}.txt" for index in range(1, chunks + 1)],
+>         "aggregated_result.txt",
+>     )
+>     _run_reference_task(
+>         scripts_dir, work_dir, "postprocess.py", "aggregated_result.txt", "summary.txt"
+>     )
+>     makespan = time.perf_counter() - start
+>     compute_phase = _reference_compute_phase(work_dir)
+>     return {"makespan_s": makespan, "compute_phase_s": compute_phase}
+721c746
+<     references = load_reference_baseline()
+---
+>     # Referenz wird pro Lauf frisch gemessen (konsistent mit StreamFlow/Nextflow).
+743,748c768,771
+<         reference = get_reference(
+<             references,
+<             pattern,
+<             workload,
+<             chunks,
+<             repetition,
+---
+>         reference_dir = (
+>             output_dir
+>             / "reference_runs"
+>             / f"{pattern}_{workload}_c{chunks}_r{repetition}"
+749a773,775
+>         reference = run_reference_execution(
+>             pattern, workload, chunks, reference_dir
+>         )
+
+=== Merlin: lokal gegen MOGON ===
+20,21c20
+< PIPELINE_ROOT = HOME / "merlin_pipeline_benchmark"
+< SCATTER_ROOT = HOME / "merlin_scatter_gather_benchmark"
+---
+> BASE_DIR = HOME / "wms_hpc_benchmark"
+23,29c22,23
+< RUN_DATA_ROOT = (
+<     HOME
+<     / "wms_benchmark_reference"
+<     / "run_data"
+<     / "merlin"
+<     / "task_timing_benchmark"
+< )
+---
+> PIPELINE_ROOT = BASE_DIR / "merlin" / "pipeline"
+> SCATTER_ROOT = BASE_DIR / "merlin" / "scatter_gather"
+31,36c25,27
+< RESULTS_ROOT = (
+<     HOME
+<     / "wms_benchmark_reference"
+<     / "results"
+<     / "merlin_task_timing"
+< )
+---
+> RUN_DATA_ROOT = BASE_DIR / "run_data" / "merlin"
+> 
+> RESULTS_ROOT = BASE_DIR / "results" / "merlin"
+
+=== Nextflow: lokal gegen MOGON ===
+13c13
+< BASE_DIR = Path.home() / "wms_benchmark_reference"
+---
+> BASE_DIR = Path.home() / "wms_hpc_benchmark"
+15,16c15,16
+< PIPELINE_SOURCE = Path.home() / "nextflow_pipeline_test"
+< SCATTER_SOURCE = Path.home() / "nextflow_scatter_gather_test"
+---
+> PIPELINE_SOURCE = BASE_DIR / "nextflow" / "pipeline"
+> SCATTER_SOURCE = BASE_DIR / "nextflow" / "scatter_gather"
+18,19c18,19
+< RESULT_ROOT = BASE_DIR / "results" / "nextflow_task_timing"
+< RUN_ROOT = BASE_DIR / "run_data" / "nextflow" / "task_timing_benchmark"
+---
+> RESULT_ROOT = BASE_DIR / "results" / "nextflow"
+> RUN_ROOT = BASE_DIR / "run_data" / "nextflow"
+255c255
+< def copy_project(source: Path, destination: Path, workload: str) -> Path:
+---
+> def copy_project(source: Path, destination: Path, workload: str, pattern: str) -> Path:
+270a271
+>     # Option A: zentrale Fach-Skripte sind die einzige Quelle.
+271a273,280
+>     if scripts_dir.exists():
+>         shutil.rmtree(scripts_dir)
+>     central_scripts = BASE_DIR / "benchmark_scripts" / pattern
+>     shutil.copytree(
+>         central_scripts,
+>         scripts_dir,
+>         ignore=shutil.ignore_patterns("__pycache__"),
+>     )
+541a551
+>     repetitions_override: int | None = None,
+549c559,563
+<     repetitions = WORKLOADS[workload]["repetitions"]
+---
+>     repetitions = (
+>         repetitions_override
+>         if repetitions_override is not None
+>         else WORKLOADS[workload]["repetitions"]
+>     )
+566a581
+>             pattern,
+717a733
+>     mode = sys.argv[1] if len(sys.argv) > 1 else "full"
+720a737,752
+>     if mode == "smoke":
+>         print("\n=== Nextflow Smoke-Test ===\n")
+>         for pattern, workload, chunks in (
+>             ("pipeline", "short", 1),
+>             ("scatter_gather", "short", 4),
+>         ):
+>             print(f"--- Smoke: {pattern} | {workload} | chunks={chunks} ---")
+>             benchmark_configuration(
+>                 pattern=pattern,
+>                 workload=workload,
+>                 chunks=chunks,
+>                 repetitions_override=1,
+>             )
+>         print("\nSmoke-Test OK.")
+>         return
+> 
+
+=== StreamFlow: lokal gegen MOGON ===
+13,23c13,19
+< BASE_DIR = Path.home() / "wms_benchmark_reference"
+< PIPELINE_SOURCE = Path.home() / "streamflow_pipeline_benchmark_local"
+< SCATTER_SOURCE = Path.home() / "streamflow_scatter_gather_benchmark_local"
+< PIPELINE_REFERENCE_SCRIPTS = (
+<     Path.home() / "nextflow_pipeline_test" / "benchmark_scripts"
+< )
+< SCATTER_REFERENCE_SCRIPTS = (
+<     Path.home() / "nextflow_scatter_gather_test" / "benchmark_scripts"
+< )
+< RESULT_ROOT = BASE_DIR / "results" / "streamflow_local_task_timing"
+< RUN_ROOT = BASE_DIR / "run_data" / "streamflow_local" / "task_timing_benchmark"
+---
+> BASE_DIR = Path.home() / "wms_hpc_benchmark"
+> PIPELINE_SOURCE = BASE_DIR / "benchmark_scripts" / "pipeline"
+> SCATTER_SOURCE = BASE_DIR / "benchmark_scripts" / "scatter_gather"
+> PIPELINE_REFERENCE_SCRIPTS = PIPELINE_SOURCE
+> SCATTER_REFERENCE_SCRIPTS = SCATTER_SOURCE
+> RESULT_ROOT = BASE_DIR / "results" / "streamflow"
+> RUN_ROOT = BASE_DIR / "run_data" / "streamflow"
+26c22
+<     Path.home() / "miniforge3" / "envs" / "streamflow-local" / "bin" / "streamflow"
+---
+>     Path.home() / ".conda" / "envs" / "streamflow-new" / "bin" / "streamflow"
+562c558
+<     source_scripts = source / "scripts"
+---
+>     source_scripts = source
+1192c1188
+<     if "streamflow-local" not in str(STREAMFLOW):
+---
+>     if "streamflow-new" not in str(STREAMFLOW):
+1231c1227,1228
+<     prepare_local_sources()
+---
+>     # prepare_local_sources() entfaellt bei Option A: zentrale Skripte werden
+>     # nicht veraendert; create_project kopiert sie samt benchmark_timing.py frisch.

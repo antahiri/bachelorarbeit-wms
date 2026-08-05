@@ -1,0 +1,5 @@
+system,workflow_pattern,workload,chunks,repetition,run_kind,task_name,task_start_ns,task_end_ns,task_duration_seconds
+reference,pipeline,medium,1,1,reference,generate_input,1783637240724605601,1783637240726621882,0.002016281
+reference,pipeline,medium,1,1,reference,preprocess,1783637240759273261,1783637240761699281,0.00242602
+reference,pipeline,medium,1,1,reference,compute_1,1783637240794448360,1783637281801460096,41.007011736
+reference,pipeline,medium,1,1,reference,postprocess,1783637281877820406,1783637281880571244,0.002750838

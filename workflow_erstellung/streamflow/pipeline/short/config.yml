@@ -1,0 +1,5 @@
+generate_script: {class: File, path: scripts/generate_input.py}
+preprocess_script: {class: File, path: scripts/preprocess.py}
+compute_script: {class: File, path: scripts/compute.py}
+postprocess_script: {class: File, path: scripts/postprocess.py}
+timing_helper: {class: File, path: scripts/benchmark_timing.py}

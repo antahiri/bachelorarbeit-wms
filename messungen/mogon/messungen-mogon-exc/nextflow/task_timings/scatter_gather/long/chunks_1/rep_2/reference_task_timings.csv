@@ -1,0 +1,7 @@
+system,workflow_pattern,workload,chunks,repetition,run_kind,task_name,task_start_ns,task_end_ns,task_duration_seconds
+reference,scatter_gather,long,1,2,reference,generate_input,1783670095612183615,1783670095614176391,0.001992776
+reference,scatter_gather,long,1,2,reference,preprocess,1783670095651797697,1783670095653925336,0.002127639
+reference,scatter_gather,long,1,2,reference,split,1783670095685466625,1783670095687430975,0.00196435
+reference,scatter_gather,long,1,2,reference,compute_1,1783670095726291891,1783670292911395408,197.185103517
+reference,scatter_gather,long,1,2,reference,aggregate,1783670292992818395,1783670292994781908,0.001963513
+reference,scatter_gather,long,1,2,reference,postprocess,1783670293025362252,1783670293027726373,0.002364121

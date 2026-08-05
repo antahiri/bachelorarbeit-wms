@@ -1,0 +1,5 @@
+system,pattern,workload,chunks,wms_task_span_s,wms_gen_to_pre_s,wms_pre_to_comp_s,wms_comp_to_post_s,wms_pre_to_split_s,wms_split_to_comp_s,wms_comp_to_agg_s,wms_agg_to_post_s,wms_start_spread_s,wms_compute_phase_s
+aiida,pipeline,long,1,242.038810,0.961944,0.899544,0.996248,,,,,,
+aiida,scatter_gather,long,1,250.874736,0.870697,,,0.831818,0.845111,0.912162,0.855546,0.000000,246.310270
+aiida,scatter_gather,long,2,129.761787,0.843534,,,0.935724,1.069437,0.962491,0.823479,0.037409,125.091692
+aiida,scatter_gather,long,4,69.347227,0.860510,,,0.857764,1.089523,1.078804,0.815421,0.611719,64.620904

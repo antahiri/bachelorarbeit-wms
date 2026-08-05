@@ -1,0 +1,38 @@
+description:
+  name: merlin_pipeline_medium
+  description: Pipeline-Benchmark mit Workload medium
+
+merlin:
+  resources:
+    workers:
+      benchmark_workers:
+        args: -l INFO --concurrency 4 --prefetch-multiplier 1 -Ofair
+        steps:
+          - generate_input
+          - preprocess
+          - compute_1
+          - postprocess
+
+study:
+  - name: generate_input
+    description: Eingabedaten erzeugen
+    run:
+      cmd: python3 $(SPECROOT)/scripts/generate_input.py raw_input.txt
+
+  - name: preprocess
+    description: Eingabedaten vorverarbeiten
+    run:
+      depends: [generate_input]
+      cmd: python3 $(SPECROOT)/scripts/preprocess.py $(generate_input.workspace)/raw_input.txt prepared_input.txt
+
+  - name: compute_1
+    description: Eingabedaten verarbeiten
+    run:
+      depends: [preprocess]
+      cmd: python3 $(SPECROOT)/scripts/compute_medium.py $(preprocess.workspace)/prepared_input.txt result.txt
+
+  - name: postprocess
+    description: Finale Zusammenfassung erzeugen
+    run:
+      depends: [compute_1]
+      cmd: python3 $(SPECROOT)/scripts/postprocess.py $(compute_1.workspace)/result.txt summary.txt

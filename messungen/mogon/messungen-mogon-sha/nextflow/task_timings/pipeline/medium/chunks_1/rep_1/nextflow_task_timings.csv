@@ -1,0 +1,5 @@
+system,workflow_pattern,workload,chunks,repetition,run_kind,task_name,task_start_ns,task_end_ns,task_duration_seconds
+nextflow,pipeline,medium,1,1,nextflow,generate_input,1783637284419114293,1783637284421175075,0.002060782
+nextflow,pipeline,medium,1,1,nextflow,preprocess,1783637284568335709,1783637284571426685,0.003090976
+nextflow,pipeline,medium,1,1,nextflow,compute_1,1783637284688944247,1783637324706235428,40.017291181
+nextflow,pipeline,medium,1,1,nextflow,postprocess,1783637324846433168,1783637324849388625,0.002955457

@@ -1,0 +1,30 @@
+version: v1.0
+
+workflows:
+  pipeline-slurm:
+    type: cwl
+    config:
+      file: workflow.cwl
+      settings: config.yml
+    bindings:
+      - step: /
+        target:
+          deployment: slurm-mogon
+          service: default
+
+deployments:
+  mogon-local:
+    type: local
+    workdir: /fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir
+    config: {}
+
+  slurm-mogon:
+    type: slurm
+    wraps: mogon-local
+    workdir: /fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir
+    config:
+      maxConcurrentJobs: 4
+      services:
+        default:
+          file: streamflow_slurm.sbatch
+

@@ -1,0 +1,58 @@
+description:
+  name: merlin_scatter_gather
+  description: Scatter-Gather-Benchmark mit 4 Chunk(s), Workload short
+
+batch:
+  type: local
+
+env:
+  variables:
+    OUTPUT_PATH: ./studies
+
+global.parameters:
+  CHUNK:
+    values: [1, 2, 3, 4]
+    label: CHUNK.%%
+
+merlin:
+  resources:
+    workers:
+      scatter_worker:
+        args: "--concurrency 4 --prefetch-multiplier 1 -O fair -l INFO"
+        steps: [all]
+
+study:
+  - name: generate_input
+    description: Eingabedaten erzeugen
+    run:
+      cmd: python3 $(SPECROOT)/scripts/generate_input.py raw_input.txt
+
+  - name: preprocess
+    description: Eingabedaten vorverarbeiten
+    run:
+      depends: [generate_input]
+      cmd: python3 $(SPECROOT)/scripts/preprocess.py $(generate_input.workspace)/raw_input.txt prepared_input.txt
+
+  - name: split
+    description: Daten in 4 Chunk(s) aufteilen
+    run:
+      depends: [preprocess]
+      cmd: python3 $(SPECROOT)/scripts/split.py $(preprocess.workspace)/prepared_input.txt 4
+
+  - name: compute
+    description: Chunk $(CHUNK) verarbeiten
+    run:
+      depends: [split]
+      cmd: python3 $(SPECROOT)/scripts/compute.py $(split.workspace)/chunk_$(CHUNK).txt result_$(CHUNK).txt
+
+  - name: aggregate
+    description: Ergebnisse der Compute-Schritte zusammenfuehren
+    run:
+      depends: [compute_*]
+      cmd: python3 $(SPECROOT)/scripts/aggregate.py $(compute.workspace)/*/result_*.txt aggregated_result.txt
+
+  - name: postprocess
+    description: Finale Zusammenfassung erstellen
+    run:
+      depends: [aggregate]
+      cmd: python3 $(SPECROOT)/scripts/postprocess.py $(aggregate.workspace)/aggregated_result.txt summary.txt

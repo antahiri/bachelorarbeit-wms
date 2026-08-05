@@ -1,0 +1,5 @@
+chunk=chunk_1.txt
+count=36
+sum=678
+mean=18.83
+matrix_checksum=2293248932

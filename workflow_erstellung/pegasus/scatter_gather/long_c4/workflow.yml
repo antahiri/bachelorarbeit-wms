@@ -1,0 +1,170 @@
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+  createdOn: 06-30-26T06:05:38Z
+pegasus: 5.0.4
+name: scatter-gather-benchmark
+jobs:
+- type: job
+  name: generate
+  id: ID0000001
+  arguments:
+  - raw_input.txt
+  uses:
+  - lfn: raw_input.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: preprocess
+  id: ID0000002
+  arguments:
+  - raw_input.txt
+  - prepared_input.txt
+  uses:
+  - lfn: prepared_input.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: raw_input.txt
+    type: input
+- type: job
+  name: split
+  id: ID0000003
+  arguments:
+  - prepared_input.txt
+  - '4'
+  uses:
+  - lfn: prepared_input.txt
+    type: input
+  - lfn: chunk_4.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: chunk_3.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: chunk_2.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: chunk_1.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: compute
+  id: ID0000004
+  arguments:
+  - chunk_1.txt
+  - result_1.txt
+  uses:
+  - lfn: chunk_1.txt
+    type: input
+  - lfn: result_1.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: compute
+  id: ID0000005
+  arguments:
+  - chunk_2.txt
+  - result_2.txt
+  uses:
+  - lfn: chunk_2.txt
+    type: input
+  - lfn: result_2.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: compute
+  id: ID0000006
+  arguments:
+  - chunk_3.txt
+  - result_3.txt
+  uses:
+  - lfn: result_3.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: chunk_3.txt
+    type: input
+- type: job
+  name: compute
+  id: ID0000007
+  arguments:
+  - chunk_4.txt
+  - result_4.txt
+  uses:
+  - lfn: chunk_4.txt
+    type: input
+  - lfn: result_4.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: aggregate
+  id: ID0000008
+  arguments:
+  - result_1.txt
+  - result_2.txt
+  - result_3.txt
+  - result_4.txt
+  - aggregated_result.txt
+  uses:
+  - lfn: aggregated_result.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: result_3.txt
+    type: input
+  - lfn: result_1.txt
+    type: input
+  - lfn: result_4.txt
+    type: input
+  - lfn: result_2.txt
+    type: input
+- type: job
+  name: postprocess
+  id: ID0000009
+  arguments:
+  - aggregated_result.txt
+  - summary.txt
+  uses:
+  - lfn: summary.txt
+    type: output
+    stageOut: true
+    registerReplica: true
+  - lfn: aggregated_result.txt
+    type: input
+jobDependencies:
+- id: ID0000001
+  children:
+  - ID0000002
+- id: ID0000002
+  children:
+  - ID0000003
+- id: ID0000003
+  children:
+  - ID0000007
+  - ID0000005
+  - ID0000004
+  - ID0000006
+- id: ID0000004
+  children:
+  - ID0000008
+- id: ID0000005
+  children:
+  - ID0000008
+- id: ID0000006
+  children:
+  - ID0000008
+- id: ID0000007
+  children:
+  - ID0000008
+- id: ID0000008
+  children:
+  - ID0000009

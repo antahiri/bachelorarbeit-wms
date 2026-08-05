@@ -1,0 +1,25 @@
+broker:
+  name: redis
+  password: /fshpc/antahiri/merlin_server/redis.pass
+  port: '6379'
+  server: mogon-nhr01
+  username: default
+container:
+  config: redis.conf
+  config_dir: ./merlin_server/
+  format: singularity
+  image: redis_latest.sif
+  image_type: redis
+  pass_file: redis.pass
+  pfile: merlin_server.pf
+  url: docker://redis
+  user_file: redis.users
+process:
+  kill: kill {pid}
+  status: pgrep -P {pid}
+results_backend:
+  name: redis
+  password: /fshpc/antahiri/merlin_server/redis.pass
+  port: '6379'
+  server: mogon-nhr01
+  username: default

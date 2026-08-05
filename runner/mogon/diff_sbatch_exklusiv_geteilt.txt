@@ -1,0 +1,53 @@
+2c2
+< #SBATCH --job-name=wms_full
+---
+> #SBATCH --job-name=wms_shared
+8,9c8
+< #SBATCH --exclusive
+< #SBATCH --time=12:00:00
+---
+> #SBATCH --time=09:00:00
+12c11
+< echo "########## WMS-VOLLMESSUNG ##########"
+---
+> echo "########## WMS-VOLLMESSUNG (SHARED, ohne exclusive) ##########"
+14a14,21
+> cd ~/wms_hpc_benchmark/run_benchmarks
+> 
+> # Eigene Skript-Kopien mit separaten Ausgabe-Ordnern erzeugen
+> for s in streamflow nextflow aiida merlin; do
+>     sed 's/"results"/"results_shared"/g; s/"run_data"/"run_data_shared"/g' \
+>         run_${s}_mogon.py > run_${s}_shared.py
+> done
+> echo "Shared-Skriptkopien erzeugt."
+20,21c27
+< cd ~/wms_hpc_benchmark/run_benchmarks
+< python3 run_streamflow_mogon.py full
+---
+> python3 run_streamflow_shared.py full
+30,31c36
+< cd ~/wms_hpc_benchmark/run_benchmarks
+< python3 run_nextflow_mogon.py full
+---
+> python3 run_nextflow_shared.py full
+50,51c55
+<     cd ~/wms_hpc_benchmark/run_benchmarks
+<     python3 run_aiida_mogon.py
+---
+>     python3 run_aiida_shared.py
+69c73
+<     > ~/redis_full.log 2>&1 &
+---
+>     > ~/redis_shared.log 2>&1 &
+76c80
+<         -l INFO -n full_worker.%h -Q "[merlin]_merlin" > ~/celery_full.log 2>&1 &
+---
+>         -l INFO -n shared_worker.%h -Q "[merlin]_merlin" > ~/celery_shared.log 2>&1 &
+81c85
+<     python3 run_merlin_mogon.py --force
+---
+>     python3 run_merlin_shared.py --force
+92c96
+< echo "########## ALLE VIER SYSTEME FERTIG: $(date '+%F %T') ##########"
+---
+> echo "########## SHARED-LAUF FERTIG: $(date '+%F %T') ##########"

@@ -1,0 +1,13 @@
+system,pattern,workload,chunks,wms_task_span_s,wms_gen_to_pre_s,wms_pre_to_comp_s,wms_comp_to_post_s,wms_pre_to_split_s,wms_split_to_comp_s,wms_comp_to_agg_s,wms_agg_to_post_s,wms_start_spread_s,wms_compute_phase_s
+aiida,pipeline,short,1,7.462076,1.127906,1.134664,1.180122,,,,,,
+aiida,pipeline,medium,1,55.015016,1.154942,1.158235,1.403966,,,,,,
+aiida,pipeline,long,1,242.606900,1.154627,1.160779,1.757909,,,,,,
+aiida,scatter_gather,short,1,9.770120,1.106419,,,1.116903,1.193625,1.210829,1.137866,0.000000,4.109429
+aiida,scatter_gather,short,2,7.981104,1.136630,,,1.077253,1.351422,1.254513,1.144558,0.058030,2.132066
+aiida,scatter_gather,short,4,8.753346,1.160109,,,1.126175,1.517733,1.587453,1.240509,0.739645,1.833339
+aiida,scatter_gather,medium,1,59.499689,1.117747,,,1.096519,1.141530,1.330538,1.246101,0.000000,53.389110
+aiida,scatter_gather,medium,2,33.506847,1.118270,,,1.172055,1.443673,1.319477,1.175688,0.086667,27.301885
+aiida,scatter_gather,medium,4,21.020566,1.095437,,,1.085680,1.429971,1.294824,1.199756,0.697858,14.727704
+aiida,scatter_gather,long,1,252.902244,1.126193,,,1.145863,1.150151,1.561458,1.192341,0.000000,246.621960
+aiida,scatter_gather,long,2,131.201446,1.041791,,,1.052929,1.421262,1.595987,1.112478,0.052899,124.768788
+aiida,scatter_gather,long,4,70.856084,1.071919,,,1.112761,1.352060,1.311789,1.045345,0.661349,64.937854

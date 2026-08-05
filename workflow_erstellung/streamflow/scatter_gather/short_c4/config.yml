@@ -1,0 +1,13 @@
+generate_script: {class: File, path: scripts/generate_input.py}
+preprocess_script: {class: File, path: scripts/preprocess.py}
+compute_script: {class: File, path: scripts/compute.py}
+postprocess_script: {class: File, path: scripts/postprocess.py}
+timing_helper: {class: File, path: scripts/benchmark_timing.py}
+split_script: {class: File, path: scripts/split.py}
+aggregate_script: {class: File, path: scripts/aggregate.py}
+number_of_chunks: 4
+output_names:
+  - result_1.txt
+  - result_2.txt
+  - result_3.txt
+  - result_4.txt

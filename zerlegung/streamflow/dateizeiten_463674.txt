@@ -1,0 +1,6 @@
+insgesamt 28
+drwxrwxrwx.   2 antahiri stud_08  4096 2026-07-21 18:17:55.645522244 +0200 .
+drwxr-xr-x. 131 antahiri stud_08 16384 2026-07-23 11:11:41.914401704 +0200 ..
+-rw-r--r--.   1 antahiri stud_08   271 2026-07-21 18:17:55.644522313 +0200 raw_input.txt
+-rw-r--r--.   1 antahiri stud_08     0 2026-07-21 18:17:55.539524939 +0200 slurm-463674.out
+-rw-r--r--.   1 antahiri stud_08    91 2026-07-21 18:17:55.646522267 +0200 timing_generate_input.txt

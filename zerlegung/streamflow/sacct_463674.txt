@@ -1,0 +1,4 @@
+JobID|JobName|Submit|Start|End|Elapsed|WorkDir
+463674|sbatch|2026-07-21T18:16:50|2026-07-21T18:17:11|2026-07-21T18:17:55|00:00:44|/fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir/bc56e5b6-08c6-4ee8-a9cf-4d5100441b5f
+463674.batch|batch|2026-07-21T18:17:11|2026-07-21T18:17:11|2026-07-21T18:17:55|00:00:44|
+463674.extern|extern|2026-07-21T18:17:11|2026-07-21T18:17:11|2026-07-21T18:17:56|00:00:45|

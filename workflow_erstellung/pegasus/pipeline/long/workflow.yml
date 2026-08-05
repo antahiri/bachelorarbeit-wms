@@ -1,0 +1,66 @@
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+  createdOn: 06-30-26T06:05:38Z
+pegasus: 5.0.4
+name: pipeline-benchmark
+jobs:
+- type: job
+  name: generate
+  id: ID0000001
+  arguments:
+  - raw_input.txt
+  uses:
+  - lfn: raw_input.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: preprocess
+  id: ID0000002
+  arguments:
+  - raw_input.txt
+  - prepared_input.txt
+  uses:
+  - lfn: prepared_input.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+  - lfn: raw_input.txt
+    type: input
+- type: job
+  name: compute
+  id: ID0000003
+  arguments:
+  - prepared_input.txt
+  - result.txt
+  uses:
+  - lfn: prepared_input.txt
+    type: input
+  - lfn: result.txt
+    type: output
+    stageOut: false
+    registerReplica: false
+- type: job
+  name: postprocess
+  id: ID0000004
+  arguments:
+  - result.txt
+  - summary.txt
+  uses:
+  - lfn: summary.txt
+    type: output
+    stageOut: true
+    registerReplica: true
+  - lfn: result.txt
+    type: input
+jobDependencies:
+- id: ID0000001
+  children:
+  - ID0000002
+- id: ID0000002
+  children:
+  - ID0000003
+- id: ID0000003
+  children:
+  - ID0000004

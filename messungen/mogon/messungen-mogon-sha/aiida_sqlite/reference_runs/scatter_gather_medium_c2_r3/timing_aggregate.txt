@@ -1,0 +1,3 @@
+task_name=aggregate
+task_start_ns=1783670214153636605
+task_end_ns=1783670214154969545

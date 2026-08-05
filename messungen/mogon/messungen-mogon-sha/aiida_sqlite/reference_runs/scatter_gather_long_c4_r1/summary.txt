@@ -1,0 +1,7 @@
+Summary of Scatter-Gather computation
+-------------------------------------
+chunks=4
+total_count=71
+total_sum=1353
+global_mean=19.06
+total_matrix_checksum=271368017100
