@@ -2,9 +2,12 @@
 
 import argparse
 import csv
+import os
 import shutil
 import statistics
+import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from aiida import load_profile
@@ -16,6 +19,18 @@ from scatter_gather_calcjob_workchain import ScatterGatherCalcJobWorkChain
 
 
 HOME = Path.home()
+PYTHON = shutil.which("python3")
+
+if PYTHON is None:
+    raise RuntimeError("Kein python3 im Suchpfad gefunden.")
+
+THREAD_LIMITS = {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+}
 
 PIPELINE_SCRIPTS_DIR = (
     HOME / "nextflow_pipeline_test" / "benchmark_scripts"
@@ -39,12 +54,6 @@ SMOKE_RESULTS_DIR = (
     / "aiida_task_timing_smoke"
 )
 
-REFERENCE_BASELINE = (
-    HOME
-    / "wms_benchmark_reference"
-    / "reference_inputs"
-    / "aiida_reference_baseline.csv"
-)
 
 CODE_LABEL = "aiida_python312@localhost_aiida"
 
@@ -367,71 +376,110 @@ def run_aiida_scatter(workload, chunks):
     }
 
 
-def load_reference_baseline():
-    if not REFERENCE_BASELINE.is_file():
+def _run_reference_task(scripts_dir, work_dir, script_name, *arguments):
+    environment = os.environ.copy()
+    environment.update(THREAD_LIMITS)
+    result = subprocess.run(
+        [PYTHON, str(scripts_dir / script_name), *arguments],
+        cwd=work_dir,
+        env=environment,
+        text=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode:
         raise RuntimeError(
-            f"Referenz-Baseline fehlt: {REFERENCE_BASELINE}"
+            f"Referenz-Task fehlgeschlagen ({script_name}): {result.stderr}"
         )
 
-    references = {}
 
-    with REFERENCE_BASELINE.open(newline="") as handle:
-        reader = csv.DictReader(handle)
+def _reference_compute_phase(work_dir):
+    starts = []
+    ends = []
+    for path in work_dir.glob("timing_compute_*.txt"):
+        values = {}
+        for line in path.read_text().splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                values[key.strip()] = value.strip()
+        starts.append(int(values["task_start_ns"]))
+        ends.append(int(values["task_end_ns"]))
+    if not starts:
+        raise RuntimeError(f"Keine Compute-Timings in {work_dir}")
+    return (max(ends) - min(starts)) / 1e9
 
-        required = {
-            "pattern",
-            "workload",
-            "chunks",
-            "repetition",
-            "ref_makespan_s",
-            "ref_compute_phase_s",
-        }
 
-        if not required.issubset(reader.fieldnames or []):
-            raise RuntimeError(
-                "Referenz-Baseline hat nicht die erwarteten Spalten."
-            )
+def run_reference_execution(pattern, workload, chunks, work_dir):
+    """Fuehrt die Referenz (reine Python-Kette) frisch aus.
 
-        for row in reader:
-            key = (
-                row["pattern"],
-                row["workload"],
-                int(row["chunks"]),
-                int(row["repetition"]),
-            )
+    Identisch zum Vorgehen der StreamFlow-/Nextflow-Benchmarks, damit der
+    Overhead in allen Systemen gegen dieselbe Referenzart gemessen wird.
+    """
+    compute_file = {
+        "short": "compute.py",
+        "medium": "compute_medium.py",
+        "long": "compute_long.py",
+    }[workload]
 
-            if key in references:
-                raise RuntimeError(
-                    f"Doppelte Referenzkonfiguration: {key}"
-                )
+    scripts_dir = (
+        PIPELINE_SCRIPTS_DIR if pattern == "pipeline" else SCATTER_SCRIPTS_DIR
+    )
 
-            references[key] = {
-                "makespan_s": float(row["ref_makespan_s"]),
-                "compute_phase_s": (
-                    float(row["ref_compute_phase_s"])
-                    if row["ref_compute_phase_s"] != ""
-                    else ""
-                ),
-            }
+    if work_dir.exists():
+        shutil.rmtree(work_dir)
+    work_dir.mkdir(parents=True)
 
-    expected_count = sum(REPETITIONS.values()) * (1 + len(CHUNKS))
+    start = time.perf_counter()
+    _run_reference_task(scripts_dir, work_dir, "generate_input.py", "raw_input.txt")
+    _run_reference_task(
+        scripts_dir, work_dir, "preprocess.py", "raw_input.txt", "prepared_input.txt"
+    )
 
-    if len(references) != expected_count:
-        raise RuntimeError(
-            f"Referenz-Baseline enthält {len(references)} statt "
-            f"{expected_count} Konfigurationen."
+    if pattern == "pipeline":
+        _run_reference_task(
+            scripts_dir, work_dir, compute_file, "prepared_input.txt", "result.txt"
+        )
+        _run_reference_task(
+            scripts_dir, work_dir, "postprocess.py", "result.txt", "summary.txt"
+        )
+        makespan = time.perf_counter() - start
+        validate_pipeline_summary(
+            (work_dir / "summary.txt").read_text(), workload
+        )
+        return {"makespan_s": makespan, "compute_phase_s": ""}
+
+    _run_reference_task(
+        scripts_dir, work_dir, "split.py", "prepared_input.txt", str(chunks)
+    )
+
+    def compute(index):
+        _run_reference_task(
+            scripts_dir,
+            work_dir,
+            compute_file,
+            f"chunk_{index}.txt",
+            f"result_{index}.txt",
         )
 
-    return references
+    with ThreadPoolExecutor(max_workers=chunks) as executor:
+        list(executor.map(compute, range(1, chunks + 1)))
 
-
-def get_reference(references, pattern, workload, chunks, repetition):
-    key = (pattern, workload, chunks, repetition)
-
-    if key not in references:
-        raise RuntimeError(f"Referenzwert fehlt: {key}")
-
-    return references[key]
+    _run_reference_task(
+        scripts_dir,
+        work_dir,
+        "aggregate.py",
+        *[f"result_{index}.txt" for index in range(1, chunks + 1)],
+        "aggregated_result.txt",
+    )
+    _run_reference_task(
+        scripts_dir, work_dir, "postprocess.py", "aggregated_result.txt", "summary.txt"
+    )
+    makespan = time.perf_counter() - start
+    compute_phase = _reference_compute_phase(work_dir)
+    validate_scatter_summary(
+        (work_dir / "summary.txt").read_text(), workload, chunks
+    )
+    return {"makespan_s": makespan, "compute_phase_s": compute_phase}
 
 
 def pipeline_row(workload, repetition, reference, aiida):
@@ -718,7 +766,6 @@ def main():
 
     load_profile()
 
-    references = load_reference_baseline()
     output_dir = SMOKE_RESULTS_DIR if args.smoke else RESULTS_DIR
 
     if output_dir.exists():
@@ -740,12 +787,13 @@ def main():
             flush=True,
         )
 
-        reference = get_reference(
-            references,
-            pattern,
-            workload,
-            chunks,
-            repetition,
+        reference_dir = (
+            output_dir
+            / "reference_runs"
+            / f"{pattern}_{workload}_c{chunks}_r{repetition}"
+        )
+        reference = run_reference_execution(
+            pattern, workload, chunks, reference_dir
         )
 
         if pattern == "pipeline":

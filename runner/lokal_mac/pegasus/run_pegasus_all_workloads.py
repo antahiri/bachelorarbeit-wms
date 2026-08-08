@@ -200,7 +200,7 @@ def run_pegasus_workflow(root: Path, chunks=None):
             "--dir", "submit",
             "--sites", "condorpool",
             "--output-sites", "local",
-            "--cleanup", "leaf",
+            "--cleanup", "none",
             "--force",
             "workflow.yml",
         ],
@@ -215,377 +215,452 @@ def run_pegasus_workflow(root: Path, chunks=None):
 
     makespan = time.perf_counter() - start
     summary = get_summary_file(root / "output").read_text()
+    scratch_run = root / "scratch" / run_dir.relative_to(root / "submit")
+    timings = read_timing_files(scratch_run)
 
-    return makespan, summary, run_dir
+    return makespan, summary, run_dir, timings
 
 
-def direct_pipeline_reference(root: Path, repetitions: int, checksum: str, output: Path):
-    scripts = root / "benchmark_scripts"
+RAW_FIELDS = [
+    "system",
+    "pattern",
+    "workload",
+    "chunks",
+    "repetition",
+    "ref_makespan_s",
+    "wms_makespan_s",
+    "overhead_s",
+    "overhead_pct",
+    "ratio",
+    "ref_compute_phase_s",
+    "wms_compute_phase_s",
+    "wms_task_span_s",
+    "wms_gen_to_pre_s",
+    "wms_pre_to_comp_s",
+    "wms_comp_to_post_s",
+    "wms_pre_to_split_s",
+    "wms_split_to_comp_s",
+    "wms_comp_to_agg_s",
+    "wms_agg_to_post_s",
+    "wms_start_spread_s",
+]
 
-    with output.open("w", newline="") as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=[
-                "system",
-                "workflow_pattern",
-                "repetition",
-                "makespan_seconds",
-            ],
-        )
+CENTRAL_FIELDS = [
+    "system",
+    "pattern",
+    "workload",
+    "chunks",
+    "ref_makespan_s",
+    "wms_makespan_s",
+    "overhead_s",
+    "overhead_pct",
+    "ratio",
+    "ref_compute_phase_s",
+    "wms_compute_phase_s",
+]
+
+
+def raw_row(pattern, workload, chunks, repetition, ref_makespan, wms_makespan,
+            ref_compute_phase, wms_compute_phase, coordination):
+    overhead = wms_makespan - ref_makespan
+
+    row = {
+        "system": "pegasus",
+        "pattern": pattern,
+        "workload": workload,
+        "chunks": chunks,
+        "repetition": repetition,
+        "ref_makespan_s": f"{ref_makespan:.9f}",
+        "wms_makespan_s": f"{wms_makespan:.9f}",
+        "overhead_s": f"{overhead:.9f}",
+        "overhead_pct": f"{(overhead / ref_makespan) * 100:.6f}",
+        "ratio": f"{wms_makespan / ref_makespan:.9f}",
+        "ref_compute_phase_s": (
+            f"{ref_compute_phase:.9f}" if ref_compute_phase is not None else ""
+        ),
+        "wms_compute_phase_s": (
+            f"{wms_compute_phase:.9f}" if wms_compute_phase is not None else ""
+        ),
+    }
+
+    for key, value in coordination.items():
+        if key != "wms_compute_phase_s":
+            row[key] = f"{value:.9f}"
+
+    return row
+
+
+def create_central_rows(raw_rows):
+    grouped = {}
+
+    for row in raw_rows:
+        key = (row["pattern"], row["workload"], int(row["chunks"]))
+        grouped.setdefault(key, []).append(row)
+
+    ordered = sorted(
+        grouped,
+        key=lambda item: (
+            0 if item[0] == "pipeline" else 1,
+            ["short", "medium", "long"].index(item[1]),
+            item[2],
+        ),
+    )
+
+    central_rows = []
+
+    for pattern, workload, chunks in ordered:
+        rows = grouped[(pattern, workload, chunks)]
+
+        ref_median = statistics.median(float(row["ref_makespan_s"]) for row in rows)
+        wms_median = statistics.median(float(row["wms_makespan_s"]) for row in rows)
+        overhead = wms_median - ref_median
+
+        central = {
+            "system": "pegasus",
+            "pattern": pattern,
+            "workload": workload,
+            "chunks": chunks,
+            "ref_makespan_s": f"{ref_median:.9f}",
+            "wms_makespan_s": f"{wms_median:.9f}",
+            "overhead_s": f"{overhead:.9f}",
+            "overhead_pct": f"{(overhead / ref_median) * 100:.6f}",
+            "ratio": f"{wms_median / ref_median:.9f}",
+            "ref_compute_phase_s": "",
+            "wms_compute_phase_s": "",
+        }
+
+        ref_phases = [
+            float(row["ref_compute_phase_s"])
+            for row in rows
+            if row["ref_compute_phase_s"]
+        ]
+        wms_phases = [
+            float(row["wms_compute_phase_s"])
+            for row in rows
+            if row["wms_compute_phase_s"]
+        ]
+
+        if ref_phases:
+            central["ref_compute_phase_s"] = f"{statistics.median(ref_phases):.9f}"
+        if wms_phases:
+            central["wms_compute_phase_s"] = f"{statistics.median(wms_phases):.9f}"
+
+        central_rows.append(central)
+
+    return central_rows
+
+
+def reference_compute_phase(compute_dirs):
+    starts = []
+    ends = []
+
+    for index, compute_dir in enumerate(compute_dirs, start=1):
+        values = {}
+
+        for line in (compute_dir / f"timing_compute_{index}.txt").read_text().splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                values[key.strip()] = value.strip()
+
+        starts.append(int(values["task_start_ns"]))
+        ends.append(int(values["task_end_ns"]))
+
+    return (max(ends) - min(starts)) / 1_000_000_000
+
+
+def read_timing_files(scratch_dir: Path):
+    timings = {}
+
+    for path in scratch_dir.rglob("timing_*.txt"):
+        values = {}
+
+        for line in path.read_text().splitlines():
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip()
+
+        name = values["task_name"]
+
+        if name in timings:
+            raise RuntimeError(f"Doppelte Timing-Daten fuer {name} in {scratch_dir}")
+
+        timings[name] = {
+            "start": int(values["task_start_ns"]),
+            "end": int(values["task_end_ns"]),
+        }
+
+    if not timings:
+        raise RuntimeError(f"Keine Timing-Dateien in {scratch_dir}")
+
+    return timings
+
+
+def pipeline_coordination(timings):
+    expected = ["generate_input", "preprocess", "compute_1", "postprocess"]
+
+    for name in expected:
+        if name not in timings:
+            raise RuntimeError(f"Timing fehlt: {name}")
+
+    def gap(first, second):
+        return (timings[second]["start"] - timings[first]["end"]) / 1_000_000_000
+
+    return {
+        "wms_task_span_s": (
+            timings["postprocess"]["end"] - timings["generate_input"]["start"]
+        ) / 1_000_000_000,
+        "wms_gen_to_pre_s": gap("generate_input", "preprocess"),
+        "wms_pre_to_comp_s": gap("preprocess", "compute_1"),
+        "wms_comp_to_post_s": gap("compute_1", "postprocess"),
+    }
+
+
+def scatter_coordination(timings, chunks: int):
+    expected = ["generate_input", "preprocess", "split", "aggregate", "postprocess"]
+    expected += [f"compute_{index}" for index in range(1, chunks + 1)]
+
+    for name in expected:
+        if name not in timings:
+            raise RuntimeError(f"Timing fehlt: {name}")
+
+    computes = [timings[f"compute_{index}"] for index in range(1, chunks + 1)]
+
+    first_compute_start = min(item["start"] for item in computes)
+    last_compute_start = max(item["start"] for item in computes)
+    last_compute_end = max(item["end"] for item in computes)
+
+    def gap(first, second):
+        return (timings[second]["start"] - timings[first]["end"]) / 1_000_000_000
+
+    return {
+        "wms_task_span_s": (
+            timings["postprocess"]["end"] - timings["generate_input"]["start"]
+        ) / 1_000_000_000,
+        "wms_gen_to_pre_s": gap("generate_input", "preprocess"),
+        "wms_pre_to_split_s": gap("preprocess", "split"),
+        "wms_split_to_comp_s": (
+            first_compute_start - timings["split"]["end"]
+        ) / 1_000_000_000,
+        "wms_comp_to_agg_s": (
+            timings["aggregate"]["start"] - last_compute_end
+        ) / 1_000_000_000,
+        "wms_agg_to_post_s": gap("aggregate", "postprocess"),
+        "wms_start_spread_s": (
+            last_compute_start - first_compute_start
+        ) / 1_000_000_000,
+        "wms_compute_phase_s": (
+            last_compute_end - first_compute_start
+        ) / 1_000_000_000,
+    }
+
+
+COORDINATION_FIELDS = [
+    "system",
+    "pattern",
+    "workload",
+    "chunks",
+    "wms_task_span_s",
+    "wms_gen_to_pre_s",
+    "wms_pre_to_comp_s",
+    "wms_comp_to_post_s",
+    "wms_pre_to_split_s",
+    "wms_split_to_comp_s",
+    "wms_comp_to_agg_s",
+    "wms_agg_to_post_s",
+    "wms_start_spread_s",
+    "wms_compute_phase_s",
+]
+
+
+def write_coordination_file(rows, path: Path):
+    with path.open("w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=COORDINATION_FIELDS)
         writer.writeheader()
 
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in COORDINATION_FIELDS})
+
+
+def coordination_medians(system, pattern, workload, chunks, samples):
+    row = {
+        "system": system,
+        "pattern": pattern,
+        "workload": workload,
+        "chunks": chunks,
+    }
+
+    keys = set()
+    for sample in samples:
+        keys.update(sample.keys())
+
+    for key in keys:
+        values = [sample[key] for sample in samples if key in sample]
+        row[key] = f"{statistics.median(values):.9f}"
+
+    return row
+
+
+def paired_pipeline_benchmark(root: Path, workload: str, repetitions: int,
+                              checksum: str, raw_writer, raw_file, archive_root: Path):
+    scripts = root / "benchmark_scripts"
+    coordination_samples = []
+
+    for repetition in range(1, repetitions + 1):
+        with tempfile.TemporaryDirectory(prefix="pegasus_pipeline_reference_") as temp:
+            workdir = Path(temp)
+
+            start = time.perf_counter()
+
+            run([scripts / "generate_input.py", "raw_input.txt"], workdir)
+            run([scripts / "preprocess.py", "raw_input.txt", "prepared_input.txt"], workdir)
+            run([scripts / "compute.py", "prepared_input.txt", "result.txt"], workdir)
+            run([scripts / "postprocess.py", "result.txt", "summary.txt"], workdir)
+
+            ref_makespan = time.perf_counter() - start
+            summary = (workdir / "summary.txt").read_text()
+
+            validate_pipeline(summary, checksum)
+
+        print(f"[Referenz Pipeline] Wiederholung {repetition}/{repetitions}: {ref_makespan:.3f} s")
+
+        wms_makespan, summary, run_dir, timings = run_pegasus_workflow(root)
+
+        validate_pipeline(summary, checksum)
+        coordination = pipeline_coordination(timings)
+        coordination_samples.append(coordination)
+
+        archive = archive_root / f"pipeline_rep_{repetition}"
+        if archive.exists():
+            shutil.rmtree(archive)
+        shutil.copytree(run_dir, archive)
+
+        raw_writer.writerow(
+            raw_row(
+                "pipeline", workload, 1, repetition,
+                ref_makespan, wms_makespan, None, None, coordination,
+            )
+        )
+        raw_file.flush()
+
+        print(f"[Pegasus Pipeline] Wiederholung {repetition}/{repetitions}: {wms_makespan:.3f} s")
+
+    return coordination_samples
+
+
+def paired_scatter_benchmark(root: Path, workload: str, repetitions: int,
+                             checksum: str, raw_writer, raw_file, archive_root: Path):
+    scripts = root / "benchmark_scripts"
+    coordination_samples = {}
+
+    for chunks in [1, 2, 4]:
         for repetition in range(1, repetitions + 1):
-            with tempfile.TemporaryDirectory(prefix="pegasus_pipeline_reference_") as temp:
+            with tempfile.TemporaryDirectory(prefix="pegasus_scatter_reference_") as temp:
                 workdir = Path(temp)
 
                 start = time.perf_counter()
 
                 run([scripts / "generate_input.py", "raw_input.txt"], workdir)
                 run([scripts / "preprocess.py", "raw_input.txt", "prepared_input.txt"], workdir)
-                run([scripts / "compute.py", "prepared_input.txt", "result.txt"], workdir)
-                run([scripts / "postprocess.py", "result.txt", "summary.txt"], workdir)
+                run([scripts / "split.py", "prepared_input.txt", str(chunks)], workdir)
 
-                makespan = time.perf_counter() - start
-                summary = (workdir / "summary.txt").read_text()
+                compute_dirs = []
 
-                validate_pipeline(summary, checksum)
+                for index in range(1, chunks + 1):
+                    compute_dir = workdir / f"compute_{index}"
+                    compute_dir.mkdir()
 
-                writer.writerow(
-                    {
-                        "system": "direct_reference",
-                        "workflow_pattern": "pipeline",
-                        "repetition": repetition,
-                        "makespan_seconds": f"{makespan:.6f}",
-                    }
-                )
-                file.flush()
+                    shutil.copy2(
+                        workdir / f"chunk_{index}.txt",
+                        compute_dir / f"chunk_{index}.txt",
+                    )
 
-                print(f"[Referenz Pipeline] Wiederholung {repetition}/{repetitions}: {makespan:.3f} s")
+                    compute_dirs.append(compute_dir)
 
+                def compute_one(index_and_dir):
+                    index, compute_dir = index_and_dir
 
-def direct_scatter_reference(root: Path, repetitions: int, checksum: str, output: Path):
-    scripts = root / "benchmark_scripts"
-
-    with output.open("w", newline="") as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=[
-                "system",
-                "workflow_pattern",
-                "chunks",
-                "repetition",
-                "makespan_seconds",
-            ],
-        )
-        writer.writeheader()
-
-        for chunks in [1, 2, 4]:
-            for repetition in range(1, repetitions + 1):
-                with tempfile.TemporaryDirectory(prefix="pegasus_scatter_reference_") as temp:
-                    workdir = Path(temp)
-
-                    start = time.perf_counter()
-
-                    run([scripts / "generate_input.py", "raw_input.txt"], workdir)
-                    run([scripts / "preprocess.py", "raw_input.txt", "prepared_input.txt"], workdir)
-                    run([scripts / "split.py", "prepared_input.txt", str(chunks)], workdir)
-
-                    compute_dirs = []
-
-                    for index in range(1, chunks + 1):
-                        compute_dir = workdir / f"compute_{index}"
-                        compute_dir.mkdir()
-
-                        shutil.copy2(
-                            workdir / f"chunk_{index}.txt",
-                            compute_dir / f"chunk_{index}.txt",
-                        )
-
-                        compute_dirs.append(compute_dir)
-
-                    def compute_one(index_and_dir):
-                        index, compute_dir = index_and_dir
-
-                        run(
-                            [
-                                scripts / "compute.py",
-                                f"chunk_{index}.txt",
-                                f"result_{index}.txt",
-                            ],
-                            compute_dir,
-                        )
-
-                    with ThreadPoolExecutor(max_workers=chunks) as executor:
-                        list(executor.map(compute_one, enumerate(compute_dirs, start=1)))
-
-                    aggregate_command = [
-                        scripts / "aggregate.py",
-                        *[
-                            compute_dir / f"result_{index}.txt"
-                            for index, compute_dir in enumerate(compute_dirs, start=1)
-                        ],
-                        "aggregated_result.txt",
-                    ]
-
-                    run(aggregate_command, workdir)
                     run(
                         [
-                            scripts / "postprocess.py",
-                            "aggregated_result.txt",
-                            "summary.txt",
+                            scripts / "compute.py",
+                            f"chunk_{index}.txt",
+                            f"result_{index}.txt",
                         ],
-                        workdir,
+                        compute_dir,
                     )
 
-                    makespan = time.perf_counter() - start
-                    summary = (workdir / "summary.txt").read_text()
+                with ThreadPoolExecutor(max_workers=chunks) as executor:
+                    list(executor.map(compute_one, enumerate(compute_dirs, start=1)))
 
-                    validate_scatter(summary, chunks, checksum)
+                aggregate_command = [
+                    scripts / "aggregate.py",
+                    *[
+                        compute_dir / f"result_{index}.txt"
+                        for index, compute_dir in enumerate(compute_dirs, start=1)
+                    ],
+                    "aggregated_result.txt",
+                ]
 
-                    writer.writerow(
-                        {
-                            "system": "direct_reference",
-                            "workflow_pattern": "scatter_gather",
-                            "chunks": chunks,
-                            "repetition": repetition,
-                            "makespan_seconds": f"{makespan:.6f}",
-                        }
-                    )
-                    file.flush()
+                run(aggregate_command, workdir)
+                run(
+                    [
+                        scripts / "postprocess.py",
+                        "aggregated_result.txt",
+                        "summary.txt",
+                    ],
+                    workdir,
+                )
 
-                    print(
-                        f"[Referenz Scatter-Gather] chunks={chunks}, "
-                        f"Wiederholung {repetition}/{repetitions}: {makespan:.3f} s"
-                    )
+                ref_makespan = time.perf_counter() - start
+                summary = (workdir / "summary.txt").read_text()
 
+                validate_scatter(summary, chunks, checksum)
 
-def run_pipeline_benchmark(root: Path, repetitions: int, checksum: str, output: Path, archive_root: Path):
-    with output.open("w", newline="") as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=[
-                "system",
-                "workflow_pattern",
-                "chunks",
-                "repetition",
-                "makespan_seconds",
-            ],
-        )
-        writer.writeheader()
+                ref_compute_phase = reference_compute_phase(compute_dirs)
 
-        for repetition in range(1, repetitions + 1):
-            makespan, summary, run_dir = run_pegasus_workflow(root)
+            print(
+                f"[Referenz Scatter-Gather] chunks={chunks}, "
+                f"Wiederholung {repetition}/{repetitions}: {ref_makespan:.3f} s"
+            )
 
-            validate_pipeline(summary, checksum)
+            wms_makespan, summary, run_dir, timings = run_pegasus_workflow(root, chunks)
 
-            archive = archive_root / f"pipeline_rep_{repetition}"
+            validate_scatter(summary, chunks, checksum)
+            coordination = scatter_coordination(timings, chunks)
+            coordination_samples.setdefault(chunks, []).append(coordination)
+
+            wms_compute_phase = coordination["wms_compute_phase_s"]
+
+            archive = archive_root / f"scatter_chunks_{chunks}_rep_{repetition}"
             if archive.exists():
                 shutil.rmtree(archive)
             shutil.copytree(run_dir, archive)
 
-            writer.writerow(
-                {
-                    "system": "pegasus",
-                    "workflow_pattern": "pipeline",
-                    "chunks": 1,
-                    "repetition": repetition,
-                    "makespan_seconds": f"{makespan:.6f}",
-                }
-            )
-            file.flush()
-
-            print(f"[Pegasus Pipeline] Wiederholung {repetition}/{repetitions}: {makespan:.3f} s")
-
-
-def run_scatter_benchmark(root: Path, repetitions: int, checksum: str, output: Path, archive_root: Path):
-    with output.open("w", newline="") as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=[
-                "system",
-                "workflow_pattern",
-                "chunks",
-                "repetition",
-                "makespan_seconds",
-                "compute_phase_seconds",
-                "compute_task_throughput_tasks_per_second",
-            ],
-        )
-        writer.writeheader()
-
-        for chunks in [1, 2, 4]:
-            for repetition in range(1, repetitions + 1):
-                makespan, summary, run_dir = run_pegasus_workflow(root, chunks)
-
-                validate_scatter(summary, chunks, checksum)
-
-                start_match = re.search(r"compute_start_ns=(\d+)", summary)
-                end_match = re.search(r"compute_end_ns=(\d+)", summary)
-
-                if start_match is None or end_match is None:
-                    raise RuntimeError(f"Compute-Zeitstempel fehlen:\n{summary}")
-
-                compute_phase = (
-                    int(end_match.group(1)) - int(start_match.group(1))
-                ) / 1_000_000_000
-
-                if compute_phase <= 0:
-                    raise RuntimeError(f"Ungültige Compute-Phase: {compute_phase}")
-
-                throughput = chunks / compute_phase
-
-                archive = archive_root / f"scatter_chunks_{chunks}_rep_{repetition}"
-                if archive.exists():
-                    shutil.rmtree(archive)
-                shutil.copytree(run_dir, archive)
-
-                writer.writerow(
-                    {
-                        "system": "pegasus",
-                        "workflow_pattern": "scatter_gather",
-                        "chunks": chunks,
-                        "repetition": repetition,
-                        "makespan_seconds": f"{makespan:.6f}",
-                        "compute_phase_seconds": f"{compute_phase:.6f}",
-                        "compute_task_throughput_tasks_per_second": f"{throughput:.6f}",
-                    }
+            raw_writer.writerow(
+                raw_row(
+                    "scatter_gather", workload, chunks, repetition,
+                    ref_makespan, wms_makespan,
+                    ref_compute_phase, wms_compute_phase, coordination,
                 )
-                file.flush()
+            )
+            raw_file.flush()
 
-                print(
-                    f"[Pegasus Scatter-Gather] chunks={chunks}, "
-                    f"Wiederholung {repetition}/{repetitions}: "
-                    f"{makespan:.3f} s, Compute-Phase={compute_phase:.3f} s"
-                )
-
-
-def create_pipeline_summary(workload: str, raw_path: Path, reference_path: Path, summary_path: Path):
-    raw_rows = list(csv.DictReader(raw_path.open()))
-    reference_rows = list(csv.DictReader(reference_path.open()))
-
-    pegasus_median = statistics.median(float(row["makespan_seconds"]) for row in raw_rows)
-    reference_median = statistics.median(float(row["makespan_seconds"]) for row in reference_rows)
-
-    fields = central_fields()
-
-    with summary_path.open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fields)
-        writer.writeheader()
-        writer.writerow(
-            {
-                "system": "pegasus",
-                "workflow_pattern": "pipeline",
-                "workload": workload,
-                "chunks": 1,
-                "reference_median_seconds": f"{reference_median:.6f}",
-                "pegasus_median_seconds": f"{pegasus_median:.6f}",
-                "workflow_execution_overhead_seconds": f"{pegasus_median - reference_median:.6f}",
-                "wms_reference_ratio": f"{pegasus_median / reference_median:.6f}",
-                "compute_phase_median_seconds": "",
-                "speedup": "",
-                "efficiency": "",
-                "compute_task_throughput_tasks_per_second": "",
-            }
-        )
-
-
-def create_scatter_summary(workload: str, raw_path: Path, reference_path: Path, summary_path: Path):
-    raw_rows = list(csv.DictReader(raw_path.open()))
-    reference_rows = list(csv.DictReader(reference_path.open()))
-
-    raw_by_chunks = {}
-    phase_by_chunks = {}
-    reference_by_chunks = {}
-
-    for row in raw_rows:
-        chunks = int(row["chunks"])
-        raw_by_chunks.setdefault(chunks, []).append(float(row["makespan_seconds"]))
-        phase_by_chunks.setdefault(chunks, []).append(float(row["compute_phase_seconds"]))
-
-    for row in reference_rows:
-        chunks = int(row["chunks"])
-        reference_by_chunks.setdefault(chunks, []).append(float(row["makespan_seconds"]))
-
-    pegasus_medians = {
-        chunks: statistics.median(values)
-        for chunks, values in raw_by_chunks.items()
-    }
-
-    baseline = pegasus_medians[1]
-
-    with summary_path.open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=central_fields())
-        writer.writeheader()
-
-        for chunks in [1, 2, 4]:
-            pegasus_median = pegasus_medians[chunks]
-            reference_median = statistics.median(reference_by_chunks[chunks])
-            compute_median = statistics.median(phase_by_chunks[chunks])
-
-            speedup = baseline / pegasus_median
-            efficiency = speedup / chunks
-            throughput = chunks / compute_median
-
-            writer.writerow(
-                {
-                    "system": "pegasus",
-                    "workflow_pattern": "scatter_gather",
-                    "workload": workload,
-                    "chunks": chunks,
-                    "reference_median_seconds": f"{reference_median:.6f}",
-                    "pegasus_median_seconds": f"{pegasus_median:.6f}",
-                    "workflow_execution_overhead_seconds": f"{pegasus_median - reference_median:.6f}",
-                    "wms_reference_ratio": f"{pegasus_median / reference_median:.6f}",
-                    "compute_phase_median_seconds": f"{compute_median:.6f}",
-                    "speedup": f"{speedup:.6f}",
-                    "efficiency": f"{efficiency:.6f}",
-                    "compute_task_throughput_tasks_per_second": f"{throughput:.6f}",
-                }
+            print(
+                f"[Pegasus Scatter-Gather] chunks={chunks}, "
+                f"Wiederholung {repetition}/{repetitions}: "
+                f"{wms_makespan:.3f} s, Compute-Phase={wms_compute_phase:.3f} s"
             )
 
-
-def central_fields():
-    return [
-        "system",
-        "workflow_pattern",
-        "workload",
-        "chunks",
-        "reference_median_seconds",
-        "pegasus_median_seconds",
-        "workflow_execution_overhead_seconds",
-        "wms_reference_ratio",
-        "compute_phase_median_seconds",
-        "speedup",
-        "efficiency",
-        "compute_task_throughput_tasks_per_second",
-    ]
+    return coordination_samples
 
 
-def create_central_file():
-    rows = []
-
-    for workload in ["short", "medium", "long"]:
-        rows.extend(
-            csv.DictReader(
-                (RESULT_ROOT / "pipeline" / workload / "summary.csv").open()
-            )
-        )
-
-    for workload in ["short", "medium", "long"]:
-        rows.extend(
-            csv.DictReader(
-                (RESULT_ROOT / "scatter_gather" / workload / "summary.csv").open()
-            )
-        )
-
-    central = RESULT_ROOT / "pegasus_central_results.csv"
-
-    with central.open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=central_fields())
+def write_rows(path: Path, fieldnames, rows):
+    with path.open("w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
 
-    return central
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
 
 
 def check_environment():
@@ -607,96 +682,81 @@ def check_environment():
 def main():
     check_environment()
 
-    for workload, config in WORKLOADS.items():
-        repetitions = config["repetitions"]
-        repeat_factor = config["repeat_factor"]
-        checksum = config["checksum"]
+    RESULT_ROOT.mkdir(parents=True, exist_ok=True)
 
-        print("\n" + "=" * 76)
-        print(f"STARTE PEGASUS-WORKLOAD: {workload.upper()} | Faktor={repeat_factor}")
-        print("=" * 76)
+    raw_path = RESULT_ROOT / "pegasus_raw_results.csv"
+    coordination_rows = []
+    raw_rows_all = []
 
-        pipeline_root = HOME / f"pegasus_pipeline_{workload}"
-        scatter_root = HOME / f"pegasus_scatter_gather_{workload}"
+    with raw_path.open("w", newline="") as raw_file:
+        raw_writer = csv.DictWriter(raw_file, fieldnames=RAW_FIELDS)
+        raw_writer.writeheader()
 
-        prepare_copy(PIPELINE_SOURCE, pipeline_root, repeat_factor)
-        prepare_copy(SCATTER_SOURCE, scatter_root, repeat_factor)
+        class CollectingWriter:
+            def writerow(self, row):
+                raw_rows_all.append(row)
+                raw_writer.writerow({field: row.get(field, "") for field in RAW_FIELDS})
 
-        pipeline_result_dir = RESULT_ROOT / "pipeline" / workload
-        scatter_result_dir = RESULT_ROOT / "scatter_gather" / workload
+        collecting_writer = CollectingWriter()
 
-        pipeline_result_dir.mkdir(parents=True, exist_ok=True)
-        scatter_result_dir.mkdir(parents=True, exist_ok=True)
+        for workload, config in WORKLOADS.items():
+            repetitions = config["repetitions"]
+            repeat_factor = config["repeat_factor"]
+            checksum = config["checksum"]
 
-        pipeline_reference = pipeline_result_dir / "reference_results.csv"
-        pipeline_raw = pipeline_result_dir / "raw_results.csv"
-        pipeline_summary = pipeline_result_dir / "summary.csv"
+            print("\n" + "=" * 76)
+            print(f"STARTE PEGASUS-WORKLOAD: {workload.upper()} | Faktor={repeat_factor}")
+            print("=" * 76)
 
-        scatter_reference = scatter_result_dir / "reference_results.csv"
-        scatter_raw = scatter_result_dir / "raw_results.csv"
-        scatter_summary = scatter_result_dir / "summary.csv"
+            pipeline_root = HOME / f"pegasus_pipeline_{workload}"
+            scatter_root = HOME / f"pegasus_scatter_gather_{workload}"
 
-        archive_root = WORK_ROOT / workload
-        archive_root.mkdir(parents=True, exist_ok=True)
+            prepare_copy(PIPELINE_SOURCE, pipeline_root, repeat_factor)
+            prepare_copy(SCATTER_SOURCE, scatter_root, repeat_factor)
 
-        print("\n--- Direkte Referenz: Pipeline ---")
-        direct_pipeline_reference(
-            pipeline_root,
-            repetitions,
-            checksum,
-            pipeline_reference,
-        )
+            archive_root = WORK_ROOT / workload
+            archive_root.mkdir(parents=True, exist_ok=True)
 
-        print("\n--- Direkte Referenz: Scatter-Gather ---")
-        direct_scatter_reference(
-            scatter_root,
-            repetitions,
-            checksum,
-            scatter_reference,
-        )
+            print("\n--- Pipeline: Referenz und Pegasus je Wiederholung ---")
+            pipeline_samples = paired_pipeline_benchmark(
+                pipeline_root, workload, repetitions, checksum,
+                collecting_writer, raw_file, archive_root,
+            )
 
-        print("\n--- Pegasus: Pipeline ---")
-        run_pipeline_benchmark(
-            pipeline_root,
-            repetitions,
-            checksum,
-            pipeline_raw,
-            archive_root,
-        )
+            print("\n--- Scatter-Gather: Referenz und Pegasus je Wiederholung ---")
+            scatter_samples = paired_scatter_benchmark(
+                scatter_root, workload, repetitions, checksum,
+                collecting_writer, raw_file, archive_root,
+            )
 
-        print("\n--- Pegasus: Scatter-Gather ---")
-        run_scatter_benchmark(
-            scatter_root,
-            repetitions,
-            checksum,
-            scatter_raw,
-            archive_root,
-        )
+            coordination_rows.append(
+                coordination_medians("pegasus", "pipeline", workload, 1, pipeline_samples)
+            )
 
-        create_pipeline_summary(
-            workload,
-            pipeline_raw,
-            pipeline_reference,
-            pipeline_summary,
-        )
+            for chunks in [1, 2, 4]:
+                coordination_rows.append(
+                    coordination_medians(
+                        "pegasus", "scatter_gather", workload, chunks,
+                        scatter_samples[chunks],
+                    )
+                )
 
-        create_scatter_summary(
-            workload,
-            scatter_raw,
-            scatter_reference,
-            scatter_summary,
-        )
+            print(f"\n{workload.upper()} abgeschlossen.")
 
-        print(f"\n{workload.upper()} abgeschlossen.")
+    central_path = RESULT_ROOT / "pegasus_central_results.csv"
+    write_rows(central_path, CENTRAL_FIELDS, create_central_rows(raw_rows_all))
 
-    central = create_central_file()
+    coordination_path = RESULT_ROOT / "pegasus_coordination_results.csv"
+    write_rows(coordination_path, COORDINATION_FIELDS, coordination_rows)
 
     print("\n" + "=" * 76)
     print("ALLE PEGASUS-MESSUNGEN ABGESCHLOSSEN")
     print("=" * 76)
-    print(central)
+    print(raw_path)
+    print(central_path)
+    print(coordination_path)
     print()
-    print(central.read_text())
+    print(central_path.read_text())
 
 
 if __name__ == "__main__":
