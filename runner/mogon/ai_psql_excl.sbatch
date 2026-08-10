@@ -74,7 +74,7 @@ if [ $SMOKE -eq 0 ]; then
     echo "psql-Lauf-Exit: $?"
 fi
 
-echo "== Spread-Ernte (coordination) =="
+echo "== coordination =="
 column -s, -t ~/wms_hpc_benchmark/results_psql_exclusive/aiida/aiida_coordination_results.csv 2>/dev/null | head -30
 echo "== Central =="
 column -s, -t ~/wms_hpc_benchmark/results_psql_exclusive/aiida/aiida_central_results.csv 2>/dev/null | head -30

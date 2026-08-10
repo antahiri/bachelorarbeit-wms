@@ -56,7 +56,7 @@ Filepath executable         /Users/Hp/miniforge3/envs/aiida/bin/python3.12
 
 Profil `psql_<JOBID>`, temporaer je Lauf. Das Profil wird im Jobskript erzeugt
 und nach Abschluss wieder entfernt, sodass jede Messung mit einer leeren
-Datenbank startet und die bestehenden Profile unberuehrt bleiben. Datenbank,
+Datenbank startet. Datenbank,
 Repository und Arbeitsverzeichnis liegen auf dem geteilten Dateisystem /fshpc,
 wie bei den uebrigen Systemen. Die folgenden Angaben stammen aus dem Jobskript
 und dem Log des exklusiven Laufs (Job 494992).
@@ -71,7 +71,7 @@ und dem Log des exklusiven Laufs (Job 494992).
 
 ---------------------------  -----------------------------------------------------------------
 Label                        mogon-local
-Description                  MOGON node, psql auf fshpc
+Description                  MOGON dediziert, psql auf fshpc
 Hostname                     localhost
 Transport type               core.local
 Scheduler type               core.direct
@@ -119,7 +119,7 @@ des Speicherorts.
 Label                        mogon-local
 PK                           2
 UUID                         7a9d5943-0a47-446c-a925-b053d415976f
-Description                  MOGON dedicated node, direct scheduler
+Description                  MOGON dediziert, direct scheduler
 Hostname                     localhost
 Transport type               core.local
 Scheduler type               core.direct
@@ -159,7 +159,7 @@ eigener Slurm-Job eingereicht.
 Label                        mogon-slurm
 PK                           2
 UUID                         63097619-8979-4eb0-9f4d-12afe1ebee00
-Description                  MOGON via Slurm-Scheduler, Normalmodus
+Description                  MOGON mit Slurm-Scheduler, Normalmodus
 Hostname                     localhost
 Transport type               core.local
 Scheduler type               core.slurm
