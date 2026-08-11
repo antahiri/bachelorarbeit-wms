@@ -1,0 +1,2197 @@
+% !TEX root = ../my-thesis.tex
+%
+
+% lange Zeilen in Code-Listings umbrechen, damit sie nicht rechts aus der Seite laufen
+\lstset{breaklines=true, breakatwhitespace=false}
+
+% ============================================================
+\chapter{Python Benchmark-Skripte}
+\label{app:scripts}
+% ============================================================
+
+Die folgenden vier Python-Skripte bilden die gemeinsame Rechengrundlage der Implementierungen.
+In Nextflow, Pegasus und Merlin wurden sie direkt aufgerufen. Für StreamFlow wurden angepasste
+Varianten verwendet, die Eingabe- und Ausgabepfade als Kommandozeilenargumente entgegennehmen
+(siehe Anhang~\ref{app:streamflow:scripts}). In AiiDA wurde dieselbe Logik innerhalb der
+WorkChain-Methoden nachimplementiert.
+
+\section{generate\_input.py}
+\label{app:scripts:generate}
+
+\begin{lstlisting}[language=Python,
+                   caption={generate\_input.py: Eingabedaten erzeugen},
+                   label={lst:app:generate}]
+#!/usr/bin/env python3
+
+import random
+
+numbers = [random.randint(1, 30) for i in range(10)]
+
+with open("raw_input.txt", "w") as f:
+    for n in numbers:
+        f.write(f"{n}\n")
+\end{lstlisting}
+
+\section{preprocess.py}
+\label{app:scripts:preprocess}
+
+\begin{lstlisting}[language=Python,
+                   caption={preprocess.py: Daten filtern},
+                   label={lst:app:preprocess}]
+#!/usr/bin/env python3
+
+with open("raw_input.txt", "r") as f:
+    values = [int(line.strip()) for line in f if line.strip()]
+
+filtered = [x for x in values if x >= 10]
+
+with open("prepared_input.txt", "w") as f:
+    for x in filtered:
+        f.write(f"{x}\n")
+\end{lstlisting}
+
+\section{compute.py}
+\label{app:scripts:compute}
+
+\begin{lstlisting}[language=Python,
+                   caption={compute.py: Statistiken berechnen},
+                   label={lst:app:compute}]
+#!/usr/bin/env python3
+
+with open("prepared_input.txt", "r") as f:
+    values = [int(line.strip()) for line in f if line.strip()]
+
+count = len(values)
+total = sum(values)
+mean = total / count if count > 0 else 0
+
+with open("result.txt", "w") as f:
+    f.write(f"count={count}\n")
+    f.write(f"sum={total}\n")
+    f.write(f"mean={mean:.2f}\n")
+\end{lstlisting}
+
+\section{postprocess.py}
+\label{app:scripts:postprocess}
+
+\begin{lstlisting}[language=Python,
+                   caption={postprocess.py: Zusammenfassung erstellen},
+                   label={lst:app:postprocess}]
+#!/usr/bin/env python3
+
+with open("result.txt", "r") as f:
+    content = f.read()
+
+with open("summary.txt", "w") as f:
+    f.write("Summary of computation\n")
+    f.write("----------------------\n")
+    f.write(content)
+\end{lstlisting}
+
+% ============================================================
+\chapter{Nextflow: Workflow-Dateien}
+\label{app:nextflow}
+% ============================================================
+
+\section{main.nf}
+\label{app:nextflow:mainnf}
+
+\begin{lstlisting}[caption={main.nf: Vollständige Workflow-Datei (Nextflow DSL2)},
+                   label={lst:app:nextflow:mainnf}]
+nextflow.enable.dsl=2
+
+process GENERATE_INPUT {
+    output:
+    path 'raw_input.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/generate_input.py
+    """
+}
+
+process PREPROCESS {
+    input:
+    path raw_file
+
+    output:
+    path 'prepared_input.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/preprocess.py
+    """
+}
+
+process COMPUTE {
+    input:
+    path prepared_file
+
+    output:
+    path 'result.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/compute.py
+    """
+}
+
+process POSTPROCESS {
+    input:
+    path result_file
+
+    output:
+    path 'summary.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/postprocess.py
+    """
+}
+
+workflow {
+    raw_ch      = GENERATE_INPUT()
+    prepared_ch = PREPROCESS(raw_ch)
+    result_ch   = COMPUTE(prepared_ch)
+    summary_ch  = POSTPROCESS(result_ch)
+}
+\end{lstlisting}
+
+% ============================================================
+\chapter{Pegasus: Workflow-Dateien}
+\label{app:pegasus}
+% ============================================================
+
+\section{build\_workflow.py}
+\label{app:pegasus:buildwf}
+
+\begin{lstlisting}[language=Python,
+                   caption={build\_workflow.py: Workflow-Komposition via Pegasus Python API},
+                   label={lst:app:pegasus:buildwf}]
+#!/usr/bin/env python3
+from pathlib import Path
+from Pegasus.api import *
+
+base = Path(".").resolve()
+
+tc = TransformationCatalog()
+generate_t = Transformation(
+    "generate",
+    site="condorpool",
+    pfn=(base / "scripts" / "generate_input.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+preprocess_t = Transformation(
+    "preprocess",
+    site="condorpool",
+    pfn=(base / "scripts" / "preprocess.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+compute_t = Transformation(
+    "compute",
+    site="condorpool",
+    pfn=(base / "scripts" / "compute.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+postprocess_t = Transformation(
+    "postprocess",
+    site="condorpool",
+    pfn=(base / "scripts" / "postprocess.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+tc.add_transformations(
+    generate_t,
+    preprocess_t,
+    compute_t,
+    postprocess_t
+)
+tc.write("transformations.yml")
+
+wf = Workflow("sequence-pipeline")
+raw_file      = File("raw_input.txt")
+prepared_file = File("prepared_input.txt")
+result_file   = File("result.txt")
+summary_file  = File("summary.txt")
+
+generate_job = Job("generate")
+generate_job.add_outputs(
+    raw_file,
+    stage_out=False,
+    register_replica=False
+)
+
+preprocess_job = Job("preprocess")
+preprocess_job.add_inputs(raw_file)
+preprocess_job.add_outputs(
+    prepared_file,
+    stage_out=False,
+    register_replica=False
+)
+
+compute_job = Job("compute")
+compute_job.add_inputs(prepared_file)
+compute_job.add_outputs(
+    result_file,
+    stage_out=False,
+    register_replica=False
+)
+
+postprocess_job = Job("postprocess")
+postprocess_job.add_inputs(result_file)
+postprocess_job.add_outputs(
+    summary_file,
+    stage_out=True,
+    register_replica=True
+)
+
+wf.add_jobs(
+    generate_job,
+    preprocess_job,
+    compute_job,
+    postprocess_job
+)
+wf.write("workflow.yml")
+\end{lstlisting}
+
+\section{transformations.yml}
+\label{app:pegasus:transformations}
+
+\begin{lstlisting}[caption={transformations.yml: Transformations-Katalog (automatisch erzeugt)},
+                   label={lst:app:pegasus:transformations}]
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+  createdOn: 06-03-26T14:33:58Z
+pegasus: 5.0.4
+transformations:
+- name: generate
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/pegasus_pipeline_test/scripts/generate_input.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: preprocess
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/pegasus_pipeline_test/scripts/preprocess.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: compute
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/pegasus_pipeline_test/scripts/compute.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: postprocess
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/pegasus_pipeline_test/scripts/postprocess.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+\end{lstlisting}
+
+\section{sites.yml}
+\label{app:pegasus:sites}
+
+\begin{lstlisting}[caption={sites.yml: Site-Katalog (manuell erstellt)},
+                   label={lst:app:pegasus:sites}]
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+pegasus: 5.0.4
+
+sites:
+- name: local
+  directories:
+  - type: sharedScratch
+    path: /Users/Hp/pegasus_pipeline_test/scratch
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_pipeline_test/scratch
+      operation: all
+  - type: localStorage
+    path: /Users/Hp/pegasus_pipeline_test/output
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_pipeline_test/output
+      operation: all
+
+- name: condorpool
+  arch: x86_64
+  os.type: macosx
+  directories:
+  - type: sharedScratch
+    path: /Users/Hp/pegasus_pipeline_test/scratch
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_pipeline_test/scratch
+      operation: all
+  profiles:
+    condor:
+      universe: vanilla
+      periodic_remove: (JobStatus == 5) &&
+        ((CurrentTime - EnteredCurrentStatus) > 10)
+    pegasus:
+      style: condor
+      data.configuration: sharedfs
+      gridstart: Kickstart
+    env:
+      PEGASUS_HOME: /opt/homebrew
+\end{lstlisting}
+
+\section{pegasus.properties}
+\label{app:pegasus:properties}
+
+\begin{lstlisting}[caption={pegasus.properties: Globale Konfiguration},
+                   label={lst:app:pegasus:properties}]
+pegasus.data.configuration = sharedfs
+pegasus.transfer.arguments = -m 1
+\end{lstlisting}
+
+% ============================================================
+\chapter{StreamFlow: Workflow-Dateien}
+\label{app:streamflow}
+% ============================================================
+
+\section{workflow.cwl}
+\label{app:streamflow:cwl}
+
+\begin{lstlisting}[caption={workflow.cwl: Vollständige Workflow-Beschreibung (CWL)},
+                   label={lst:app:streamflow:cwl}]
+cwlVersion: v1.2
+class: Workflow
+
+inputs:
+  generate_script:    File
+  preprocess_script:  File
+  compute_script:     File
+  postprocess_script: File
+
+outputs:
+  final_summary:
+    type: File
+    outputSource: postprocess/summary_file
+
+steps:
+  generate_input:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        output_name:
+          type: string
+          default: raw_input.txt
+          inputBinding:
+            position: 2
+      outputs:
+        raw_file:
+          type: File
+          outputBinding:
+            glob: raw_input.txt
+    in:
+      script: generate_script
+    out: [raw_file]
+
+  preprocess:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        raw_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: prepared_input.txt
+          inputBinding:
+            position: 3
+      outputs:
+        prepared_file:
+          type: File
+          outputBinding:
+            glob: prepared_input.txt
+    in:
+      script:   preprocess_script
+      raw_file: generate_input/raw_file
+    out: [prepared_file]
+
+  compute:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        prepared_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: result.txt
+          inputBinding:
+            position: 3
+      outputs:
+        result_file:
+          type: File
+          outputBinding:
+            glob: result.txt
+    in:
+      script:        compute_script
+      prepared_file: preprocess/prepared_file
+    out: [result_file]
+
+  postprocess:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        result_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: summary.txt
+          inputBinding:
+            position: 3
+      outputs:
+        summary_file:
+          type: File
+          outputBinding:
+            glob: summary.txt
+    in:
+      script:      postprocess_script
+      result_file: compute/result_file
+    out: [summary_file]
+\end{lstlisting}
+
+\section{streamflow.yml}
+\label{app:streamflow:yml}
+
+\begin{lstlisting}[caption={streamflow.yml: Deployment-Konfiguration (StreamFlow)},
+                   label={lst:app:streamflow:yml}]
+version: v1.0
+
+workflows:
+  sequence-pipeline:
+    type: cwl
+    config:
+      file: workflow.cwl
+      settings: config.yml
+    bindings:
+      - step: /
+        target:
+          model: python-docker
+
+models:
+  python-docker:
+    type: docker
+    config:
+      image: python:3.12-slim
+\end{lstlisting}
+
+\section{config.yml}
+\label{app:streamflow:config}
+
+\begin{lstlisting}[caption={config.yml: Eingabe-Konfiguration (StreamFlow)},
+                   label={lst:app:streamflow:config}]
+generate_script:
+  class: File
+  path: scripts/generate_input.py
+
+preprocess_script:
+  class: File
+  path: scripts/preprocess.py
+
+compute_script:
+  class: File
+  path: scripts/compute.py
+
+postprocess_script:
+  class: File
+  path: scripts/postprocess.py
+\end{lstlisting}
+
+% ============================================================
+\chapter{Merlin: Workflow-Dateien}
+\label{app:merlin}
+% ============================================================
+
+\section{pipeline.yaml}
+\label{app:merlin:yaml}
+
+\begin{lstlisting}[caption={pipeline.yaml: Vollständige Workflow-Datei (Merlin)},
+                   label={lst:app:merlin:yaml}]
+description:
+  name: merlin_pipeline
+  description: Pipeline-Pattern mit Merlin.
+
+study:
+  - name: generate_input
+    description: Eingabedaten erzeugen.
+    run:
+      cmd: python3 $(SPECROOT)/scripts/generate_input.py
+
+  - name: preprocess
+    description: Daten filtern.
+    run:
+      depends: [generate_input]
+      cmd: |
+        cp $(generate_input.workspace)/raw_input.txt .
+        python3 $(SPECROOT)/scripts/preprocess.py
+
+  - name: compute
+    description: Statistiken berechnen.
+    run:
+      depends: [preprocess]
+      cmd: |
+        cp $(preprocess.workspace)/prepared_input.txt .
+        python3 $(SPECROOT)/scripts/compute.py
+
+  - name: postprocess
+    description: Endgueltige Zusammenfassungsdatei erstellen.
+    run:
+      depends: [compute]
+      cmd: |
+        cp $(compute.workspace)/result.txt .
+        python3 $(SPECROOT)/scripts/postprocess.py
+\end{lstlisting}
+
+% ============================================================
+\chapter{AiiDA: Workflow-Dateien}
+\label{app:aiida}
+% ============================================================
+
+\section{pipeline\_workchain.py}
+\label{app:aiida:workchain}
+
+\begin{lstlisting}[language=Python,
+                   caption={pipeline\_workchain.py: Vollständige WorkChain-Implementierung (AiiDA)},
+                   label={lst:app:aiida:workchain}]
+#!/usr/bin/env python3
+
+import random
+from pathlib import Path
+
+from aiida import load_profile
+from aiida.engine import WorkChain, run_get_node
+from aiida.orm import List, Dict, SinglefileData
+
+
+class PipelineWorkChain(WorkChain):
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+
+        spec.outline(
+            cls.generate_input,
+            cls.preprocess,
+            cls.compute,
+            cls.postprocess,
+        )
+
+        spec.output("raw_input",      valid_type=List)
+        spec.output("prepared_input", valid_type=List)
+        spec.output("result",         valid_type=Dict)
+        spec.output("summary_file",   valid_type=SinglefileData)
+
+    def generate_input(self):
+        numbers = [random.randint(1, 30) for _ in range(10)]
+        self.ctx.raw_input = List(list=numbers)
+
+    def preprocess(self):
+        values   = self.ctx.raw_input.get_list()
+        filtered = [x for x in values if x >= 10]
+        self.ctx.prepared_input = List(list=filtered)
+
+    def compute(self):
+        values = self.ctx.prepared_input.get_list()
+        count  = len(values)
+        total  = sum(values)
+        mean   = total / count if count > 0 else 0
+        self.ctx.result = Dict(
+            dict={
+                "count": count,
+                "sum":   total,
+                "mean":  mean,
+            }
+        )
+
+    def postprocess(self):
+        result = self.ctx.result.get_dict()
+        summary_text = (
+            "Summary of computation\n"
+            "----------------------\n"
+            f"count={result['count']}\n"
+            f"sum={result['sum']}\n"
+            f"mean={result['mean']:.2f}\n"
+        )
+        output_path = Path("summary.txt").resolve()
+        output_path.write_text(summary_text)
+        self.ctx.summary_file = SinglefileData(file=output_path)
+        self.out("raw_input",      self.ctx.raw_input)
+        self.out("prepared_input", self.ctx.prepared_input)
+        self.out("result",         self.ctx.result)
+        self.out("summary_file",   self.ctx.summary_file)
+
+
+if __name__ == "__main__":
+    load_profile()
+
+    results, node = run_get_node(PipelineWorkChain)
+
+    print("Workflow finished successfully.")
+    print(f"Process PK:   {node.pk}")
+    print(f"Process UUID: {node.uuid}")
+
+    summary = results["summary_file"]
+    print(f"Summary file PK:  {summary.pk}")
+    print(f"Summary filename: {summary.filename}")
+
+    with summary.open(mode="r") as handle:
+        print()
+        print(handle.read())
+\end{lstlisting}
+
+\section{submit\_pipeline.py}
+\label{app:aiida:submit}
+
+\begin{lstlisting}[language=Python,
+                   caption={submit\_pipeline.py: Workflow-Starter fuer den Daemon-Lauf (AiiDA)},
+                   label={lst:app:aiida:submit}]
+#!/usr/bin/env python3
+
+import time
+
+from aiida import load_profile
+from aiida.engine import submit
+from aiida.orm import load_node
+
+from pipeline_workchain import PipelineWorkChain
+
+
+if __name__ == "__main__":
+    load_profile()
+
+    node = submit(PipelineWorkChain)
+
+    print("Submitted PipelineWorkChain to daemon.")
+    print(f"Process PK:   {node.pk}")
+    print(f"Process UUID: {node.uuid}")
+
+    while not node.is_terminated:
+        node = load_node(node.pk)
+        print(f"Current state: {node.process_state}")
+        time.sleep(2)
+
+    node = load_node(node.pk)
+
+    print()
+    print(f"Final state: {node.process_state}")
+    print(f"Exit status: {node.exit_status}")
+
+    if node.is_finished_ok:
+        summary = node.outputs.summary_file
+        print(f"Summary file PK:  {summary.pk}")
+        print(f"Summary filename: {summary.filename}")
+        with summary.open(mode="r") as handle:
+            print()
+            print(handle.read())
+    else:
+        print("Workflow did not finish successfully.")
+\end{lstlisting}
+
+% ============================================================
+\chapter{StreamFlow: Angepasste Skripte}
+\label{app:streamflow:scripts}
+% ============================================================
+
+Da StreamFlow die Workflow-Schritte in einem Docker-Container ausführt und Eingabe- und
+Ausgabepfade über CWL-\texttt{inputBinding} als Kommandozeilenargumente übergibt, wurden
+die Skripte für StreamFlow so angepasst, dass sie Pfade über \texttt{sys.argv}
+entgegennehmen. Die Basislogik ist identisch mit den Skripten in Anhang~\ref{app:scripts}.
+
+\section{generate\_input.py (StreamFlow)}
+\label{app:streamflow:scripts:generate}
+
+\begin{lstlisting}[language=Python,
+                   caption={generate\_input.py: Angepasste Version fuer StreamFlow},
+                   label={lst:app:sf:generate}]
+#!/usr/bin/env python3
+
+import sys
+import random
+
+output_file = sys.argv[1] if len(sys.argv) > 1 else "raw_input.txt"
+
+numbers = [random.randint(1, 30) for i in range(10)]
+
+with open(output_file, "w") as f:
+    for n in numbers:
+        f.write(f"{n}\n")
+\end{lstlisting}
+
+\section{preprocess.py (StreamFlow)}
+\label{app:streamflow:scripts:preprocess}
+
+\begin{lstlisting}[language=Python,
+                   caption={preprocess.py: Angepasste Version fuer StreamFlow},
+                   label={lst:app:sf:preprocess}]
+#!/usr/bin/env python3
+
+import sys
+
+input_file  = sys.argv[1] if len(sys.argv) > 1 else "raw_input.txt"
+output_file = sys.argv[2] if len(sys.argv) > 2 else "prepared_input.txt"
+
+with open(input_file, "r") as f:
+    values = [int(line.strip()) for line in f if line.strip()]
+
+filtered = [x for x in values if x >= 10]
+
+with open(output_file, "w") as f:
+    for x in filtered:
+        f.write(f"{x}\n")
+\end{lstlisting}
+
+\section{compute.py (StreamFlow)}
+\label{app:streamflow:scripts:compute}
+
+\begin{lstlisting}[language=Python,
+                   caption={compute.py: Angepasste Version fuer StreamFlow},
+                   label={lst:app:sf:compute}]
+#!/usr/bin/env python3
+
+import sys
+
+input_file  = sys.argv[1] if len(sys.argv) > 1 else "prepared_input.txt"
+output_file = sys.argv[2] if len(sys.argv) > 2 else "result.txt"
+
+with open(input_file, "r") as f:
+    values = [int(line.strip()) for line in f if line.strip()]
+
+count = len(values)
+total = sum(values)
+mean  = total / count if count > 0 else 0
+
+with open(output_file, "w") as f:
+    f.write(f"count={count}\n")
+    f.write(f"sum={total}\n")
+    f.write(f"mean={mean:.2f}\n")
+\end{lstlisting}
+
+\section{postprocess.py (StreamFlow)}
+\label{app:streamflow:scripts:postprocess}
+
+\begin{lstlisting}[language=Python,
+                   caption={postprocess.py: Angepasste Version fuer StreamFlow},
+                   label={lst:app:sf:postprocess}]
+#!/usr/bin/env python3
+
+import sys
+
+input_file  = sys.argv[1] if len(sys.argv) > 1 else "result.txt"
+output_file = sys.argv[2] if len(sys.argv) > 2 else "summary.txt"
+
+with open(input_file, "r") as f:
+    content = f.read()
+
+with open(output_file, "w") as f:
+    f.write("Summary of computation\n")
+    f.write("----------------------\n")
+    f.write(content)
+\end{lstlisting}
+% ============================================================
+\chapter{Scatter-Gather: Gemeinsame Python-Skripte}
+\label{app:sg:scripts}
+% ============================================================
+
+Die folgenden sechs Python-Skripte bilden die Rechengrundlage des Scatter-Gather-Patterns.
+Sie entsprechen den Skripten aus Anhang~\ref{app:scripts}, sind jedoch um \texttt{split.py}
+und \texttt{aggregate.py} erweitert, erzeugen 100 statt zehn Eingabewerte und nehmen ihre
+Ein- und Ausgabepfade als Kommandozeilenargumente (\texttt{sys.argv}) entgegen. In dieser
+Form wurden sie in Nextflow, Pegasus und StreamFlow unverändert eingesetzt.
+\section{generate\_input.py}
+\label{app:sg:scripts:generate}
+
+\begin{lstlisting}[language=Python,
+                   caption={generate\_input.py: 100 Eingabewerte erzeugen},
+                   label={lst:app:sg:generate}]
+#!/usr/bin/env python3
+
+import random
+import sys
+
+output_file = sys.argv[1] if len(sys.argv) > 1 else "raw_input.txt"
+
+numbers = [random.randint(1, 30) for _ in range(100)]
+
+with open(output_file, "w") as f:
+    for n in numbers:
+        f.write(f"{n}\n")
+\end{lstlisting}
+
+\section{preprocess.py}
+\label{app:sg:scripts:preprocess}
+
+\begin{lstlisting}[language=Python,
+                   caption={preprocess.py: Daten filtern},
+                   label={lst:app:sg:preprocess}]
+#!/usr/bin/env python3
+
+import sys
+
+input_file = sys.argv[1] if len(sys.argv) > 1 else "raw_input.txt"
+output_file = sys.argv[2] if len(sys.argv) > 2 else "prepared_input.txt"
+
+with open(input_file, "r") as f:
+    values = [int(line.strip()) for line in f if line.strip()]
+
+filtered = [x for x in values if x >= 10]
+
+with open(output_file, "w") as f:
+    for x in filtered:
+        f.write(f"{x}\n")
+\end{lstlisting}
+
+\section{split.py}
+\label{app:sg:scripts:split}
+
+\begin{lstlisting}[language=Python,
+                   caption={split.py: Daten in Chunks aufteilen (Scatter)},
+                   label={lst:app:sg:split}]
+#!/usr/bin/env python3
+import sys
+
+input_file = sys.argv[1] if len(sys.argv) > 1 else "prepared_input.txt"
+num_chunks = int(sys.argv[2]) if len(sys.argv) > 2 else 4
+
+with open(input_file, "r") as f:
+    values = [line.strip() for line in f if line.strip()]
+
+chunks = [[] for _ in range(num_chunks)]
+for i in range(len(values)):
+    chunks[i % num_chunks].append(values[i])
+
+for i in range(num_chunks):
+    with open(f"chunk_{i+1}.txt", "w") as f:
+        for value in chunks[i]:
+            f.write(f"{value}\n")
+\end{lstlisting}
+
+\section{compute.py}
+\label{app:sg:scripts:compute}
+
+\begin{lstlisting}[language=Python,
+                   caption={compute.py: Statistiken je Chunk berechnen},
+                   label={lst:app:sg:compute}]
+#!/usr/bin/env python3
+
+import sys
+
+input_file = sys.argv[1]
+output_file = sys.argv[2]
+
+with open(input_file, "r") as f:
+    values = [int(line.strip()) for line in f if line.strip()]
+
+count = len(values)
+total = sum(values)
+mean = total / count if count > 0 else 0
+
+with open(output_file, "w") as f:
+    f.write(f"chunk={input_file}\n")
+    f.write(f"count={count}\n")
+    f.write(f"sum={total}\n")
+    f.write(f"mean={mean:.2f}\n")
+\end{lstlisting}
+
+\section{aggregate.py}
+\label{app:sg:scripts:aggregate}
+
+\begin{lstlisting}[language=Python,
+                   caption={aggregate.py: Teilergebnisse zusammenführen (Gather)},
+                   label={lst:app:sg:aggregate}]
+#!/usr/bin/env python3
+
+import sys
+
+input_files = sys.argv[1:-1]
+output_file = sys.argv[-1]
+
+total_count = 0
+total_sum = 0
+chunks = 0
+
+for input_file in input_files:
+    chunks += 1
+    values = {}
+
+    with open(input_file, "r") as f:
+        for line in f:
+            if "=" in line:
+                key, value = line.strip().split("=", 1)
+                values[key] = value
+
+    total_count += int(values.get("count", 0))
+    total_sum += int(values.get("sum", 0))
+
+total_mean = total_sum / total_count if total_count > 0 else 0
+
+with open(output_file, "w") as f:
+    f.write(f"chunks={chunks}\n")
+    f.write(f"total_count={total_count}\n")
+    f.write(f"total_sum={total_sum}\n")
+    f.write(f"global_mean={total_mean:.2f}\n")
+\end{lstlisting}
+
+\section{postprocess.py}
+\label{app:sg:scripts:postprocess}
+
+\begin{lstlisting}[language=Python,
+                   caption={postprocess.py: Zusammenfassung schreiben},
+                   label={lst:app:sg:postprocess}]
+#!/usr/bin/env python3
+
+import sys
+
+input_file = sys.argv[1] if len(sys.argv) > 1 else "aggregated_result.txt"
+output_file = sys.argv[2] if len(sys.argv) > 2 else "summary.txt"
+
+with open(input_file, "r") as f:
+    content = f.read()
+
+with open(output_file, "w") as f:
+    f.write("Summary of Scatter-Gather computation\n")
+    f.write("-------------------------------------\n")
+    f.write(content)
+\end{lstlisting}
+
+
+% ============================================================
+\chapter{Scatter-Gather: Nextflow}
+\label{app:sg:nextflow}
+% ============================================================
+
+\section{main.nf}
+\label{app:sg:nextflow:mainnf}
+\begin{lstlisting}[caption={main.nf: Vollständige Scatter-Gather-Workflow-Datei (Nextflow DSL2)},
+                   label={lst:app:sg:nextflow:mainnf}]
+nextflow.enable.dsl=2
+
+process GENERATE_INPUT {
+    output:
+    path 'raw_input.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/generate_input.py raw_input.txt
+    """
+}
+
+process PREPROCESS {
+    input:
+    path raw_file
+
+    output:
+    path 'prepared_input.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/preprocess.py ${raw_file} prepared_input.txt
+    """
+}
+
+process SPLIT {
+    input:
+    path prepared_file
+
+    output:
+    path 'chunk_*.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/split.py ${prepared_file} 4
+    """
+}
+
+process COMPUTE {
+    input:
+    path chunk_file
+
+    output:
+    path "result_${chunk_file.simpleName.replace('chunk_', '')}.txt"
+
+    script:
+    """
+    chunk_id=\$(echo ${chunk_file.simpleName} | sed 's/chunk_//')
+    python3 ${projectDir}/scripts/compute.py ${chunk_file} result_\${chunk_id}.txt
+    """
+}
+
+process AGGREGATE {
+    input:
+    path result_files
+
+    output:
+    path 'aggregated_result.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/aggregate.py ${result_files} aggregated_result.txt
+    """
+}
+
+process POSTPROCESS {
+    input:
+    path aggregated_file
+
+    output:
+    path 'summary.txt'
+
+    script:
+    """
+    python3 ${projectDir}/scripts/postprocess.py ${aggregated_file} summary.txt
+    """
+}
+
+workflow {
+    raw_ch = GENERATE_INPUT()
+
+    prepared_ch = PREPROCESS(raw_ch)
+
+    chunks_ch = SPLIT(prepared_ch)
+        .flatten()
+
+    results_ch = COMPUTE(chunks_ch)
+        .collect()
+
+    aggregated_ch = AGGREGATE(results_ch)
+
+    summary_ch = POSTPROCESS(aggregated_ch)
+}
+\end{lstlisting}
+
+
+% ============================================================
+\chapter{Scatter-Gather: Pegasus}
+\label{app:sg:pegasus}
+% ============================================================
+
+\section{build\_workflow.py}
+\label{app:sg:pegasus:buildwf}
+\begin{lstlisting}[language=Python,
+                   caption={build\_workflow.py: Aufbau des Scatter-Gather-Workflows (Pegasus)},
+                   label={lst:app:sg:pegasus:buildwf}]
+#!/usr/bin/env python3
+
+from pathlib import Path
+from Pegasus.api import *
+
+base = Path(".").resolve()
+
+tc = TransformationCatalog()
+
+generate_t = Transformation(
+    "generate",
+    site="condorpool",
+    pfn=(base / "scripts" / "generate_input.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+
+preprocess_t = Transformation(
+    "preprocess",
+    site="condorpool",
+    pfn=(base / "scripts" / "preprocess.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+
+split_t = Transformation(
+    "split",
+    site="condorpool",
+    pfn=(base / "scripts" / "split.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+
+compute_t = Transformation(
+    "compute",
+    site="condorpool",
+    pfn=(base / "scripts" / "compute.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+
+aggregate_t = Transformation(
+    "aggregate",
+    site="condorpool",
+    pfn=(base / "scripts" / "aggregate.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+
+postprocess_t = Transformation(
+    "postprocess",
+    site="condorpool",
+    pfn=(base / "scripts" / "postprocess.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX
+)
+
+tc.add_transformations(
+    generate_t,
+    preprocess_t,
+    split_t,
+    compute_t,
+    aggregate_t,
+    postprocess_t
+)
+
+tc.write("transformations.yml")
+
+wf = Workflow("scatter-gather")
+
+raw_file = File("raw_input.txt")
+prepared_file = File("prepared_input.txt")
+
+chunk_1_file = File("chunk_1.txt")
+chunk_2_file = File("chunk_2.txt")
+chunk_3_file = File("chunk_3.txt")
+chunk_4_file = File("chunk_4.txt")
+
+result_1_file = File("result_1.txt")
+result_2_file = File("result_2.txt")
+result_3_file = File("result_3.txt")
+result_4_file = File("result_4.txt")
+
+aggregated_file = File("aggregated_result.txt")
+summary_file = File("summary.txt")
+
+generate_job = Job("generate")
+generate_job.add_args("raw_input.txt")
+generate_job.add_outputs(
+    raw_file,
+    stage_out=False,
+    register_replica=False
+)
+
+preprocess_job = Job("preprocess")
+preprocess_job.add_args("raw_input.txt", "prepared_input.txt")
+preprocess_job.add_inputs(raw_file)
+preprocess_job.add_outputs(
+    prepared_file,
+    stage_out=False,
+    register_replica=False
+)
+
+split_job = Job("split")
+split_job.add_args("prepared_input.txt", "4")
+split_job.add_inputs(prepared_file)
+split_job.add_outputs(
+    chunk_1_file,
+    chunk_2_file,
+    chunk_3_file,
+    chunk_4_file,
+    stage_out=False,
+    register_replica=False
+)
+
+compute_job_1 = Job("compute")
+compute_job_1.add_args("chunk_1.txt", "result_1.txt")
+compute_job_1.add_inputs(chunk_1_file)
+compute_job_1.add_outputs(
+    result_1_file,
+    stage_out=False,
+    register_replica=False
+)
+
+compute_job_2 = Job("compute")
+compute_job_2.add_args("chunk_2.txt", "result_2.txt")
+compute_job_2.add_inputs(chunk_2_file)
+compute_job_2.add_outputs(
+    result_2_file,
+    stage_out=False,
+    register_replica=False
+)
+
+compute_job_3 = Job("compute")
+compute_job_3.add_args("chunk_3.txt", "result_3.txt")
+compute_job_3.add_inputs(chunk_3_file)
+compute_job_3.add_outputs(
+    result_3_file,
+    stage_out=False,
+    register_replica=False
+)
+
+compute_job_4 = Job("compute")
+compute_job_4.add_args("chunk_4.txt", "result_4.txt")
+compute_job_4.add_inputs(chunk_4_file)
+compute_job_4.add_outputs(
+    result_4_file,
+    stage_out=False,
+    register_replica=False
+)
+
+aggregate_job = Job("aggregate")
+aggregate_job.add_args(
+    "result_1.txt",
+    "result_2.txt",
+    "result_3.txt",
+    "result_4.txt",
+    "aggregated_result.txt"
+)
+aggregate_job.add_inputs(
+    result_1_file,
+    result_2_file,
+    result_3_file,
+    result_4_file
+)
+aggregate_job.add_outputs(
+    aggregated_file,
+    stage_out=False,
+    register_replica=False
+)
+
+postprocess_job = Job("postprocess")
+postprocess_job.add_args("aggregated_result.txt", "summary.txt")
+postprocess_job.add_inputs(aggregated_file)
+postprocess_job.add_outputs(
+    summary_file,
+    stage_out=True,
+    register_replica=True
+)
+
+wf.add_jobs(
+    generate_job,
+    preprocess_job,
+    split_job,
+    compute_job_1,
+    compute_job_2,
+    compute_job_3,
+    compute_job_4,
+    aggregate_job,
+    postprocess_job
+)
+
+wf.write("workflow.yml")
+\end{lstlisting}
+
+\section{sites.yml}
+\label{app:sg:pegasus:sites}
+
+\begin{lstlisting}[caption={sites.yml: Site-Katalog mit sharedfs-Konfiguration (Pegasus)},
+                   label={lst:app:sg:pegasus:sites}]
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+pegasus: 5.0.4
+
+sites:
+- name: local
+  directories:
+  - type: sharedScratch
+    path: /Users/Hp/pegasus_scatter_gather_clean/scratch
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_scatter_gather_clean/scratch
+      operation: all
+  - type: localStorage
+    path: /Users/Hp/pegasus_scatter_gather_clean/output
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_scatter_gather_clean/output
+      operation: all
+
+- name: condorpool
+  arch: x86_64
+  os.type: macosx
+  directories:
+  - type: sharedScratch
+    path: /Users/Hp/pegasus_scatter_gather_clean/scratch
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_scatter_gather_clean/scratch
+      operation: all
+  profiles:
+    condor:
+      universe: vanilla
+      periodic_remove: (JobStatus == 5) &&
+        ((CurrentTime - EnteredCurrentStatus) > 10)
+    pegasus:
+      style: condor
+      data.configuration: sharedfs
+      gridstart: Kickstart
+    env:
+      PEGASUS_HOME: /opt/homebrew
+\end{lstlisting}
+
+\section{pegasus.properties}
+\label{app:sg:pegasus:properties}
+
+\begin{lstlisting}[caption={pegasus.properties: Globale Konfiguration (Pegasus)},
+                   label={lst:app:sg:pegasus:properties}]
+pegasus.catalog.site.file=sites.yml
+pegasus.catalog.transformation.file=transformations.yml
+pegasus.mode=development
+pegasus.data.configuration=sharedfs
+pegasus.transfer.arguments=-m 1
+\end{lstlisting}
+
+
+% ============================================================
+\chapter{Scatter-Gather: StreamFlow}
+\label{app:sg:streamflow}
+% ============================================================
+
+\section{workflow.cwl}
+\label{app:sg:streamflow:cwl}
+\begin{lstlisting}[caption={workflow.cwl: Vollständige Scatter-Gather-Beschreibung (CWL)},
+                   label={lst:app:sg:streamflow:cwl}]
+cwlVersion: v1.2
+class: Workflow
+
+inputs:
+  generate_script: File
+  preprocess_script: File
+  split_script: File
+  compute_script: File
+  aggregate_script: File
+  postprocess_script: File
+
+outputs:
+  final_summary:
+    type: File
+    outputSource: postprocess/summary_file
+
+steps:
+  generate_input:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        output_name:
+          type: string
+          default: raw_input.txt
+          inputBinding:
+            position: 2
+      outputs:
+        raw_file:
+          type: File
+          outputBinding:
+            glob: raw_input.txt
+    in:
+      script: generate_script
+    out: [raw_file]
+
+  preprocess:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        raw_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: prepared_input.txt
+          inputBinding:
+            position: 3
+      outputs:
+        prepared_file:
+          type: File
+          outputBinding:
+            glob: prepared_input.txt
+    in:
+      script: preprocess_script
+      raw_file: generate_input/raw_file
+    out: [prepared_file]
+
+  split:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        prepared_file:
+          type: File
+          inputBinding:
+            position: 2
+        num_chunks:
+          type: string
+          default: "4"
+          inputBinding:
+            position: 3
+      outputs:
+        chunk_1:
+          type: File
+          outputBinding:
+            glob: chunk_1.txt
+        chunk_2:
+          type: File
+          outputBinding:
+            glob: chunk_2.txt
+        chunk_3:
+          type: File
+          outputBinding:
+            glob: chunk_3.txt
+        chunk_4:
+          type: File
+          outputBinding:
+            glob: chunk_4.txt
+    in:
+      script: split_script
+      prepared_file: preprocess/prepared_file
+    out: [chunk_1, chunk_2, chunk_3, chunk_4]
+
+  compute_1:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        chunk_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: result_1.txt
+          inputBinding:
+            position: 3
+      outputs:
+        result_file:
+          type: File
+          outputBinding:
+            glob: result_1.txt
+    in:
+      script: compute_script
+      chunk_file: split/chunk_1
+    out: [result_file]
+
+  compute_2:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        chunk_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: result_2.txt
+          inputBinding:
+            position: 3
+      outputs:
+        result_file:
+          type: File
+          outputBinding:
+            glob: result_2.txt
+    in:
+      script: compute_script
+      chunk_file: split/chunk_2
+    out: [result_file]
+
+  compute_3:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        chunk_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: result_3.txt
+          inputBinding:
+            position: 3
+      outputs:
+        result_file:
+          type: File
+          outputBinding:
+            glob: result_3.txt
+    in:
+      script: compute_script
+      chunk_file: split/chunk_3
+    out: [result_file]
+
+  compute_4:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        chunk_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: result_4.txt
+          inputBinding:
+            position: 3
+      outputs:
+        result_file:
+          type: File
+          outputBinding:
+            glob: result_4.txt
+    in:
+      script: compute_script
+      chunk_file: split/chunk_4
+    out: [result_file]
+
+  aggregate:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        result_1:
+          type: File
+          inputBinding:
+            position: 2
+        result_2:
+          type: File
+          inputBinding:
+            position: 3
+        result_3:
+          type: File
+          inputBinding:
+            position: 4
+        result_4:
+          type: File
+          inputBinding:
+            position: 5
+        output_name:
+          type: string
+          default: aggregated_result.txt
+          inputBinding:
+            position: 6
+      outputs:
+        aggregated_file:
+          type: File
+          outputBinding:
+            glob: aggregated_result.txt
+    in:
+      script: aggregate_script
+      result_1: compute_1/result_file
+      result_2: compute_2/result_file
+      result_3: compute_3/result_file
+      result_4: compute_4/result_file
+    out: [aggregated_file]
+
+  postprocess:
+    run:
+      class: CommandLineTool
+      baseCommand: python3
+      inputs:
+        script:
+          type: File
+          inputBinding:
+            position: 1
+        aggregated_file:
+          type: File
+          inputBinding:
+            position: 2
+        output_name:
+          type: string
+          default: summary.txt
+          inputBinding:
+            position: 3
+      outputs:
+        summary_file:
+          type: File
+          outputBinding:
+            glob: summary.txt
+    in:
+      script: postprocess_script
+      aggregated_file: aggregate/aggregated_file
+    out: [summary_file]
+\end{lstlisting}
+
+\section{streamflow.yml}
+\label{app:sg:streamflow:yml}
+
+\begin{lstlisting}[caption={streamflow.yml: Deployment mit replicas (StreamFlow)},
+                   label={lst:app:sg:streamflow:yml}]
+version: v1.0
+
+workflows:
+  scatter-gather:
+    type: cwl
+    config:
+      file: workflow.cwl
+      settings: config.yml
+    bindings:
+      - step: /
+        target:
+          model: python-docker
+
+models:
+  python-docker:
+    type: docker
+    config:
+      image: python:3.12-slim
+      replicas: 4
+\end{lstlisting}
+
+\section{config.yml}
+\label{app:sg:streamflow:config}
+
+\begin{lstlisting}[caption={config.yml: Eingabe-Konfiguration (StreamFlow)},
+                   label={lst:app:sg:streamflow:config}]
+generate_script:
+  class: File
+  path: scripts/generate_input.py
+
+preprocess_script:
+  class: File
+  path: scripts/preprocess.py
+
+split_script:
+  class: File
+  path: scripts/split.py
+
+compute_script:
+  class: File
+  path: scripts/compute.py
+
+aggregate_script:
+  class: File
+  path: scripts/aggregate.py
+
+postprocess_script:
+  class: File
+  path: scripts/postprocess.py
+\end{lstlisting}
+
+
+\chapter{Scatter-Gather: Merlin}
+\label{app:sg:merlin}
+% ============================================================
+
+\section{scatter\_gather.yaml}
+\label{app:sg:merlin:yaml}
+
+\begin{lstlisting}[caption={scatter\_gather.yaml: Vollständige Workflow-Datei (Merlin, Scatter-Gather)},
+                   label={lst:app:sg:merlin:yaml}]
+description:
+  name: merlin_scatter_gather
+  description: Scatter Gather Pattern mit Merlin
+
+study:
+  - name: generate_input
+    description: erzeugt Eingabedaten
+    run:
+      cmd: python3 $(SPECROOT)/scripts/generate_input.py raw_input.txt
+
+  - name: preprocess
+    description: Daten ausfiltern
+    run:
+      depends: [generate_input]
+      cmd: |
+        cp $(generate_input.workspace)/raw_input.txt .
+        python3 $(SPECROOT)/scripts/preprocess.py raw_input.txt prepared_input.txt
+
+  - name: split
+    description: verarbeitete Daten in vier Chunks aufteilen
+    run:
+      depends: [preprocess]
+      cmd: |
+        cp $(preprocess.workspace)/prepared_input.txt .
+        python3 $(SPECROOT)/scripts/split.py prepared_input.txt 4
+
+  - name: compute_1
+    description: Erster Chunk verarbeiten
+    run:
+      depends: [split]
+      cmd: |
+        cp $(split.workspace)/chunk_1.txt .
+        python3 $(SPECROOT)/scripts/compute.py chunk_1.txt result_1.txt
+
+  - name: compute_2
+    description: Zweiter Chunk verarbeiten
+    run:
+      depends: [split]
+      cmd: |
+        cp $(split.workspace)/chunk_2.txt .
+        python3 $(SPECROOT)/scripts/compute.py chunk_2.txt result_2.txt
+
+  - name: compute_3
+    description: Dritter Chunk verarbeiten
+    run:
+      depends: [split]
+      cmd: |
+        cp $(split.workspace)/chunk_3.txt .
+        python3 $(SPECROOT)/scripts/compute.py chunk_3.txt result_3.txt
+
+  - name: compute_4
+    description: Vierter Chunk verarbeiten
+    run:
+      depends: [split]
+      cmd: |
+        cp $(split.workspace)/chunk_4.txt .
+        python3 $(SPECROOT)/scripts/compute.py chunk_4.txt result_4.txt
+
+  - name: aggregate
+    description: Ergebnisse der vier Compute-Schritte zusammenführen.
+    run:
+      depends: [compute_1, compute_2, compute_3, compute_4]
+      cmd: |
+        cp $(compute_1.workspace)/result_1.txt .
+        cp $(compute_2.workspace)/result_2.txt .
+        cp $(compute_3.workspace)/result_3.txt .
+        cp $(compute_4.workspace)/result_4.txt .
+        python3 $(SPECROOT)/scripts/aggregate.py result_1.txt result_2.txt result_3.txt result_4.txt aggregated_result.txt
+
+  - name: postprocess
+    description: Finale Zusammenfassungsdatei erstellen.
+    run:
+      depends: [aggregate]
+      cmd: |
+        cp $(aggregate.workspace)/aggregated_result.txt .
+        python3 $(SPECROOT)/scripts/postprocess.py aggregated_result.txt summary.txt
+\end{lstlisting}
+
+% ============================================================
+\chapter{Scatter-Gather: AiiDA}
+\label{app:sg:aiida}
+% ============================================================
+
+\section{scatter\_gather\_workchain.py}
+\label{app:sg:aiida:workchain}
+
+\begin{lstlisting}[language=Python,
+                   caption={scatter\_gather\_workchain.py: Vollständige WorkChain-Implementierung (AiiDA, Scatter-Gather)},
+                   label={lst:app:sg:aiida:workchain}]
+
+import random
+import time
+import tempfile
+from pathlib import Path
+
+from aiida.engine import WorkChain, ToContext, calcfunction
+from aiida.orm import Int, Float, List, Dict, SinglefileData
+
+
+@calcfunction
+def generate_input(count):
+    numbers = [random.randint(1, 30) for _ in range(count.value)]
+    return List(list=numbers)
+
+
+@calcfunction
+def preprocess(numbers):
+    values = numbers.get_list()
+    filtered = [x for x in values if x >= 10]
+    return List(list=filtered)
+
+
+@calcfunction
+def split_data(numbers, num_chunks):
+    values = numbers.get_list()
+    n = num_chunks.value
+
+    chunks = [[] for _ in range(n)]
+
+    for i, value in enumerate(values):
+        chunks[i % n].append(value)
+
+    return List(list=chunks)
+
+
+@calcfunction
+def compute_chunk(chunk, index, sleep):
+    """Verarbeitet Chunk.
+    sleep für den Nachweis der Parallelitä
+    """
+    if sleep.value > 0:
+        time.sleep(sleep.value)
+
+    values = chunk.get_list()
+
+    count = len(values)
+    total = sum(values)
+    mean = total / count if count > 0 else 0
+
+    return Dict(
+        dict={
+            "chunk": f"chunk_{index.value}.txt",
+            "count": count,
+            "sum": total,
+            "mean": round(mean, 2),
+        }
+    )
+
+
+@calcfunction
+def aggregate(**results):
+    total_count = 0
+    total_sum = 0
+    chunks = 0
+
+    for label in sorted(results.keys()):
+        data = results[label].get_dict()
+        chunks += 1
+        total_count += data["count"]
+        total_sum += data["sum"]
+
+    global_mean = total_sum / total_count if total_count > 0 else 0
+
+    return Dict(
+        dict={
+            "chunks": chunks,
+            "total_count": total_count,
+            "total_sum": total_sum,
+            "global_mean": round(global_mean, 2),
+        }
+    )
+
+
+@calcfunction
+def postprocess(result):
+    r = result.get_dict()
+
+    text = (
+        "Summary of Scatter-Gather computation\n"
+        "-------------------------------------\n"
+        f"chunks={r['chunks']}\n"
+        f"total_count={r['total_count']}\n"
+        f"total_sum={r['total_sum']}\n"
+        f"global_mean={r['global_mean']:.2f}\n"
+    )
+
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as handle:
+        handle.write(text)
+        path = handle.name
+
+    node = SinglefileData(file=path, filename="summary.txt")
+    Path(path).unlink(missing_ok=True)
+
+    return node
+
+
+class ComputeChunkWorkChain(WorkChain):
+    """Verarbeitet genau einen Chunk als eigener AiiDA-Prozess."""
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+
+        spec.input("chunk", valid_type=List)
+        spec.input("index", valid_type=Int)
+        spec.input("sleep", valid_type=Float, default=lambda: Float(0.0))
+
+        spec.outline(cls.run_compute)
+
+        spec.output("result", valid_type=Dict)
+
+    def run_compute(self):
+        index = self.inputs.index.value
+        sleep = self.inputs.sleep.value
+
+        self.report(f"START compute_{index}: sleep={sleep}s")
+
+        result = compute_chunk(
+            self.inputs.chunk,
+            self.inputs.index,
+            self.inputs.sleep,
+        )
+
+        self.report(f"END compute_{index}")
+
+        self.out("result", result)
+
+
+class ScatterGatherWorkChain(WorkChain):
+    """generate -> preprocess -> split -> compute parallel -> aggregate -> postprocess."""
+
+    @classmethod
+    def define(cls, spec):
+        super().define(spec)
+
+        spec.input("count", valid_type=Int, default=lambda: Int(100))
+        spec.input("num_chunks", valid_type=Int, default=lambda: Int(4))
+        spec.input("compute_sleep", valid_type=Float, default=lambda: Float(5.0))
+
+        spec.outline(
+            cls.generate,
+            cls.split,
+            cls.submit_compute,
+            cls.gather,
+        )
+
+        spec.output("raw_input", valid_type=List)
+        spec.output("prepared_input", valid_type=List)
+        spec.output("chunks", valid_type=List)
+        spec.output("aggregated_result", valid_type=Dict)
+        spec.output("summary_file", valid_type=SinglefileData)
+
+        spec.exit_code(
+            400,
+            "ERROR_COMPUTE_FAILED",
+            message="Ein Compute-Schritt ist fehlgeschlagen.",
+        )
+
+    def generate(self):
+        self.ctx.raw_input = generate_input(self.inputs.count)
+        self.ctx.prepared_input = preprocess(self.ctx.raw_input)
+
+    def split(self):
+        self.ctx.chunks = split_data(
+            self.ctx.prepared_input,
+            self.inputs.num_chunks,
+        )
+
+    def submit_compute(self):
+        chunks = self.ctx.chunks.get_list()
+        futures = {}
+
+        for i, chunk in enumerate(chunks, start=1):
+            future = self.submit(
+                ComputeChunkWorkChain,
+                chunk=List(list=chunk),
+                index=Int(i),
+                sleep=self.inputs.compute_sleep,
+            )
+
+            futures[f"compute_{i}"] = future
+            self.report(f"submitted compute_{i} <{future.pk}> fuer chunk {i}")
+
+        return ToContext(**futures)
+
+    def gather(self):
+        num_chunks = self.inputs.num_chunks.value
+        results = {}
+
+        for i in range(1, num_chunks + 1):
+            child = self.ctx[f"compute_{i}"]
+
+            if not child.is_finished_ok:
+                self.report(f"compute_{i} <{child.pk}> fehlgeschlagen")
+                return self.exit_codes.ERROR_COMPUTE_FAILED
+
+            results[f"compute_{i}"] = child.outputs.result
+
+        aggregated = aggregate(**results)
+        summary_file = postprocess(aggregated)
+
+        self.out("raw_input", self.ctx.raw_input)
+        self.out("prepared_input", self.ctx.prepared_input)
+        self.out("chunks", self.ctx.chunks)
+        self.out("aggregated_result", aggregated)
+        self.out("summary_file", summary_file)
+\end{lstlisting}
+
+\section{submit\_scatter\_gather.py}
+\label{app:sg:aiida:submit}
+
+\begin{lstlisting}[language=Python,
+                   caption={submit\_scatter\_gather.py: Submit-Skript fuer den Daemon-Lauf (AiiDA, Scatter-Gather)},
+                   label={lst:app:sg:aiida:submit}]
+"""Startet die parallele ScatterGatherWorkChain über den AiiDA-Daemon."""
+
+import time
+
+from aiida import load_profile
+from aiida.engine import submit
+from aiida.orm import Int, Float, load_node
+
+from scatter_gather_workchain import ScatterGatherWorkChain
+
+
+load_profile()
+
+start = time.time()
+
+node = submit(
+    ScatterGatherWorkChain,
+    count=Int(100),
+    num_chunks=Int(4),
+    compute_sleep=Float(5.0),
+)
+
+print(f"Submitted ScatterGatherWorkChain to daemon.")
+print(f"Process PK: {node.pk}")
+print(f"Process UUID: {node.uuid}")
+print("\nWaiting for workflow to finish...")
+
+while not node.is_terminated:
+    node = load_node(node.pk)
+    print(f"Current state: {node.process_state}")
+    time.sleep(1)
+
+node = load_node(node.pk)
+elapsed = time.time() - start
+
+print("\nWorkflow finished.")
+print(f"Process state: {node.process_state}")
+print(f"Exit status: {node.exit_status}")
+print(f"Gesamtzeit: {elapsed:.1f}s")
+print(f"Pk {node.pk}")
+
+if node.is_finished_ok:
+    print("\naggregated_result:")
+    print(node.outputs.aggregated_result.get_dict())
+
+    print("\nsummary.txt:")
+    print(node.outputs.summary_file.get_content())
+else:
+    print("\nWorkflow nicht erfolgreich beendet.")
+    print(f"Details: verdi process report {node.pk}")
+\end{lstlisting}
+% ============================================================
+\chapter{Laufzeit-Logs zum Nachweis der Parallelität}
+\label{app:logs}
+% ============================================================
+
+Dieser Anhang enthält die Log-Ausschnitte. Sie belegen für Pegasus, Merlin und AiiDA, dass sich die vier Compute-Schritte zeitlich
+überlappend, also parallel liefen. Für Nextflow und StreamFlow ist der Nachweis über die HTML-Timeline, welche im Anhang~\ref{app:figures} abgebildet sind.
+
+\section{Pegasus: Laufzeiten aus den .out-Dateien}
+\label{app:logs:pegasus}
+
+\begin{lstlisting}[caption={Start- und Endzeiten der vier compute-Jobs (Pegasus)},label={lst:logs:pegasus}]
+compute_ID0000006   START 14:55:59.289   END 14:56:04.296
+compute_ID0000005   START 14:56:00.081   END 14:56:05.084
+compute_ID0000004   START 14:56:00.354   END 14:56:05.360
+compute_ID0000007   START 14:56:01.109   END 14:56:06.123
+\end{lstlisting}
+
+Alle vier Jobs warteten künstlich 5 Sekunden. Bei serieller Ausführung wären das rund
+20 Sekunden gewesen; tatsächlich lagen erster Start (14:55:59) und letztes Ende (14:56:06) nur
+etwa 7 Sekunden auseinander.
+
+\section{Merlin: Worker-Logs}
+\label{app:logs:merlin}
+
+\begin{lstlisting}[caption={Start- und Endzeiten der vier compute-Schritte (Merlin)},label={lst:logs:merlin}]
+compute_4   Start 21:01:44,163
+compute_1   Start 21:01:44,167
+compute_3   Start 21:01:44,170
+compute_2   Start 21:01:44,174
+
+Ende der vier Schritte zwischen 21:01:49,499 und 21:01:50,324
+aggregate   Start 21:01:50,365
+\end{lstlisting}
+
+Die vier Schritte starteten innerhalb weniger Millisekunden gemeinsam. Der
+\texttt{aggregate}-Schritt begann erst, nachdem alle vier beendet waren.
+
+\section{AiiDA: verdi process report (PK 243)}
+\label{app:logs:aiida}
+
+\begin{lstlisting}[caption={Auszug aus verdi process report fuer ScatterGatherWorkChain PK 243 (AiiDA)},label={lst:logs:aiida}]
+2026-06-15 00:46:38 [243|ScatterGatherWorkChain|submit_compute]: submitted compute_1 <252> fuer chunk 1
+2026-06-15 00:46:38 [243|ScatterGatherWorkChain|submit_compute]: submitted compute_2 <255> fuer chunk 2
+2026-06-15 00:46:39 [243|ScatterGatherWorkChain|submit_compute]: submitted compute_3 <258> fuer chunk 3
+2026-06-15 00:46:39 [243|ScatterGatherWorkChain|submit_compute]: submitted compute_4 <262> fuer chunk 4
+2026-06-15 00:46:39   [252|ComputeChunkWorkChain|run_compute]: START compute_1: sleep=5.0s
+2026-06-15 00:46:39   [255|ComputeChunkWorkChain|run_compute]: START compute_2: sleep=5.0s
+2026-06-15 00:46:39   [258|ComputeChunkWorkChain|run_compute]: START compute_3: sleep=5.0s
+2026-06-15 00:46:39   [262|ComputeChunkWorkChain|run_compute]: START compute_4: sleep=5.0s
+2026-06-15 00:46:44   [252|ComputeChunkWorkChain|run_compute]: END compute_1
+2026-06-15 00:46:44   [255|ComputeChunkWorkChain|run_compute]: END compute_2
+2026-06-15 00:46:44   [258|ComputeChunkWorkChain|run_compute]: END compute_3
+2026-06-15 00:46:44   [262|ComputeChunkWorkChain|run_compute]: END compute_4
+\end{lstlisting}
+
+Die vier Child-Prozesse (PK 252, 255, 258 und 262) starteten zwischen 00:46:38 und 00:46:39 und
+endeten gemeinsam um 00:46:44. Die im Submit-Skript gemessene Gesamtzeit lag bei etwa
+8,7 Sekunden.
+
+% ============================================================
+\chapter{Abbildungen: Reports, Timelines und DAG}
+\label{app:figures}
+% ============================================================
+
+Dieser Anhang zeigt die relevanten Bereiche der erzeugten HTML-Reports und Timelines sowie den
+Pegasus-Ausführungsgraphen. 
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{content/figs/nextflow_timeline.png}
+  \caption{Nextflow-Timeline: Die vier COMPUTE-Aufrufe überlappen sich zeitlich.}
+  \label{fig:nextflow:timeline}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{content/figs/streamflow_timeline.png}
+  \caption{StreamFlow-Report mit \texttt{replicas: 4}: Die vier compute-Schritte laufen zeitlich überlappend.}
+  \label{fig:streamflow:report}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.7\textwidth]{content/figs/pegasus_dag.png}
+  \caption{Pegasus-DAG: Die vier compute-Jobs liegen als unabhängige Zweige zwischen \texttt{split} und \texttt{aggregate}.}
+  \label{fig:pegasus:dag}
+\end{figure}

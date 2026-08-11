@@ -1,0 +1,15 @@
+\babel@toc {ngerman}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\babel@toc {ngerman}{}\relax 
+\babel@toc {ngerman}{}\relax 
+\providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

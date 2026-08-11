@@ -1,0 +1,94 @@
+% !TEX root = my-thesis.tex
+
+% **************************************************
+% Information and Commands for Reuse
+% **************************************************
+\newcommand{\thesisTitle}{Systematische Betrachtung ausgewählter Workflow-Management-Systeme für HPC-Umgebungen}
+\newcommand{\thesisName}{Anas Tahiri}
+\newcommand{\thesisMatriculationNumber}{2777866}
+\newcommand{\thesisBirthplace}{Wiesbaden}
+% Options: Bachelorarbeit, Masterarbeit, Bachelor thesis, Master thesis, Dissertation.
+% Dissertation has different titlepage than others
+\newcommand{\thesisSubject}{Bachelorarbeit}
+\newcommand{\thesisKeywords}{Workflow-Management-Systeme, Vergleich, Klassifikation, Scientific Workflows, Nextflow, Pegasus}
+
+\newcommand{\thesisDate}{25.08.2026}
+\ifcsname thesisVersion\endcsname
+% version specifier from cmd option. In the gitlab CI/CD job the commit short SHA will be inserted.
+\else
+% update to fixed version string if no command option is specified
+\newcommand{\thesisVersion}{CleanThesis 0.4.1 - JGU patches}
+\fi
+
+\newcommand{\thesisFirstReviewer}{Prof. Dr. Sarah Neuwirth}
+\newcommand{\thesisFirstReviewerUniversity}{\protect{Johannes Gutenberg-Universität Mainz}}
+\newcommand{\thesisFirstReviewerDepartment}{Institut für Informatik / Zentrum für Datenverarbeitung}
+
+\newcommand{\thesisSecondReviewer}{Prof. Dr. Nicolai Kuntze}
+\newcommand{\thesisSecondReviewerDepartment}{Angewandte Informatik mit Schwerpunkt IT-Sicherheit}
+\newcommand{\thesisSecondReviewerUniversity}{\protect{Hochschule Mainz}}
+
+\newcommand{\thesisFirstSupervisor}{Zhaobin Zhu}
+\newcommand{\thesisSecondSupervisor}{Niklas Bartelheimer}
+
+\newcommand{\thesisUniversity}{\protect{Johannes Gutenberg-Universität Mainz}}
+\newcommand{\thesisUniversityDepartment}{FB 08}
+\newcommand{\thesisUniversityDepartmentLong}{Fachbereich 08 Physik, Mathematik und Informatik}
+\newcommand{\thesisUniversityInstitute}{Institut für Informatik}
+\newcommand{\thesisUniversityGroup}{}
+\newcommand{\thesisUniversityCity}{Mainz}
+\newcommand{\thesisUniversityStreetAddress}{Staudingerweg 9}
+\newcommand{\thesisUniversityPostalCode}{55128}
+
+\newcommand{\thesisAIToolsAllowed}{true}  % Change here [true, false] for declaration.
+\newcommand{\thesisTitlepageElement}{show}  % show or hide titlepage graphical element
+\newcommand{\thesisTitlepageHeight}{6cm}  % height of line in cm
+\newcommand{\thesisTitlepageStart}{8cm}  % shifted start from center
+
+
+% **************************************************
+% Debug LaTeX Information
+% **************************************************
+%\listfiles
+
+
+% **************************************************
+% Load and Configure Packages
+% **************************************************
+\usepackage[english, ngerman]{babel} % the last mentioned language is used as default for all text
+\PassOptionsToPackage{% setup clean thesis style
+    figuresep=colon,%
+    hangfigurecaption=false,%
+    hangsection=true,%
+    hangsubsection=true,%
+    sansserif=false,%
+    configurelistings=true,%
+    colorize=full,%
+    colortheme=jgured,%
+    configurebiblatex=true,%
+    bibsys=biber,%
+    bibfile=bib-refs,%
+    bibstyle=numeric,%
+    bibsorting=nty,%
+}{cleanthesis}
+\usepackage{cleanthesis}
+
+\hypersetup{% setup the hyperref-package options
+    pdftitle={\thesisTitle},    %   - title (PDF meta)
+    pdfsubject={\thesisSubject},%   - subject (PDF meta)
+    pdfauthor={\thesisName},    %   - author (PDF meta)
+    pdfkeywords={\thesisKeywords}, % list of keywords
+    plainpages=false,           %   -
+    colorlinks=false,           %   - colorize links?
+    pdfborder={0 0 0},          %   -
+    breaklinks=true,            %   - allow line break inside links
+    bookmarksnumbered=true,     %
+    bookmarksopen=true          %
+}
+
+% **************************************************
+% Other Packages
+% **************************************************
+\usepackage{scrhack}
+\usepackage{iflang}  % for language switchcase in titlepage
+\usepackage{tikz}

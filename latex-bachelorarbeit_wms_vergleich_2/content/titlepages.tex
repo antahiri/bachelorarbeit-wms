@@ -1,0 +1,126 @@
+% !TEX root = ../my-thesis.tex
+%
+% ------------------------------------  --> cover title page
+\begin{titlepage}
+	\pdfbookmark[0]{Cover}{Cover}
+	\flushright
+	\hfill
+	\vfill
+	{\LARGE\thesisTitle \par}
+	\rule[5pt]{\textwidth}{.4pt} \par
+	{\Large\thesisName}
+	\vfill
+	\textit{\large\thesisDate} \\
+	Version: \thesisVersion
+\end{titlepage}
+
+
+% ------------------------------------  --> main title page
+\begin{titlepage}
+    
+    % Titlepage Header
+    \IfLanguageName{english}{\pdfbookmark[0]{Titlepage}{Titlepage}}{\pdfbookmark[0]{Titelseite}{Titelseite}}
+    \tgherosfont
+    \centering
+
+    \begin{center}
+        \IfLanguageName{english}{\includegraphics[height=1.6cm]{gfx/ICC_corrected/icc_fogra29_ifi_logo_text_en.pdf}}{\includegraphics[height=2.6cm]{gfx/ICC_corrected/icc_fogra29_ifi_logo_text_de.pdf}} \hspace{1cm}
+        \includegraphics[height=1.6cm]{gfx/ICC_corrected/icc_fogra29_jgu_logo.pdf}
+    \end{center}
+    \vfill
+    
+
+    \ifthenelse{\equal{\thesisSubject}{Dissertation}}{
+        %% Titlepage Dissertation
+        {\LARGE \color{ctcolortitle}\textbf{\thesisTitle} \\[10mm]}
+    
+        {\large \thesisSubject} \\[5mm]
+        \IfLanguageName{english}{submitted for the award of the title}{zur Erlangung des Grades} \\[8mm]
+        \textbf{\large\IfLanguageName{english}{\enquote{Doctor of Natural Sciences}}{\setquotestyle[quotes]{german}\foreignquote{german}{Doktor der Naturwissenschaften}}} \\[8mm]
+        \IfLanguageName{english}{to the \thesisUniversityDepartmentLong}{am \thesisUniversityDepartmentLong}\\
+        \IfLanguageName{english}{of \thesisUniversity}{der \thesisUniversity}\\
+        in \thesisUniversityCity
+
+        \vfill
+        {\Large \thesisName} \\[2mm]
+        {\color{ctcolorgray} \IfLanguageName{english}{Born in}{geb. in} \thesisBirthplace} \\
+    
+        \vfill
+        \thesisUniversityCity,\IfLanguageName{english}{ }{ den }\thesisDate \\
+    }{
+        %% Titlepage Bachelor- or Masterthesis
+        \textsf{\thesisUniversity} \\
+        \textsf{\thesisUniversityDepartment} \\
+        \textsf{\thesisUniversityInstitute} \\
+        \textsf{\thesisUniversityGroup} \\
+    
+        \vfill
+        {\large \thesisSubject} \\[2mm]
+        {\LARGE \color{ctcolortitle}\textbf{\thesisTitle} \\[4mm]}
+        {\Large \thesisName} \\[2mm]
+        {\small Matrikelnummer: \thesisMatriculationNumber} \\
+       
+    
+        \vfill
+        \begin{minipage}[t]{.27\textwidth}
+            \raggedleft
+            \IfLanguageName{english}{\textit{1. Reviewer}}{\textit{1. Gutachter}}
+        \end{minipage}
+        \hspace*{15pt}
+        \begin{minipage}[t]{.65\textwidth}
+            {\Large \thesisFirstReviewer} \\
+            {\small \thesisFirstReviewerDepartment} \\[-1mm]
+            {\small \thesisFirstReviewerUniversity}
+        \end{minipage} \\[5mm]
+        \begin{minipage}[t]{.27\textwidth}
+            \raggedleft
+            \IfLanguageName{english}{\textit{2. Reviewer}}{\textit{2. Gutachter}}
+        \end{minipage}
+        \hspace*{15pt}
+        \begin{minipage}[t]{.65\textwidth}
+            {\Large \thesisSecondReviewer} \\
+            {\small \thesisSecondReviewerDepartment} \\[-1mm]
+            {\small \thesisSecondReviewerUniversity}
+        \end{minipage} \\[10mm]
+        \begin{minipage}[t]{.27\textwidth}
+            \raggedleft
+            \IfLanguageName{english}{\textit{Supervisors}}{\textit{Betreuer}}
+        \end{minipage}
+        \hspace*{15pt}
+        \begin{minipage}[t]{.65\textwidth}
+            \thesisFirstSupervisor\ \thesisAnd\ \thesisSecondSupervisor
+        \end{minipage} \\[10mm]
+    
+        \thesisDate \\
+    }
+
+    \ifthenelse{\equal{\thesisTitlepageElement}{show}}{
+    % JGU lines left side
+        \begin{tikzpicture}[overlay, remember picture,xshift=-9.5cm,yshift=\thesisTitlepageStart]
+            \draw[thick,ctcolormain,line width=0.6cm,xshift=-2cm] (0cm, \thesisTitlepageHeight) -- (0.95\pagewidth, \thesisTitlepageHeight);
+            \draw[thick,ctcolormain,line width=0.6cm,xshift=-2cm] (0.95\pagewidth, \thesisTitlepageHeight+0.3cm) -- (0.95\pagewidth, \thesisTitlepageHeight-1.5cm);
+            \draw[thick,ctcolormain,line width=0.6cm,xshift=-2cm] (.15\pagewidth, -.3cm) -- (.15\pagewidth, 1.5cm);
+            \draw[thick,ctcolormain,line width=0.6cm,xshift=-2cm] (.15\pagewidth, 0cm) -- (1.4\pagewidth, 0cm);
+            % \draw[thick,ctcolormain,line width=0.8cm] (0cm, 0cm) -- (0cm, \thesisTitlepageHeight);
+        \end{tikzpicture}}{}
+
+\end{titlepage}
+
+
+% ------------------------------------  --> lower title back for single page layout
+\hfill
+\vfill
+{
+	\small
+	\textbf{\thesisName} \\
+	\textit{\thesisTitle} \\
+	\thesisSubject, \thesisDate \\
+	\IfLanguageName{english}{Reviewers}{Gutachter}: \thesisFirstReviewer\ \thesisAnd\ \thesisSecondReviewer
+	\ifthenelse{\equal{\thesisSubject}{Dissertation}}{}{ \\ \IfLanguageName{english}{Supervisors}{Betreuer}: \thesisFirstSupervisor\ \thesisAnd\ \thesisSecondSupervisor} \\[1.5em]
+	\textbf{\thesisUniversity} \\
+	\textit{\thesisUniversityGroup} \\
+	\thesisUniversityInstitute \\
+	\thesisUniversityDepartment \\
+	\thesisUniversityStreetAddress \\
+	\thesisUniversityPostalCode\ \thesisUniversityCity
+}

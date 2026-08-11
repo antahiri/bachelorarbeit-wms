@@ -1,0 +1,1209 @@
+% !TEX root = ../my-thesis.tex
+
+\lstset{breaklines=true, breakatwhitespace=false}
+
+\chapter{Modellierung und lokale Evaluation}
+\label{sec:lokal}
+
+\section{Lokale Untersuchungsumgebung und Systembereitstellung}
+\label{sec:lokal:umgebung}
+
+Alle Modellierungen und die lokale Messreihe wurden auf einem MacBook
+Pro (2021) mit Apple-M1-Pro-Prozessor (arm64) und 16\,GB
+Arbeitsspeicher unter macOS~26.5.1 ausgeführt. Für jedes der
+Python-basierten Systeme wurde eine eigene Umgebung angelegt (conda
+oder venv), um wechselseitige Abhängigkeitskonflikte auszuschließen.
+Nextflow und HTCondor wurden dagegen über Homebrew installiert. Eine
+HPC-Ausführung wird damit nicht abgebildet. Der Zweck der lokalen
+Ebene ist ein anderer: Auf einem einzelnen Rechner lassen sich beide
+Workflow-Muster in allen fünf Systemen unter denselben,
+kontrollierten Bedingungen modellieren und vermessen. Wie sich die
+Systeme auf einem Slurm-basierten HPC-System betreiben lassen,
+untersucht Kapitel~\ref{sec:mogon}, auf die Grenzen der lokalen
+Betrachtung geht Abschnitt~\ref{sec:diskussion:grenzen} ein.
+
+Die folgenden Absätze beschreiben die Bereitstellung je System in
+derselben Reihenfolge: eingesetzte Version und Installationsweg,
+zusätzlich benötigte Komponenten und die dafür nötigen
+Konfigurationsschritte sowie aufgetretene Fehler. Eine bewertende
+Einordnung erfolgt an dieser Stelle noch nicht.
+
+\paragraph{Nextflow:} Nextflow wurde in Version~25.10.4 über Homebrew
+installiert. Als Voraussetzung benötigt Nextflow eine Java-Laufzeit
+ab Version~17~\cite{nextflowdocs-install}, die die verwendete
+Homebrew-Formel als Abhängigkeit mitinstalliert~\cite{brewnextflow}.
+Weitere Komponenten und Konfigurationsschritte waren für den lokalen
+Betrieb nicht erforderlich. Bei der Einrichtung traten keine Fehler
+auf.
+
+\paragraph{StreamFlow:} StreamFlow wurde in der Vorabversion~0.2.0rc2
+eingesetzt. Die Installation erfolgte mit pip direkt aus dem
+Quellcode-Repository des Projekts~\cite{streamflowrepo} und wurde auf
+den Commit~\texttt{7704a8e} festgelegt. StreamFlow wird als
+Python-Paket installiert und setzt Python ab Version~3.10
+voraus~\cite{streamflowdocs}. Zusätzliche Komponenten waren nicht
+erforderlich. Konfigurationsschritte über die
+Installation hinaus und Fehler traten nicht auf.
+
+\paragraph{Merlin:} Merlin wurde in Version~1.13.0 mit pip
+installiert. Für die Ausführung benötigt Merlin einen
+Nachrichtenvermittler, in dessen Warteschlange Celery die Schritte
+als Aufgaben einstellt, die Worker entgegennehmen und
+abarbeiten~\cite{merlindocs-celery}. In der lokalen Einrichtung diente Redis
+als Nachrichtenvermittler und wurde über einen Docker-Container
+bereitgestellt. Vor jedem Lauf mussten daher der Redis-Container und
+die Celery-Worker gestartet werden. Bei der Einrichtung trat ein
+Fehler auf: Aktuelle Versionen von \texttt{setuptools} liefern das
+von Merlin vorausgesetzte Modul \texttt{pkg\_resources} nicht mehr
+mit, sodass das Werkzeug nach der Installation zunächst nicht
+startete. Erst nach einem Downgrade von \texttt{setuptools} auf eine
+Version kleiner als~81 lief Merlin an.
+
+\paragraph{Pegasus:} Pegasus wurde in Version~5.1.2 installiert und
+benötigt HTCondor~\cite{pegasusdocs-install}, das in Version~23.1.0 über
+Homebrew bezogen wurde. Die HTCondor-Prozesse wurden einmal über
+\texttt{condor\_master} gestartet und blieben in der verwendeten
+Einrichtung dauerhaft aktiv. Vor jedem Aufruf waren zusätzlich zwei
+Umgebungsvariablen zu setzen, die nur für die aktuelle
+Terminal-Sitzung gelten: \texttt{CONDOR\_CONFIG} für die
+HTCondor-Konfiguration und \texttt{PYTHONPATH} für die
+Pegasus-Python-Bibliothek. Ohne die zweite Variable brach das
+Erzeugungsskript mit einem \texttt{ModuleNotFoundError} ab.
+
+\paragraph{AiiDA:} AiiDA wurde in Version~2.8.0 installiert. Für den in der Dokumentation empfohlenen Betrieb setzt AiiDA zwei Dienste voraus, PostgreSQL als Datenbank-Backend für die Ablage aller Daten- und Prozessknoten und RabbitMQ für die Kommunikation mit dem Daemon~\cite{aiidadocs-install}. Beide Dienste wurden lokal installiert. Über die Installation hinaus waren eine Datenbank und ein Profil anzulegen, vor jedem Lauf muss zusätzlich der Daemon aktiv sein, der die Workflows im Hintergrund ausführt.
+
+Tabelle~\ref{tab:lokal:dienste} fasst die für die lokale
+Bereitstellung nötigen Komponenten und Schritte zusammen. Die
+Gegenüberstellung bleibt beschreibend, eine Aufwandsrangfolge wird
+nicht gebildet, weil sich die Schritte in Art und Umfang
+unterscheiden. Die Einordnung aus Einsteigerperspektive folgt in den
+nachfolgenden Abschnitten anhand der Vergleichsaspekte aus
+Abschnitt~\ref{sec:methodik:qualitativ}.
+
+\begin{table}[ht]
+  \caption{Lokale Bereitstellung je System: zusätzliche Komponenten, einmalige Konfiguration und vor der Ausführung erforderliche Schritte}
+  \label{tab:lokal:dienste}
+  \centering
+  \footnotesize
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{l l p{2.6cm} p{3.0cm} p{3.4cm}}
+    \hline
+    \textbf{System} & \textbf{Version} & \textbf{Zusätzliche Komponenten} & \textbf{Einmalige Konfiguration} & \textbf{Vor der Ausführung} \\
+    \hline
+    Nextflow   & 25.10.4  & keine & keine & keine \\
+    StreamFlow & 0.2.0rc2 & keine & keine & keine \\
+    Merlin     & 1.13.0   & Redis & \texttt{setuptools}-Downgrade & Redis-Container und Worker starten \\
+    Pegasus    & 5.1.2    & HTCondor 23.1.0 & keine & HTCondor-Prozesse aktiv, \texttt{CONDOR\_CONFIG} und \texttt{PYTHONPATH} gesetzt (je Sitzung) \\
+    AiiDA      & 2.8.0    & PostgreSQL, RabbitMQ & Datenbank, Profil & Daemon starten \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Pipeline-Pattern}
+\label{sec:lokal:pipeline}
+
+Das Pipeline-Pattern wurde als strikt sequenzielle Abfolge von vier
+Schritten umgesetzt, bei der jeder Schritt die Ausgabe des vorherigen
+als Eingabe verwendet: \texttt{generate\_input}, \texttt{preprocess},
+\texttt{compute} und \texttt{postprocess}. In allen fünf Systemen
+kommen dieselben Python-Skripte zum Einsatz, die ihre Ein- und
+Ausgabepfade als Argumente entgegennehmen. Unterschiede zwischen den
+Systemen gehen deshalb nicht auf die Rechenlogik zurück, sondern
+darauf, wie der Ablauf beschrieben, wie die Dateien weitergegeben und
+wie die Ausführung gesteuert wird. Die vollständigen
+Workflow-Beschreibungen stehen in Anhang~\ref{app:workflows}.
+
+\subsection{Nextflow}
+\label{sec:lokal:pipeline:nextflow}
+
+Nextflow beschreibt den Workflow in einer einzigen Datei
+\texttt{benchmark.nf} in der systemeigenen Sprache DSL2. Jeder Schritt
+ist ein \texttt{process}-Block, ein abschließender
+\texttt{workflow}-Block setzt die vier Prozesse zusammen.
+
+\emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
+es nicht. Die Reihenfolge entsteht dadurch, dass der Rückgabewert
+eines Prozessaufrufs als Argument des nächsten dient, entsprechend
+dem Datenfluss-Modell, auf dem Nextflow
+beruht~\cite[S.~317]{ditommaso2017nextflow}.
+
+\begin{lstlisting}[caption={workflow-Block aus benchmark.nf (Nextflow, Pipeline)},label={lst:pipe:nf}]
+workflow {
+    raw_ch      = GENERATE_INPUT()
+    prepared_ch = PREPROCESS(raw_ch)
+    result_ch   = COMPUTE(prepared_ch)
+    summary_ch  = POSTPROCESS(result_ch)
+}
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die
+Workflow-Beschreibung liegt vollständig in einer Datei, in der
+Prozessdefinitionen und Komposition zusammenstehen. Eine Änderung der
+Rechenlast betrifft allein den Aufruf des Berechnungsskripts, die
+Fassungen für die drei Rechenlasten unterscheiden sich in genau einer
+Zeile.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Nicht nur die
+Reihenfolge, auch der Weg der Dateien ist in der Beschreibung
+ablesbar. Die beteiligten Dateien erscheinen in den
+\texttt{path}-Deklarationen der Ein- und Ausgaben und eine so
+deklarierte Ausgabe wird als Verweis im Arbeitsverzeichnis des
+nachfolgenden Prozesses bereitgestellt, sodass die Skripte sie unter
+dem angegebenen Namen öffnen. Da jeder Prozess in einem eigenen
+Verzeichnis läuft, werden die Skripte über die Variable
+\texttt{projectDir} mit absolutem Pfad aufgerufen.
+
+\emph{Ausführung und Steuerung:} Die Ausführung steuert die
+Nextflow-Laufzeit. Ein Prozess wird gestartet, sobald sein
+Eingabe-Channel Daten enthält, der Startzeitpunkt jedes Prozesses ergibt sich damit erst zur Laufzeit aus dem Eintreffen der Daten.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:}
+Workflow-Beschreibung und Ausführungsparameter liegen getrennt vor.
+Angaben wie Executor und Ressourcen stehen in einer eigenen
+Konfigurationsdatei, sodass ein Wechsel der Ausführungsumgebung die
+Workflow-Datei unberührt lässt.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Während des Laufs zeigt die
+Ausgabe im Terminal für jeden Prozess den Kennzeichner des
+Arbeitsverzeichnisses sowie die Zahl der abgeschlossenen Aufgaben an.
+Je Prozess bleibt ein Arbeitsverzeichnis mit den erzeugten Dateien
+zurück. Zusätzlich lassen sich eine Trace-Datei, ein Zeitstrahl und
+der Workflow-Graph erzeugen~\cite{nextflowdocs-reports}. Der Workflow-Graph ist in
+Abbildung~\ref{fig:nf:dag} dargestellt, Zeitstrahlen von
+Pipeline-Läufen in den Abbildungen~\ref{fig:nf:timeline:short}
+und~\ref{fig:nf:timeline}.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Die Abfolge der
+vier Schritte ist im \texttt{workflow}-Block kompakt sichtbar. Für das
+Verständnis der Beschreibung sind darüber hinaus das Channel-Konzept
+und die getrennten Arbeitsverzeichnisse relevant, aus denen sich der
+Aufruf über \texttt{projectDir} ergibt.
+
+\subsection{StreamFlow}
+\label{sec:lokal:pipeline:streamflow}
+
+StreamFlow verteilt die Beschreibung auf drei Dateien. Die fachliche
+Logik steht in \texttt{workflow.cwl} in der Common Workflow Language,
+die Zuordnung der Schritte zu einer Ausführungsumgebung in
+\texttt{streamflow.yml} und die Pfade der Skripte in
+\texttt{config.yml}. Diese Aufteilung entspricht dem Entwurfsziel,
+die Workflow-Beschreibung von der Ausführungsumgebung zu
+lösen~\cite[S.~1723]{colonnelli2021streamflow}.
+
+\emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
+es nicht. Jeder Schritt benennt unter \texttt{in} seine Eingaben und
+eine dieser Eingaben verweist auf die Ausgabe des vorherigen
+Schritts. Die Reihenfolge entsteht damit aus den Verweisen zwischen
+den Schritten.
+
+\begin{lstlisting}[caption={Verweis auf die Ausgabe des Vorgängers in workflow.cwl (StreamFlow, Pipeline)},label={lst:pipe:sf}]
+  preprocess:
+    in:
+      script:        preprocess_script
+      timing_helper: timing_helper
+      raw_file:      generate_input/raw_file
+    out: [prepared_file, timing_file]
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die Beschreibung
+verteilt sich auf drei Dateien. Den größten Teil bildet
+\texttt{workflow.cwl}, da dort für jeden Schritt Ein- und Ausgaben,
+Parameter und die Werkzeugbeschreibung festgelegt werden. Eine
+Änderung der Rechenlast betrifft allein die fünfzeilige
+\texttt{config.yml}, deren Fassungen sich in genau einer Zeile
+unterscheiden.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Für jede Ein-
+und Ausgabe sind Typ und Herkunft deklariert. Die Ausgaben eines
+Schritts werden über ein Dateimuster eingesammelt und unter einem
+benannten Bezeichner weitergereicht, auf den die nachfolgenden
+Schritte zugreifen. Auch die Ergebnisse des Gesamtworkflows werden
+über \texttt{outputSource} ausdrücklich auf die Ausgaben einzelner
+Schritte zurückgeführt.
+
+\emph{Ausführung und Steuerung:} Die Ausführung übernimmt die
+StreamFlow-Laufzeit. Die Zuordnung der Schritte zur
+Ausführungsumgebung erfolgt über \texttt{streamflow.yml}, in der
+jedem Schritt ein Deployment zugewiesen wird. Für die lokale
+Untersuchung wurden alle Schritte einer lokalen Ausführungsumgebung
+zugewiesen.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Zuordnung zur Ausführungsumgebung steht vollständig in
+\texttt{streamflow.yml} und ist von der fachlichen Beschreibung
+getrennt. Ein Wechsel der Ausführungsumgebung erfordert deshalb keine
+Änderung an \texttt{workflow.cwl}, sondern nur an der Angabe des
+Deployments.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Der Lauf lässt sich
+unmittelbar an der Ausgabe im Terminal verfolgen. Sie nennt je Schritt
+das Arbeitsverzeichnis und den vollständigen Aufruf mit allen
+Argumentpfaden sowie jede einzelne Dateiübertragung mit Quelle und
+Ziel. Am Ende gibt StreamFlow die als Workflow-Ausgaben deklarierten
+Dateien mit Pfad, Größe und Prüfsumme aus. Aus den gespeicherten
+Provenance-Daten lassen sich zudem ein Zeitstrahl des Laufs und ein
+Archiv im RO-Crate-Format erzeugen~\cite{streamflowdocs-inspect}. Der
+Zeitstrahl eines Pipeline-Laufs ist in
+Abbildung~\ref{fig:sf:timeline} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Die
+Workflow-Beschreibung verteilt sich auf drei Dateien mit
+unterschiedlichen Aufgaben. Neben der Struktur des Workflows sind
+darüber hinaus die Konzepte der Common Workflow Language relevant,
+also Typdefinitionen, Ein- und Ausgaben sowie
+Werkzeugbeschreibungen.
+
+\subsection{Merlin}
+\label{sec:lokal:pipeline:merlin}
+
+Merlin beschreibt den Workflow in einer YAML-Spezifikation, deren
+Abschnitt \texttt{study} die vier Schritte enthält. Eine zweite Datei
+enthält die Verbindungsdaten des Nachrichtenvermittlers.
+
+\emph{Ausdruck des Patterns:} Die Reihenfolge wird ausdrücklich
+benannt. Jeder Schritt führt unter \texttt{depends} seine Vorgänger
+auf.
+
+\begin{lstlisting}[caption={Abhängigkeit und Datenweitergabe eines Schritts (Merlin, Pipeline)},label={lst:pipe:me}]
+  - name: compute_1
+    run:
+      depends: [preprocess]
+      cmd: python3 $(SPECROOT)/scripts/compute_medium.py $(preprocess.workspace)/prepared_input.txt result.txt
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die
+Workflow-Beschreibung ist die Spezifikation, die Vermittlerdatei
+enthält davon getrennt die Verbindungsdaten für die Ausführung. Neben der Bezeichnung der jeweiligen Variante betrifft die Änderung
+der Rechenlast allein den Aufruf des Berechnungsskripts.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Der Datenfluss
+steht unmittelbar im Befehl, da der Pfad in das Arbeitsverzeichnis
+des vorherigen Schritts über \texttt{\$(schritt.workspace)} direkt im
+Aufruf erscheint. Abhängigkeit und Datenweitergabe stehen damit an
+zwei Stellen desselben Schritts, einmal als \texttt{depends} und
+einmal als Pfadangabe.
+
+\emph{Ausführung und Steuerung:} Die Schritte werden als Aufgaben in die Warteschlange des Vermittlers eingestellt, aus der die Worker
+sie entgegennehmen und abarbeiten~\cite[S.~258]{peterson2022merlin}\cite{merlindocs-celery}. Welche Schritte ein
+Worker übernimmt, legt die Spezifikation im Abschnitt
+\texttt{resources} fest, in der lokalen Untersuchung übernahm ein
+Worker alle vier Schritte.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Trennung beruht auf dem Erzeuger-Verbraucher-Modell. Die
+Spezifikation beschreibt, welche Schritte auszuführen sind, während
+die Worker die Aufgaben aus der Warteschlange abholen, unabhängig
+davon, wo sie laufen. Die Workflow-Beschreibung ist damit von der
+ausführenden Ressource entkoppelt~\cite[S.~261]{peterson2022merlin}. Die
+Spezifikation benennt zwar, welche Schritte ein Worker übernimmt,
+nicht aber, auf welcher Ressource dieser Worker läuft. Die
+Verbindungsdaten des Vermittlers stehen in der zweiten Datei.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Jeder Schritt läuft in
+einem eigenen Arbeitsverzeichnis, sodass sich Ergebnisse und
+Protokolle eindeutig einem Schritt zuordnen lassen. Während der
+Ausführung zeigen die Ausgaben der Celery-Worker fortlaufend an,
+welche Aufgaben angenommen und abgeschlossen werden. Über die
+Kommandozeile lassen sich zudem der Zustand der Warteschlangen und
+Worker sowie der Fortschritt eines Laufs abfragen~\cite{merlindocs-commands}.
+Eine Funktion zur Ausgabe des Workflow-Graphen wurde in der
+verwendeten Version~1.13.0 nicht gefunden.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Die Vorgänger
+jedes Schritts sind über \texttt{depends} ausdrücklich bezeichnet.
+Für das Verständnis der Beschreibung sind darüber hinaus die
+Workspace-Verweise und das Zusammenspiel von Nachrichtenvermittler
+und Workern relevant.
+
+\subsection{Pegasus}
+\label{sec:lokal:pipeline:pegasus}
+
+Der Workflow wird in \texttt{build\_workflow.py} über die Python-Schnittstelle
+aufgebaut, die daraus die abstrakte Workflow-Datei und den
+Transformationskatalog erzeugt. Hinzu kommen der Site-Katalog, eine
+Eigenschaftsdatei und der Aufruf des Planers.
+
+\emph{Ausdruck des Patterns:} Die Reihenfolge ergibt sich aus den
+Dateien. Jeder Job benennt über \texttt{add\_inputs} und
+\texttt{add\_outputs}, welche Dateien er liest und schreibt und
+Pegasus leitet daraus die Kanten des Graphen ab.
+
+\begin{lstlisting}[language=Python,caption={Ein- und Ausgaben eines Jobs (Pegasus, Pipeline)},label={lst:pipe:pg}]
+compute_job = Job("compute")
+compute_job.add_args("prepared_input.txt", "result.txt")
+compute_job.add_inputs(prepared_file)
+compute_job.add_outputs(result_file, stage_out=False, register_replica=False)
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Manuell erstellt
+wurden das Erzeugungsskript, der Site-Katalog, die Eigenschaftsdatei
+und der Planungsaufruf. Die abstrakte Workflow-Datei ist für alle
+drei Rechenlasten identisch, die erzeugten Fassungen des
+Transformationskatalogs unterscheiden sich in genau einer Zeile, der
+Pfadangabe des Berechnungsskripts.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Dateien
+werden einmal als eigene Objekte benannt und in den Jobs
+referenziert. Je Ausgabe wird zusätzlich festgelegt, ob die Datei am
+Ende gesichert und registriert wird, sodass auch der Umgang mit den
+Ergebnissen in der Beschreibung steht.
+
+\emph{Ausführung und Steuerung:} Pegasus trennt Planung und
+Ausführung. Der Planer übersetzt die abstrakte Beschreibung in einen
+konkreten Graphen, der anschließend an HTCondor zur Ausführung
+übergeben wird~\cite[S.~20]{deelman2015pegasus}. Welche Jobs mit welchen
+Abhängigkeiten auszuführen sind, steht damit bereits vor Beginn der
+Ausführung fest.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Trennung beruht auf der abstrakten Workflow-Beschreibung. Der
+Workflow wird ressourcenunabhängig formuliert, während der
+Transformations- und der Site-Katalog die Verbindung zu den
+Programmen und den verfügbaren Rechenumgebungen herstellen und der
+Planer daraus den ausführbaren Workflow
+erzeugt~\cite[S.~18--20]{deelman2015pegasus}.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Die Jobs eines Laufs
+werden in einem gemeinsamen Arbeitsverzeichnis ausgeführt, ein
+eigenes Verzeichnis je Job entsteht nicht. Während des Laufs lässt
+sich der Fortschritt über die Statusabfrage verfolgen, die die
+laufenden Jobs einzeln benennt und den Anteil der abgeschlossenen
+Jobs ausweist. Bei jedem Lauf entstanden
+im Submit-Verzeichnis neben den Protokollen automatisch drei
+Abbildungen des Workflow-Graphen, eine abstrakte Darstellung, eine
+Darstellung mit den beteiligten Dateien und eine des konkreten,
+geplanten Graphen. Die drei Darstellungen des
+Pipeline-Workflows sind in den Abbildungen~\ref{fig:pg:dag},
+\ref{fig:pg:dag:files} und~\ref{fig:pg:dag:concrete} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Die Beschreibung
+erfolgt in Python. Für das Verständnis der Umsetzung sind darüber
+hinaus die Kataloge, die Site-Konfiguration, der vorgelagerte
+Planungsschritt und die Rolle von HTCondor relevant.
+
+\subsection{AiiDA}
+\label{sec:lokal:pipeline:aiida}
+
+In AiiDA wird der Workflow als Python-Klasse beschrieben. Eine
+WorkChain legt den Ablauf fest, ein allgemein gehaltener CalcJob
+führt je Schritt eines der Benchmark-Skripte aus, ein Submit-Skript
+übergibt den Lauf an den Daemon.
+
+\emph{Ausdruck des Patterns:} Die Reihenfolge wird ausdrücklich als
+Liste von Methoden in \texttt{spec.outline()} festgelegt. Die
+abschließende Methode \texttt{results} reicht keinen weiteren
+CalcJob ein, sie veröffentlicht die Ausgaben der vier fachlichen
+Schritte als Ausgaben der WorkChain.
+
+\begin{lstlisting}[language=Python,caption={Reihenfolge in spec.outline() (AiiDA, Pipeline)},label={lst:pipe:ai}]
+spec.outline(
+    cls.submit_generate,
+    cls.submit_preprocess,
+    cls.submit_compute,
+    cls.submit_postprocess,
+    cls.results,
+)
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die Umsetzung
+umfasst WorkChain, CalcJob und Submit-Skript, wobei der CalcJob
+allgemein formuliert ist und in beiden Mustern unverändert verwendet
+wird. Eine eigene Fassung je Rechenlast entfällt, die Rechenlast wird
+dem Submit-Skript als Argument übergeben und die WorkChain wählt
+daraus das Berechnungsskript aus.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Weitergabe
+der Dateien ist an drei Stellen ausdrücklich beschrieben, als
+Eingabeordner des vorherigen Schritts, als Zuordnung, welche Datei
+unter welchem Namen im nächsten Arbeitsverzeichnis erscheint und als
+Liste der nach dem Lauf abzurufenden Dateien.
+
+\emph{Ausführung und Steuerung:} Das Submit-Skript übergibt die
+WorkChain an den Daemon, der die Schritte der Outline abarbeitet und
+für jeden Schritt einen CalcJob einreicht. Vor jedem weiteren Schritt
+prüft die WorkChain, ob der vorherige erfolgreich abgeschlossen
+wurde und bricht andernfalls mit einem eigenen Fehlercode ab.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Ausführungsumgebung wird als Eingabe behandelt. Rechner und Code sind
+in der Datenbank als eigene Objekte abgelegt und werden vom
+Submit-Skript geladen.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Während des Laufs lässt
+sich der Fortschritt über die Statusabfrage verfolgen, die die
+laufenden Prozesse einzeln benennt und ihren Zustand ausweist. Unabhängig davon hält AiiDA jeden Schritt bereits während des Laufs in einem dauerhaften
+Provenance-Graphen fest. Darin sind sowohl die Prozesse als auch die
+Daten eigene Knoten und die Kanten geben an, welche Eingaben ein
+Prozess verwendet hat und welche Ausgaben aus ihm hervorgegangen
+sind~\cite[S.~7\,f.]{huber2020aiida}. Dabei werden zwei Zusammenhänge unterschieden. Zum einen wird festgehalten, wie Daten aus vorherigen Daten und Berechnungsschritten entstanden sind. Zum anderen wird dokumentiert, welcher Workflow die einzelnen Berechnungen ausgelöst hat. In der vorliegenden Umsetzung erscheint deshalb die WorkChain als
+eigener Knoten, der mit den vier von ihr eingereichten CalcJobs
+verbunden ist. Der gespeicherte Ablauf lässt sich im
+Nachhinein abfragen und als Graph ausgeben~\cite{aiidadocs-graph}. Der
+Provenance-Graph des Pipeline-Laufs ist in
+Abbildung~\ref{fig:ai:prov} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Die Beschreibung
+erfolgt in Python. Für das Verständnis der Umsetzung sind darüber
+hinaus typisierte Datenknoten, WorkChain und CalcJob, der Kontext für
+die Weitergabe von Ergebnissen sowie die Einrichtung von Rechner und
+Code relevant.
+
+\subsection{Vergleichende Beobachtungen zum Pipeline-Pattern}
+\label{sec:lokal:pipeline:zusammenfassung}
+
+Tabelle~\ref{tab:pipe:vergleich} stellt die Beobachtungen aus den
+fünf Systemabschnitten entlang der Vergleichsaspekte gegenüber. Als
+Artefakte gezählt werden dabei die manuell erstellten Dateien, die
+die Workflow-Beschreibung und ihre Konfiguration ausmachen,
+automatisch erzeugte Dateien und die unveränderten Benchmark-Skripte
+bleiben unberücksichtigt. Bei AiiDA treten zu den drei Dateien
+Rechner und Code hinzu, die einmalig als Objekte in der Datenbank
+eingerichtet werden.
+
+\begin{table}[H]
+  \caption{Umsetzung des Pipeline-Patterns im Überblick}
+  \label{tab:pipe:vergleich}
+  \centering
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.7cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm}}
+    \hline
+     & \textbf{Nextflow} & \textbf{Stream\-Flow} & \textbf{Merlin} & \textbf{Pegasus} & \textbf{AiiDA} \\
+    \hline
+    Ausdruck des Patterns & Übergabe der Prozess\-ausgaben & Verweis auf Vorgänger\-ausgabe & Angabe unter \texttt{depends} & deklarierte Ein- und Ausgaben & Liste in \texttt{spec.outline()} \\
+    Modellierung und Konfiguration & eine Datei & drei Dateien & zwei Dateien & vier Dateien & drei Dateien, dazu Rechner und Code \\
+    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben der Prozesse & typisierte Ein- und Ausgaben & Pfad im Befehl & \texttt{File}-Objekte der Jobs & Ordner und Zuordnung \\
+    Ausführung und Steuerung & eigene Laufzeit & eigene Laufzeit & Celery-Worker & HTCondor nach Planung & Daemon \\
+    Trennung Logik und Umgebung & eigene Konfigu\-rationsdatei & eigene Deployment-Datei & Warteschlange trennt Schritt und Ressource & abstrakte Beschreibung, Kataloge, Planer & Rechner und Code in der Datenbank \\
+    Nachvollziehbarkeit & Fortschritts\-anzeige, Trace-Datei, Zeitstrahl, Graph & Terminal\-ausgabe, Zeitstrahl, RO-Crate & Worker-Ausgaben, Status\-abfragen & Status\-abfragen, drei Graph\-abbildungen & Status\-abfragen, Provenance-Graph \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Beim Ausdruck des Patterns zeigen sich zwei Ansätze. Nextflow,
+StreamFlow und Pegasus leiten die Reihenfolge der Schritte aus den
+Datenbeziehungen ab, während Merlin und AiiDA die Abfolge
+ausdrücklich beschreiben. Diese Trennlinie fällt nicht mit der
+Beschreibungsform zusammen, denn Pegasus wird wie AiiDA
+programmatisch in Python beschrieben, gehört bei der Entstehung der
+Abhängigkeiten aber zur ersten Gruppe.
+
+Hinsichtlich des Modellierungs- und Konfigurationsaufwands
+unterscheiden sich die Systeme vor allem in der Zahl der beteiligten
+Artefakte, von einer einzigen Datei bei Nextflow über die Aufteilung
+in fachliche Beschreibung und Umgebungsdateien bei StreamFlow, Merlin
+und Pegasus bis zu den drei Python-Bausteinen bei AiiDA. Auffällig
+einheitlich fällt dagegen der Wechsel der Rechenlast aus: In Nextflow, StreamFlow, Merlin und Pegasus war jeweils nur der Aufruf des Berechnungsskripts anzupassen, die Stelle dieser Anpassung unterscheidet sich jedoch, sie liegt in der Workflow-Datei, in der Eingabekonfiguration, in der Spezifikation beziehungsweise im erzeugten Transformationskatalog. AiiDA behandelt die Rechenlast stattdessen
+als Aufrufargument.
+
+Auch die Sichtbarkeit des Datenflusses nimmt unterschiedliche Formen
+an, von den Deklarationen bei den Schritten in Nextflow und
+StreamFlow über die als eigene Objekte geführten Dateien bei Pegasus
+und den Verzeichnispfad im Befehl bei Merlin bis zur dreifach
+beschriebenen Weitergabe in AiiDA. Bei der Ausführung stehen sich
+zwei Modelle gegenüber. Nextflow und StreamFlow führen den Workflow
+in der eigenen Laufzeit aus, während Merlin, Pegasus und AiiDA die
+Ausführung an eine eigenständige Komponente übergeben, an
+Celery-Worker, an HTCondor nach vorgelagerter Planung beziehungsweise
+an den Daemon. Der Zeitpunkt, zu dem der Ablauf feststeht,
+unterscheidet sich entsprechend, bei Pegasus liegt der vollständige
+Graph vor dem ersten Schritt vor, bei Nextflow ergibt sich der Start
+eines Prozesses aus dem Datenfluss zur Laufzeit.
+
+Bei der Trennung von Logik und Umgebung greifen unterschiedliche
+Mechanismen. Nextflow und StreamFlow lagern die Umgebungsangaben in
+eigene Dateien aus, Merlin entkoppelt Beschreibung und Ressource über
+die Aufgabenwarteschlange, Pegasus formuliert den Workflow abstrakt
+und stellt die Verbindung zur Umgebung über Kataloge und den Planer
+her und AiiDA hält Rechner und Code als Objekte in der Datenbank.
+
+Bei der Nachvollziehbarkeit unterscheidet sich weniger der Umfang
+als die Ebene, auf der ein Lauf dokumentiert wird. Während der
+Ausführung lässt sich der Fortschritt in allen fünf Systemen
+unmittelbar verfolgen, bei Nextflow über die Fortschrittsanzeige je
+Prozess, bei StreamFlow über die im Terminal ausgegebenen Schritte
+und Dateiübertragungen, bei Merlin über die Ausgaben der Worker, bei
+Pegasus über die Statusabfrage des Laufs und bei AiiDA über
+Statusabfragen an den Daemon. Nach dem Lauf hinterlassen Nextflow,
+StreamFlow, Merlin und AiiDA je Schritt ein Arbeitsverzeichnis,
+während bei Pegasus alle Jobs eines Laufs in einem gemeinsamen
+Arbeitsverzeichnis ausgeführt werden. Einen Zeitstrahl des Laufs
+erzeugen Nextflow und StreamFlow, Nextflow zusätzlich eine
+Trace-Datei, bei Pegasus liegen die Protokolle im Verzeichnis des
+Laufs. Den Aufbau des Workflows stellen Nextflow und Pegasus als
+Graph dar, während AiiDA im Provenance-Graphen zusätzlich festhält,
+aus welchem Prozess welche Daten hervorgegangen sind und welcher
+Workflow die einzelnen Berechnungen angestoßen hat.
+
+Aus Einsteigerperspektive unterscheiden sich die Umsetzungen vor
+allem darin, wie viele systemeigene Konzepte vor dem ersten Lauf
+verstanden sein müssen. Bei Nextflow ist dies neben den
+Prozessdefinitionen vor allem das Channel-Modell. StreamFlow setzt
+die Konzepte der Common Workflow Language sowie die Aufteilung auf
+drei Dateien mit unterschiedlichen Aufgaben voraus. Bei Merlin kommt
+zu der ausdrücklich bezeichneten Abhängigkeit das Zusammenspiel von
+Nachrichtenvermittler und Workern hinzu. Pegasus verlangt zusätzlich
+die Kataloge, den vorgelagerten Planungsschritt und die Rolle von
+HTCondor, AiiDA typisierte Datenknoten, WorkChain und CalcJob sowie
+die Einrichtung von Rechner und Code. Diese Einordnung beruht auf der
+erstmaligen Umsetzung der beiden Muster und ersetzt keine
+Nutzerstudie. Wie sich die beschriebenen Unterschiede im
+Laufzeitverhalten niederschlagen, untersucht
+Abschnitt~\ref{sec:lokal:messungen}.
+
+\section{Scatter-Gather-Pattern}
+\label{sec:lokal:scattergather}
+
+Das Scatter-Gather-Pattern erweitert die Abfolge um eine parallele
+Phase. Nach \texttt{generate\_input} und \texttt{preprocess} zerlegt
+\texttt{split} die Eingabe in eine einstellbare Zahl von Teilstücken,
+\texttt{compute} verarbeitet jedes Teilstück unabhängig,
+\texttt{aggregate} führt die Teilergebnisse zusammen und
+\texttt{postprocess} bildet den Abschluss. Untersucht wurden Läufe mit
+einem, zwei und vier Teilstücken. Wie beim Pipeline-Pattern kommen in
+allen fünf Systemen dieselben Python-Skripte zum Einsatz, die
+Unterschiede liegen darin, wie die Aufteilung, die parallele
+Verarbeitung und das Zusammenführen beschrieben werden. Die
+vollständigen Workflow-Beschreibungen stehen in
+Anhang~\ref{app:workflows}.
+
+\subsection{Nextflow}
+\label{sec:lokal:sg:nextflow}
+
+Die Beschreibung folgt dem Aufbau des Pipeline-Workflows und liegt
+wieder vollständig in einer Datei, die Zahl der Teilstücke steht als
+Parameter am Dateianfang.
+
+\emph{Ausdruck des Patterns:} Aufteilung und Zusammenführung werden
+über zwei Operatoren auf den Channels ausgedrückt. \texttt{SPLIT}
+liefert die Teilstücke als eine Ausgabe, \texttt{flatten} zerlegt sie
+in einzelne Elemente, sodass \texttt{COMPUTE} für jedes Element
+gestartet wird und \texttt{collect} sammelt die Teilergebnisse
+wieder zu einer Eingabe für \texttt{AGGREGATE}.
+
+\begin{lstlisting}[caption={Fan-out und Fan-in im workflow-Block (Nextflow, Scatter-Gather)},label={lst:sg:nf}]
+    chunks_ch = SPLIT(prepared_ch)
+        .flatten()
+    results_ch = COMPUTE(chunks_ch)
+        .collect()
+    aggregated_ch = AGGREGATE(results_ch)
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die Zahl der
+Teilstücke ist ein Parameter, die Fassungen für einen, zwei und vier
+Teilstücke unterscheiden sich in genau einer Zeile. Der Wechsel der
+Rechenlast betrifft wie beim Pipeline-Pattern allein den Aufruf des
+Berechnungsskripts, ebenfalls eine Zeile.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Der Weg der
+Dateien durch die parallele Phase ist in der Beschreibung ablesbar.
+\texttt{SPLIT} deklariert seine Ausgabe als Dateimuster, an dem
+sichtbar ist, dass hier mehrere Dateien entstehen. Jede Instanz von
+\texttt{COMPUTE} erhält genau ein Teilstück als deklarierte Eingabe
+in ihrem Arbeitsverzeichnis bereitgestellt und \texttt{AGGREGATE}
+erhält die gesammelten Ergebnisdateien zusammen als eine Eingabe.
+Welches Ergebnis zu welchem Teilstück gehört, bleibt dabei am
+Dateinamen ablesbar, da dieser die Kennung des Teilstücks trägt.
+
+\emph{Ausführung und Steuerung:} Für jedes Element des
+Eingabe-Channels startet die Laufzeit eine eigene Instanz von
+\texttt{COMPUTE}, die Instanzen laufen nebeneinander.
+\texttt{AGGREGATE} startet erst, wenn \texttt{collect} die Ergebnisse
+aller Instanzen zusammengeführt hat.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
+Pipeline-Pattern steht die Ausführungsumgebung in der eigenen
+Konfigurationsdatei, die Workflow-Datei bleibt bei einem Wechsel
+unverändert.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Die Fortschrittsanzeige
+zählt die parallelen Instanzen von \texttt{COMPUTE} als Aufgaben
+desselben Prozesses. Workflow-Graph und Zeitstrahl stehen wie beim
+Pipeline-Pattern zur Verfügung, der Graph des
+Scatter-Gather-Workflows und der Zeitstrahl eines Laufs mit vier
+Teilstücken sind in den Abbildungen~\ref{fig:nf:dag:sg}
+und~\ref{fig:nf:timeline:sg} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zum
+Channel-Modell sind die beiden Operatoren zu verstehen, die aus einer
+Ausgabe mehrere Elemente machen und mehrere Elemente wieder zu einer
+Eingabe bündeln.
+
+\subsection{StreamFlow}
+\label{sec:lokal:sg:streamflow}
+
+Die Aufteilung auf die drei Dateien bleibt bestehen. Die parallele
+Phase wird vollständig in der CWL-Beschreibung ausgedrückt, die Zahl
+der Teilstücke ist ein Eingabewert des Workflows aus der
+Konfigurationsdatei.
+
+\emph{Ausdruck des Patterns:} Die Aufteilung wird über das
+\texttt{scatter}-Attribut des \texttt{compute}-Schritts ausgedrückt.
+Der Schritt erhält das von \texttt{split} erzeugte Feld der
+Teilstücke und wird für jedes Element einzeln instanziiert. Da jede
+Instanz einen eigenen Ergebnisnamen benötigt, wird paarweise über
+zwei Listen verteilt, die Teilstücke und die Liste der Ergebnisnamen.
+Für die Zusammenführung verweist \texttt{aggregate} mit
+\texttt{result\_files: compute/result\_file} auf die Ausgaben aller
+Instanzen und erhält sie als eine Liste.
+
+\begin{lstlisting}[caption={Fan-out über scatter am compute-Schritt (StreamFlow, Scatter-Gather)},label={lst:sg:sf}]
+  compute:
+    in:
+      chunk_file:  split/chunk_files
+      output_name: output_names
+    scatter: [chunk_file, output_name]
+    scatterMethod: dotproduct
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die
+\texttt{workflow.cwl} bleibt über alle Varianten unverändert, die
+parallele Phase ist vollständig in ihr enthalten. Eine Änderung der
+Teilstückzahl betrifft allein die Konfigurationsdatei, dort ändern
+sich der Eingabewert und die Liste der Ergebnisnamen, die einen
+Eintrag je Teilstück enthält. Der Wechsel der Rechenlast betrifft wie
+beim Pipeline-Pattern genau eine Zeile, den Pfad des
+Berechnungsskripts.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
+Pipeline-Pattern sind für jede Eingabe Typ und Herkunft deklariert.
+An den Typangaben ist zusätzlich ablesbar, ob ein einzelnes Teilstück
+oder ein Feld von Dateien übergeben wird. \texttt{split} deklariert
+seine Ausgabe als Feld von Dateien, jede Instanz von \texttt{compute}
+erhält daraus ein einzelnes Teilstück als Eingabe und
+\texttt{aggregate} erhält das Feld aller Ergebnisdateien als eine
+Eingabe.
+
+\emph{Ausführung und Steuerung:} Die Laufzeit startet für jedes
+Element eine eigene Instanz des \texttt{compute}-Schritts, die
+Instanzen laufen nebeneinander in der zugewiesenen Umgebung.
+\texttt{aggregate} startet erst, wenn die Ergebnisse aller Instanzen
+vorliegen.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
+Pipeline-Pattern steht die Zuordnung zur Ausführungsumgebung in
+\texttt{streamflow.yml}. Auch der Parallelitätsgrad liegt außerhalb
+der CWL-Beschreibung, da die Teilstückzahl aus der
+Konfigurationsdatei kommt.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Der Lauf lässt sich wie
+beim Pipeline-Pattern an der Terminalausgabe verfolgen, Zeitstrahl
+und RO-Crate-Archiv stehen ebenfalls zur Verfügung. Der Zeitstrahl
+eines Scatter-Gather-Laufs ist in
+Abbildung~\ref{fig:sf:timeline:sg} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
+Konzepten des Pipeline-Patterns sind das \texttt{scatter}-Attribut
+und die Feld-Typen zu verstehen. Zu beachten ist außerdem, dass die
+Liste der Ergebnisnamen in der Konfigurationsdatei zur Teilstückzahl
+passen muss.
+
+\subsection{Merlin}
+\label{sec:lokal:sg:merlin}
+
+Die Workflow-Beschreibung bleibt eine einzelne
+YAML-Spezifikation. Die parallele Phase wird über einen Parameter
+ausgedrückt, der Verarbeitungsschritt selbst steht nur einmal in der
+Spezifikation.
+
+\emph{Ausdruck des Patterns:} Der Parameter \texttt{CHUNK} trägt eine
+Werteliste mit einem Eintrag je Teilstück. Merlin erzeugt daraus für
+jeden Wert einen eigenen Verarbeitungsschritt, im Befehl bezeichnet
+der Parameterwert das Teilstück und den Ergebnisnamen. Für die
+Zusammenführung verweist \texttt{aggregate} unter \texttt{depends}
+mit einem Platzhalter auf alle aus der Expansion hervorgegangenen
+Schritte.
+
+\begin{lstlisting}[caption={Parametrisierter Verarbeitungsschritt und Fan-in (Merlin, Scatter-Gather)},label={lst:sg:me}]
+  - name: compute
+    run:
+      depends: [split]
+      cmd: python3 $(SPECROOT)/scripts/compute_medium.py $(split.workspace)/chunk_$(CHUNK).txt result_$(CHUNK).txt
+
+  - name: aggregate
+    run:
+      depends: [compute_*]
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Die Zahl der
+Teilstücke steht an zwei Stellen der Spezifikation, in der
+Werteliste des Parameters und im Argument des Zerlegeschritts. Der
+Wechsel der Rechenlast betrifft wie beim Pipeline-Pattern allein den
+Aufruf des Berechnungsskripts.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
+Pipeline-Pattern steht der Datenfluss unmittelbar im Befehl. Jede
+Instanz liest ihr Teilstück über den Parameterwert aus dem
+Arbeitsverzeichnis von \texttt{split} und der Ergebnisname trägt
+denselben Wert, sodass die Zuordnung ablesbar bleibt. Das Einsammeln
+ist ebenfalls als Pfadangabe formuliert, \texttt{aggregate} liest die
+Ergebnisse über ein Muster aus den Arbeitsverzeichnissen aller
+Instanzen. Abhängigkeit und Datenweitergabe stehen damit wieder an
+zwei Stellen desselben Schritts, einmal unter \texttt{depends} und
+einmal als Pfadmuster im Befehl.
+
+\emph{Ausführung und Steuerung:} Die aus der Expansion hervorgegangenen Schritte werden wie beim Pipeline-Pattern als Aufgaben in die Warteschlange eingestellt. In der lokalen Untersuchung
+nahm ein einzelner Worker alle Aufgaben entgegen und bearbeitete
+laut Spezifikation bis zu vier davon gleichzeitig, die
+Verarbeitungsinstanzen liefen dadurch nebeneinander.
+\texttt{aggregate} startet erst, wenn alle Verarbeitungsschritte
+abgeschlossen sind.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Entkopplung von der ausführenden Ressource über die Warteschlange
+bleibt wie beim Pipeline-Pattern bestehen. Ein Teil der
+Ausführungssteuerung steht jedoch in der Spezifikation selbst, der
+Abschnitt \texttt{resources} legt fest, wie viele Aufgaben der
+Worker gleichzeitig ausführt.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Die aus der Expansion
+hervorgegangenen Schritte erscheinen in den Ausgaben des Workers
+einzeln, mit eigenem Namen, Arbeitsverzeichnis und Abschlussmeldung,
+und hinterlassen jeweils ein eigenes Arbeitsverzeichnis.
+Statusabfragen über die Kommandozeile stehen wie beim
+Pipeline-Pattern zur Verfügung, eine Graphausgabe weiterhin nicht.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
+Konzepten des Pipeline-Patterns ist das Parameter-Konzept zu
+verstehen, also die Expansion eines Schritts über eine Werteliste
+sowie die Platzhalter für den Parameterwert und die expandierten
+Schrittnamen. Zu beachten ist außerdem, dass die Werteliste und das
+Argument des Zerlegeschritts zueinander passen müssen.
+
+\subsection{Pegasus}
+\label{sec:lokal:sg:pegasus}
+
+Der Aufbau über das Erzeugungsskript und die Kataloge bleibt
+bestehen. Die Zahl der Teilstücke wird dem Erzeugungsskript als
+Aufrufargument übergeben.
+
+\emph{Ausdruck des Patterns:} Die parallele Phase entsteht im
+Erzeugungsskript. Eine Schleife legt je Teilstück einen eigenen
+\texttt{compute}-Job an, der sein Teilstück als Eingabe und die
+zugehörige Ergebnisdatei als Ausgabe deklariert, die Kanten leitet
+Pegasus wie beim Pipeline-Pattern aus den Dateien ab. Für die
+Zusammenführung deklariert der \texttt{aggregate}-Job die
+Ergebnisdateien aller Teilstücke als Eingaben. In der erzeugten
+Workflow-Datei stehen die Verarbeitungsjobs einzeln, der Umfang der
+parallelen Phase liegt damit bereits in der abstrakten Beschreibung
+fest.
+
+\begin{lstlisting}[language=Python,caption={Erzeugung der compute-Jobs je Teilstück (Pegasus, Scatter-Gather)},label={lst:sg:pg}]
+for index, (chunk_file, result_file) in enumerate(zip(chunk_files, result_files), start=1):
+    compute_job = Job("compute")
+    compute_job.add_args(f"chunk_{index}.txt", f"result_{index}.txt")
+    compute_job.add_inputs(chunk_file)
+    compute_job.add_outputs(result_file, stage_out=False, register_replica=False)
+    compute_jobs.append(compute_job)
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Das Erzeugungsskript
+ist für alle Varianten dasselbe, die Teilstückzahl geht als
+Aufrufargument ein. Die erzeugte Workflow-Datei wächst mit der
+Teilstückzahl, da je Teilstück ein Verarbeitungsjob und zwei
+Dateiobjekte hinzukommen. Der Wechsel der Rechenlast betrifft wie
+beim Pipeline-Pattern genau eine Zeile im erzeugten
+Transformationskatalog, die Pfadangabe des Berechnungsskripts.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
+Pipeline-Pattern sind die Dateien als eigene Objekte benannt und in
+den Jobs referenziert. Die parallele Phase ist daran ablesbar, dass
+das Zerlegen alle Teilstücke als Ausgaben deklariert, jeder
+Verarbeitungsjob genau ein Teilstück als Eingabe führt und der
+\texttt{aggregate}-Job die Ergebnisdateien aller Teilstücke als
+Eingaben aufführt.
+
+\emph{Ausführung und Steuerung:} Planung und Ausführung bleiben
+getrennt. Bei vier Teilstücken enthält die abstrakte Beschreibung
+neun fachliche Jobs. Der Planer übersetzt sie in den ausführbaren Graphen, den HTCondor abarbeitet. Dabei ergänzt er Jobs für das Anlegen von Verzeichnissen, das Sichern der Ergebnisse und das Aufräumen.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Trennung über die abstrakte Beschreibung und die Kataloge bleibt wie
+beim Pipeline-Pattern bestehen, ebenso die Einschränkung, dass das
+Erzeugungsskript die Zielsite benennt.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Die drei Abbildungen des
+Workflow-Graphen entstehen wie beim Pipeline-Pattern bei jedem Lauf.
+In der abstrakten Darstellung sind die Verarbeitungsjobs einzeln
+sichtbar, im geplanten Graphen kommen die vom Planer ergänzten Jobs
+hinzu. Die drei Darstellungen des Scatter-Gather-Workflows sind in
+den Abbildungen~\ref{fig:pg:dag:sg}, \ref{fig:pg:dag:sg:files}
+und~\ref{fig:pg:dag:sg:concrete} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
+Konzepten des Pipeline-Patterns ist das Zusammenspiel zweier Ebenen
+zu verstehen, des Python-Programms, das den Workflow erzeugt und
+der daraus erzeugten Beschreibung. Die parallele Phase wird nicht
+über ein Sprachmittel des Systems ausgedrückt, sondern mit den
+Mitteln der Programmiersprache ausgeschrieben. Eine andere
+Teilstückzahl erfordert deshalb das erneute Erzeugen der
+Workflow-Datei und in der Beschreibung ist die Parallelität nur
+daran erkennbar, dass die Verarbeitungsjobs keine Dateien
+voneinander lesen.
+
+\subsection{AiiDA}
+\label{sec:lokal:sg:aiida}
+
+Der Aufbau aus WorkChain, CalcJob und Submit-Skript bleibt bestehen.
+Die Outline wächst um das Zerlegen und das Zusammenführen, die
+parallele Verarbeitung bleibt darin ein einzelner Eintrag.
+Teilstückzahl und Rechenlast sind Eingaben der WorkChain.
+
+\emph{Ausdruck des Patterns:} Die parallele Phase entsteht in einem
+einzigen Outline-Schritt. Eine Schleife reicht je Teilstück einen
+eigenen CalcJob ein, der sein Teilstück verarbeitet und
+\texttt{ToContext} lässt die WorkChain auf den Abschluss aller
+eingereichten CalcJobs warten, bevor der nächste Outline-Schritt
+beginnt. Dort sammelt \texttt{submit\_aggregate} die Ergebnisordner
+aller Instanzen ein und reicht einen einzelnen CalcJob für das
+Zusammenführen ein.
+
+\begin{lstlisting}[language=Python,caption={Fan-out in submit\_compute (AiiDA, Scatter-Gather)},label={lst:sg:ai}]
+    def submit_compute(self):
+        futures = {}
+        for index in range(1, self.inputs.num_chunks.value + 1):
+            future = self.submit_task(
+                label=f"compute_{index}",
+                arguments=[f"chunk_{index}.txt", f"result_{index}.txt"],
+            )
+            futures[f"compute_{index}"] = future
+        return ToContext(**futures)
+\end{lstlisting}
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Eine eigene Fassung
+je Teilstückzahl oder Rechenlast entfällt, beide werden dem
+Submit-Skript als Argumente übergeben und gehen als Eingaben in die
+WorkChain ein. Die Rechenlast wählt wie beim Pipeline-Pattern das
+Berechnungsskript aus. Auch die Liste der nach dem Zerlegen
+abzurufenden Teilstücke wird aus der Teilstückzahl erzeugt und
+wächst mit, ohne dass die Beschreibung angepasst wird.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Weitergabe
+ist wie beim Pipeline-Pattern an drei Stellen beschrieben, als
+Quellordner, als Zuordnung und als Abrufliste, nun jedoch je Instanz.
+Jede Verarbeitungsinstanz erhält den Ordner des Zerlegeschritts als
+Quelle mit der Zuordnung genau ihres Teilstücks. Beim Zusammenführen
+erhält der \texttt{aggregate}-CalcJob die Ordner aller Instanzen als
+Quellen mit einer Zuordnung je Ergebnisdatei. Die Kennung des
+Teilstücks erscheint dabei im Namen der Instanz, des Teilstücks und
+der Ergebnisdatei.
+
+\emph{Ausführung und Steuerung:} Die WorkChain läuft weiterhin im
+Daemon, der die eingereichten CalcJobs ausführt. Da alle
+Verarbeitungsinstanzen in einem Outline-Schritt eingereicht werden,
+führt der Daemon sie nebeneinander aus und die WorkChain setzt erst
+fort, wenn alle abgeschlossen sind. Vor dem Zusammenführen prüft sie
+für jede Instanz einzeln, ob sie erfolgreich abgeschlossen wurde,
+und bricht andernfalls mit dem eigenen Fehlercode ab.
+
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
+Pipeline-Pattern sind Rechner und Code Eingaben der WorkChain und in
+der Datenbank abgelegt. Die parallele Phase ändert daran nichts, alle
+Verarbeitungsinstanzen erhalten denselben Rechner und denselben Code
+als Eingabe.
+
+
+\emph{Nachvollziehbarkeit der Ausführung:} Der Provenance-Graph
+enthält die Verarbeitungsinstanzen als eigene Prozessknoten, die
+sämtlich mit der WorkChain verbunden sind und die Kanten zeigen, aus
+welchem Ordnerknoten jede Instanz ihr Teilstück bezogen hat und
+welche Ergebnisse in das Zusammenführen eingegangen sind. Die Kennung
+des Teilstücks erscheint dabei als Bezeichnung des Prozessknotens.
+Der Provenance-Graph eines Scatter-Gather-Laufs ist in
+Abbildung~\ref{fig:ai:prov:sg} dargestellt.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
+Konzepten des Pipeline-Patterns ist zu verstehen, dass ein
+Outline-Schritt mehrere CalcJobs einreichen kann und die Parallelität
+allein daraus folgt, dass die Schleife innerhalb eines Schritts
+steht. Im Kontext liegen dadurch mehrere Instanzen zugleich, deren
+Namen erst in der Schleife vergeben und beim Zusammenführen wieder
+aufgelöst werden.
+
+\subsection{Vergleichende Beobachtungen zum Scatter-Gather-Pattern}
+\label{sec:lokal:sg:zusammenfassung}
+
+Tabelle~\ref{tab:sg:vergleich} stellt die Beobachtungen aus den fünf
+Systemabschnitten entlang der Vergleichsaspekte gegenüber. Da die
+beteiligten Dateien und Bausteine gegenüber dem Pipeline-Pattern
+unverändert bleiben, tritt bei der Modellierung an die Stelle der
+Artefaktzahl die Frage, welche Stellen eine Änderung der
+Teilstückzahl betrifft. Auch die Trennung von Logik und Umgebung
+sowie die verfügbaren Mittel der Nachvollziehbarkeit entsprechen dem
+Pipeline-Pattern, aufgeführt ist deshalb nur, wie sich die parallele
+Phase darin abbildet.
+
+\begin{table}[H]
+  \caption{Umsetzung des Scatter-Gather-Patterns im Überblick}
+  \label{tab:sg:vergleich}
+  \centering
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.7cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.9cm}}
+    \hline
+     & \textbf{Nextflow} & \textbf{Stream\-Flow} & \textbf{Merlin} & \textbf{Pegasus} & \textbf{AiiDA} \\
+    \hline
+    Ausdruck des Patterns & Operatoren \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut am Schritt & Werteliste des Parameters, Platzhalter unter \texttt{depends} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
+    Änderung der Teilstückzahl & ein Parameter, eine Zeile & Eingabewert und Namensliste in der Konfiguration & zwei Stellen der Spezifikation & Aufruf\-argument, Beschreibung wird neu erzeugt & Aufruf\-argument beim Übergeben des Laufs \\
+    Datenfluss und Abhängigkeiten & Dateimuster in den \texttt{path}-Angaben & Feld-Typen der Ein- und Ausgaben & Pfadmuster im Befehl & Datei\-objekte der Jobs & Quellordner und Zuordnungen je Instanz \\
+    Ausführung und Steuerung & eigene Laufzeit, eine Instanz je Teilstück & eigene Laufzeit, eine Instanz je Teilstück & Celery-Worker, ein Schritt je Teilstück & HTCondor, ein Job je Teilstück & Daemon, ein CalcJob je Teilstück \\
+    Trennung Logik und Umgebung & Konfigurations\-datei unverändert & Deployment-Datei unverändert & Warteschlange unverändert & abstrakte Beschreibung und Kataloge unverändert & Rechner und Code unverändert \\
+    Nachvollziehbarkeit & Instanzen als Aufgaben desselben Prozesses & Instanzen einzeln in der Terminal\-ausgabe & Instanzen einzeln in den Worker-Ausgaben & Instanzen einzeln in der Status\-abfrage & Instanzen einzeln in Status\-abfrage und Graph \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Beim Ausdruck des Patterns unterscheiden sich die Systeme vor allem
+darin, womit die parallele Phase entsteht. Nextflow und
+StreamFlow drücken sie in der Workflow-Beschreibung selbst aus,
+Nextflow über die Operatoren \texttt{flatten} und \texttt{collect}
+auf den Channels, StreamFlow über das \texttt{scatter}-Attribut des
+Verarbeitungsschritts. Merlin erreicht die Vervielfachung über die
+Werteliste eines Parameters, aus der beim Übergeben des Laufs die
+Verarbeitungsschritte expandiert werden. Pegasus und AiiDA verwenden
+dagegen kein Sprachmittel des Systems, sondern eine Python-Schleife,
+bei Pegasus im Erzeugungsskript, sodass die Verarbeitungsjobs
+bereits ausgeschrieben in der abstrakten Beschreibung stehen, bei AiiDA innerhalb eines Outline-Schritts, aus dem die Instanzen
+gemeinsam eingereicht werden.
+
+Bei der Modellierung zeigt sich der deutlichste Unterschied darin,
+was eine andere Teilstückzahl nach sich zieht. In Nextflow ist sie
+ein Parameter, die Fassungen unterscheiden sich in einer Zeile, in
+StreamFlow ändern sich der Eingabewert und die mitwachsende Liste
+der Ergebnisnamen in der Konfigurationsdatei und in Merlin sind
+zwei Stellen der Spezifikation aufeinander abzustimmen, die
+Werteliste des Parameters und das Argument des Zerlegeschritts.
+Pegasus und AiiDA behandeln die Teilstückzahl beide als
+Aufrufargument, greifen damit aber an unterschiedlichen Stellen ein,
+bei Pegasus im Erzeugungsskript, sodass die Workflow-Datei neu
+erzeugt wird und mit der Teilstückzahl wächst, bei AiiDA im
+Submit-Skript, sodass die Beschreibung unverändert bleibt.
+
+Die Sichtbarkeit des Datenflusses behält in allen fünf Systemen die
+Form des Pipeline-Patterns, die Unterschiede liegen darin, wie der
+Weg der Teilstücke darin erscheint. In Nextflow ist die Ausgabe des
+Zerlegens als Dateimuster deklariert, an dem erkennbar ist, dass
+mehrere Dateien entstehen und jede Instanz erhält eines der
+Teilstücke als deklarierte Eingabe. In StreamFlow unterscheiden die
+Typangaben zwischen einer einzelnen Datei und einem Feld von
+Dateien, das Zerlegen liefert ein Feld, jede Instanz erhält daraus
+ein Element und das Zusammenführen erhält wieder das ganze Feld. In
+Merlin stehen die Wege als Pfade im Befehl, jede Instanz liest ihr
+Teilstück über den Parameterwert und das Zusammenführen sammelt die
+Ergebnisse über ein Pfadmuster aus allen Arbeitsverzeichnissen ein.
+In Pegasus erscheint dasselbe Dateiobjekt beim erzeugenden Job als
+Ausgabe und beim lesenden als Eingabe, sodass der Weg jedes
+Teilstücks über die Objekte verfolgbar ist. In AiiDA erhält jede
+Instanz den Ordner des Zerlegeschritts als Quelle mit der Zuordnung
+genau ihres Teilstücks, das Zusammenführen die Ordner aller
+Instanzen.
+
+Bei der Ausführung bleibt die ausführende Komponente gegenüber dem
+Pipeline-Pattern unverändert, neu ist, dass sie je Teilstück eine
+eigene Einheit startet, eine Prozessinstanz in Nextflow und
+StreamFlow, einen expandierten Schritt in Merlin, einen Job in
+Pegasus und einen CalcJob in AiiDA. In allen fünf Systemen liefen
+in den durchgeführten Läufen diese Einheiten nebeneinander und das Zusammenführen begann erst, wenn alle abgeschlossen waren.
+
+Die Trennung von Workflow-Logik und Ausführungsumgebung bleibt in
+allen fünf Systemen unverändert bestehen, die parallele Phase
+berührt sie nicht. Der Mechanismus, der die Trennung trägt, ist
+derselbe wie beim Pipeline-Pattern, die Konfigurationsdatei in
+Nextflow, die Deployment-Datei in StreamFlow, die Warteschlange in
+Merlin, die abstrakte Beschreibung mit den Katalogen in Pegasus und
+die als Eingaben behandelten Objekte für Rechner und Code in AiiDA.
+
+Bei der Nachvollziehbarkeit stellt sich mit der parallelen Phase
+eine Frage, die das Pipeline-Pattern nicht kannte, nämlich ob die
+Verarbeitungsinstanzen einzeln sichtbar werden. Am einen Ende steht
+Nextflow, dessen Fortschrittsanzeige die Instanzen als Aufgaben
+desselben Prozesses zählt, ohne sie einzeln zu benennen. In
+StreamFlow, Merlin und Pegasus erscheinen die Instanzen einzeln,
+in der Terminalausgabe, in den Ausgaben des Workers beziehungsweise
+in der Statusabfrage des Laufs. In AiiDA sind sie über die Statusabfrage hinaus als eigene Prozessknoten im Provenance-Graphen der Datenbank festgehalten,
+sodass die Zuordnung der Instanzen auch nach dem Lauf abfragbar
+bleibt.
+
+\section{Ergebnisse der lokalen Messungen}
+\label{sec:lokal:messungen}
+
+Die folgenden Ergebnisse beruhen auf fünf Wiederholungen je
+Konfiguration bei der kurzen und der mittleren Rechenlast sowie drei
+Wiederholungen bei der langen, berichtet wird jeweils der Median.
+Für jede Konfiguration wurde zusätzlich ein Referenzlauf erhoben,
+der dieselben Benchmark-Skripte in derselben Reihenfolge ohne
+Workflow-Management-System ausführt. Als Overhead wird im Folgenden die Differenz zwischen dem Median der Gesamtlaufzeit des Systemlaufs und dem Median des zugehörigen Referenzlaufs bezeichnet. Sie beschreibt den zusätzlich
+beobachteten Zeitbedarf gegenüber der Ausführung derselben
+Rechenlogik ohne Workflow-Management-System. Neben den Gesamtlaufzeiten
+werden zwei Koordinationsgrößen betrachtet, die Übergangslatenz
+zwischen dem Ende eines Schritts und dem Beginn des nächsten sowie
+die Startspreizung der parallelen Verarbeitungsinstanzen, also der
+Abstand zwischen dem ersten und dem letzten Instanzstart.
+
+Abbildung~\ref{fig:mess:pipe} zeigt die Gesamtlaufzeiten des
+Pipeline-Patterns je Rechenlast. Vier Systeme liegen dabei in einem
+engen Band, bei der kurzen Rechenlast zwischen 5,8 und
+9,2\,Sekunden, bei der mittleren zwischen 53,4 und 63,1\,Sekunden
+und bei der langen zwischen 238 und 280\,Sekunden, wobei die
+Reihenfolge innerhalb des Bandes zwischen den Rechenlasten wechselt.
+Pegasus liegt mit 184, 228 und 442\,Sekunden durchgängig deutlich
+darüber. Sein Abstand zum eigenen Referenzlauf beträgt bei allen
+drei Rechenlasten zwischen 171 und 180\,Sekunden und ist damit
+nahezu konstant, was dem vorgelagerten Planungsschritt und der
+Ausführung über HTCondor entspricht, die unabhängig von der
+Rechenlast anfallen. Auffällig ist zudem AiiDA bei der kurzen
+Rechenlast, dessen Laufzeit von 9,2\,Sekunden erkennbar über den
+drei übrigen Systemen liegt, während es bei der mittleren und der
+langen Rechenlast im Band bleibt.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/02_makespan_pipeline}
+  \caption{Median der Gesamtlaufzeit des Pipeline-Patterns je Rechenlast auf der lokalen Ebene, logarithmische Skala}
+  \label{fig:mess:pipe}
+\end{figure}
+
+Abbildung~\ref{fig:mess:sg} zeigt die Gesamtlaufzeiten des
+Scatter-Gather-Patterns über die Zahl der Teilstücke. Bei der
+mittleren und der langen Rechenlast sinken die Laufzeiten der vier
+Systeme im engen Band mit jeder Verdopplung der Teilstückzahl
+deutlich, bei der langen Rechenlast etwa von 249 auf 66\,Sekunden in
+StreamFlow und von 255 auf 73\,Sekunden in AiiDA. Bei der kurzen
+Rechenlast fällt der Rückgang geringer aus, AiiDA liegt dort bei
+vier Teilstücken mit 10,7\,Sekunden sogar leicht über dem Wert bei
+zwei Teilstücken. Pegasus folgt dem Verlauf ebenfalls, jedoch
+flacher, seine Laufzeiten sinken bei der langen Rechenlast von 480
+auf 289\,Sekunden, bei der kurzen bleiben sie mit rund
+207\,Sekunden über alle Teilstückzahlen nahezu unverändert. Der
+Anteil, der nicht auf die Rechenlogik zurückgeht, verändert sich
+dabei in allen Systemen nur wenig, in StreamFlow, Nextflow und
+Merlin liegt er bei der langen Rechenlast zwischen 1,8 und
+3,5\,Sekunden, in AiiDA zwischen 8,8 und 10,3\,Sekunden und in
+Pegasus zwischen 216 und 221\,Sekunden.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/03_makespan_scatter_gather}
+  \caption{Median der Gesamtlaufzeit des Scatter-Gather-Patterns über die Zahl der Teilstücke je Rechenlast auf der lokalen Ebene, logarithmische Skala}
+  \label{fig:mess:sg}
+\end{figure}
+
+Abbildung~\ref{fig:mess:overhead} stellt den Overhead aller zwölf
+Konfigurationen gegenüber. Die Systeme bilden drei Gruppen, deren Reihenfolge in jeder einzelnen Konfiguration gleich bleibt. StreamFlow,
+Nextflow und Merlin liegen zwischen 1,4 und 3,8\,Sekunden, einzig
+der Pipeline-Lauf der langen Rechenlast in StreamFlow liegt mit
+5,2\,Sekunden darüber, wobei dessen Einzelwerte zwischen 2,7 und
+5,3\,Sekunden streuen. AiiDA liegt zwischen 5,1 und 10,3\,Sekunden
+und Pegasus zwischen 171 und 221\,Sekunden. Mit der Rechenlast
+verändert sich der Overhead in keiner der Gruppen wesentlich,
+erkennbar ist stattdessen ein Zusammenhang mit dem Umfang des
+Workflows. Beim Scatter-Gather-Pattern mit seinen sechs Schritten
+liegt der Overhead von AiiDA und Pegasus durchgängig über dem des
+Pipeline-Patterns mit vier Schritten, bei AiiDA entspricht das der
+Abwicklung jedes Schritts als eigener CalcJob über Daemon und
+Datenbank, bei Pegasus dem größeren geplanten Graphen.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/01_overhead_alle}
+  \caption{Overhead gegenüber dem Referenzlauf für alle zwölf Konfigurationen auf der lokalen Ebene, logarithmische Skala}
+  \label{fig:mess:overhead}
+\end{figure}
+
+Abbildung~\ref{fig:mess:latenz} zeigt die Übergangslatenzen zwischen
+aufeinanderfolgenden Schritten. Die Systeme unterscheiden sich darin
+über mehrere Größenordnungen, in StreamFlow liegt der Median je
+Übergang bei etwa 0,06\,Sekunden, in Nextflow bei 0,09, in Merlin
+bei 0,38, in AiiDA bei 1,16 und in Pegasus bei 20,1\,Sekunden.
+Innerhalb eines Systems sind die Werte über die einzelnen Übergänge
+und über beide Muster hinweg weitgehend gleich. Die Übergangslatenz zeigt sich damit im lokalen Aufbau als eine weitgehend systemspezifische Größe. Sie wird maßgeblich von der Stelle bestimmt, an der ein Schritt an den nächsten übergeben wird, in Merlin von der Warteschlange, in AiiDA vom Daemon mit der Datenbank und in Pegasus vom Abfragezyklus, der die Bereitschaft der Jobs prüft. In Nextflow und StreamFlow startet die Laufzeit die Schritte selbst, entsprechend klein bleibt der Abstand.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/05_lokal_uebergangslatenzen}
+  \caption{Median der Übergangslatenzen zwischen aufeinanderfolgenden Schritten auf der lokalen Ebene, logarithmische Skala}
+  \label{fig:mess:latenz}
+\end{figure}
+
+Abbildung~\ref{fig:mess:spreizung} zeigt die Startspreizung der
+parallelen Verarbeitungsinstanzen, also den Abstand zwischen dem
+ersten und dem letzten Instanzstart. Auch hier liegen mehrere
+Größenordnungen zwischen den Systemen. Bei zwei Teilstücken reicht
+der Median von 1\,Millisekunde in Nextflow über 9 in StreamFlow und
+19 in Pegasus bis zu 58 in AiiDA und 228 in Merlin, bei vier
+Teilstücken von 7 über 40 und 62 bis zu 698 und 734\,Millisekunden.
+In allen fünf Systemen wächst die Spreizung mit der Zahl der
+Teilstücke, am deutlichsten in AiiDA, wo sie sich von zwei auf vier
+Teilstücke etwa verzwölffacht. Die Staffelung entspricht dem Weg, über den die Instanzen untereinander gestartet werden. In Nextflow, StreamFlow und Pegasus
+entstehen sie ohne Zwischenstelle, in Nextflow und StreamFlow startet
+die Laufzeit sie unmittelbar nacheinander, in Pegasus liegen die
+Jobs bereits geplant vor und werden gemeinsam in die Warteschlange
+gegeben. In AiiDA und Merlin wird dagegen jede Instanz einzeln in eine
+Warteschlange eingereiht, aus der sie in AiiDA ein Daemon-Runner
+und in Merlin ein Worker entgegennimmt, und der Abstand wächst dort
+mit jeder weiteren Instanz.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/04_startspreizung}
+  \caption{Median der Startspreizung der parallelen Verarbeitungsinstanzen auf der lokalen Ebene, logarithmische Skala}
+  \label{fig:mess:spreizung}
+\end{figure}
+
+Über die einzelnen Kenngrößen hinweg fügen sich die Befunde zu
+einem stimmigen Bild. Bei Pegasus lässt sich der höhere Overhead
+des Scatter-Gather-Patterns aus der Übergangslatenz zusammensetzen,
+die Differenz der Overhead-Mediane beider Muster beträgt
+37,9\,Sekunden, während das Muster zwei Übergänge mehr enthält als
+die Pipeline und zweimal 20,1\,Sekunden gemessener Latenz
+40,2\,Sekunden ergeben. Zugleich zeigt Pegasus, dass die beiden
+Koordinationsgrößen verschiedene Vorgänge erfassen, seine Übergänge
+sind mit Abstand die teuersten, seine Startspreizung liegt mit 19
+und 62\,Millisekunden dagegen im unteren Feld. AiiDA und Merlin
+wiederum, die als einzige jede Instanz einzeln in eine
+Warteschlange einreihen, liegen in beiden Koordinationsgrößen über
+den Systemen ohne Zwischenstelle. Die Unterschiede zwischen den
+Systemen entstehen damit an den Übergabestellen und nicht in der
+Ausführung der Rechenschritte selbst.
+
+\section{Zwischenfazit}
+\label{sec:lokal:zwischenfazit}
+
+Beide Workflow-Muster ließen sich in allen fünf Systemen mit
+denselben Benchmark-Skripten umsetzen, die Unterschiede liegen in
+der Beschreibung, der Ausführung und der Art, wie ein Lauf
+nachvollziehbar wird. Bei der Modellierung trennen sich die Systeme
+darin, ob die Reihenfolge aus den Datenbeziehungen entsteht oder
+ausdrücklich benannt wird, ob eine eigene Laufzeit ausführt oder
+eine eigenständige Komponente, und wann die auszuführenden Aufgaben
+feststehen. Eine geänderte Rechenlast betrifft in allen Systemen
+nur eine Stelle, eine geänderte Teilstückzahl reicht dagegen von
+einem einzelnen Parameter bis zum erneuten Erzeugen der
+Workflow-Beschreibung.
+
+Die Messungen zeigen drei Overhead-Gruppen, deren Reihenfolge in
+allen zwölf Konfigurationen gleich bleibt, StreamFlow, Nextflow und
+Merlin im unteren Bereich, AiiDA darüber und Pegasus mit einem
+nahezu konstanten Sockel deutlich darüber. Der Overhead hängt dabei
+nicht von der Rechenlast ab, sondern vom Umfang des Workflows und
+die beiden Koordinationsgrößen sind Eigenschaften des jeweiligen
+Systems, die Übergangslatenz reicht über mehrere Größenordnungen
+von StreamFlow bis Pegasus und bleibt je System nahezu unverändert,
+die Startspreizung wächst mit der Instanzzahl. Die beobachteten Unterschiede sind damit überwiegend der Koordination und den Übergaben durch die Workflow-Management-Systeme zuzuordnen, nicht unterschiedlichen fachlichen Rechenoperationen.
+
+Diese Befunde beschreiben das Verhalten der Systeme unter den
+kontrollierten Bedingungen eines einzelnen Rechners.
+Kapitel~\ref{sec:mogon} untersucht, wie sich die Systeme auf einem
+Slurm-basierten HPC-System bereitstellen und betreiben lassen.

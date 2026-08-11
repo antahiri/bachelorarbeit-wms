@@ -1,0 +1,169 @@
+% **************************************************
+% Document Class Definition
+% **************************************************
+\documentclass[%
+    paper=A4,               % paper size --> A4 is default in Germany
+    twoside=true,           % onesite or twoside printing
+    openright,              % doublepage cleaning ends up right side
+    parskip=half,           % spacing value / method for paragraphs
+    chapterprefix=true,     % prefix for chapter marks
+    11pt,                   % font size 
+    headings=normal,        % size of headings
+    bibliography=totoc,     % include bib in toc
+    listof=totoc,           % include listof entries in toc
+    titlepage=on,           % own page for each title page
+    captions=tableabove,    % display table captions above the float env
+    chapterprefix=false,    % do not display a prefix for chapters
+    appendixprefix=false,    % but display a prefix for appendix chapter
+    draft=false,            % value for draft version
+]{scrreprt}%
+
+% \usepackage[utf8]{inputenc} 
+% ! important for correct colors (embeds icc profile used for logos and stuff, otherwise colors wont match)
+\usepackage[x-4]{pdfx}%
+\setRGBcolorprofile{FOGRA29_ISOuncoated.icc}{FOGRA29}{cmyk}%
+\usepackage{placeins}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{subcaption}
+\usetikzlibrary{positioning,calc,fit,arrows.meta,decorations.pathreplacing}
+% **************************************************
+% Setup YOUR thesis document in this file !
+% **************************************************
+\input{my-thesis-setup}
+ 
+
+% **************************************************
+% Document CONTENT
+% **************************************************
+\begin{document}
+
+% uncomment the following command to fill up pages with
+% whitespace instead of aligning the first and last lines
+% of a page (see \raggedbottom vs. \flushbottom)
+\raggedbottom
+
+% --------------------------
+% rename document parts
+% --------------------------
+
+% > rename the title of the LOL, i.e. list of listings (default is "Listings")
+\IfLanguageName{english}{
+\renewcommand*{\lstlistlistingname}{List of Listings}
+}{
+\renewcommand*{\lstlistlistingname}{Programmausdrucksverzeichnis}
+}
+
+% > set short label names for floating environments figure and table
+\IfLanguageName{english}{
+\renewcaptionname{english}{\figurename}{Fig.}
+\renewcaptionname{english}{\tablename}{Tab.}
+\renewcommand{\lstlistingname}{Lst.}
+}
+{
+\renewcaptionname{ngerman}{\figurename}{Abb.}
+\renewcaptionname{ngerman}{\tablename}{Tab.}
+\renewcommand{\lstlistingname}{P.}
+}
+
+
+\IfLanguageName{english}{\newcommand{\thesisAnd}{and}}{\newcommand{\thesisAnd}{und}}
+
+% --------------------------
+% Front matter
+% --------------------------
+\pagenumbering{roman}			% roman page numbing (invisible for empty page style)
+\pagestyle{empty}				% no header or footers
+\input{content/titlepages}		% INCLUDE: all titlepages
+\cleardoublepage
+
+\pagestyle{plain}				% display just page numbers
+\input{content/abstract}		% INCLUDE: the abstracts (english and german)
+\cleardoublepage
+%
+% INPUT: acknowledgement only in Dissertation
+\ifthenelse{\equal{\thesisSubject}{Dissertation}}{\input{content/acknowledgement}\cleardoublepage}{}
+%
+\currentpdfbookmark{\contentsname}{toc}
+\setcounter{tocdepth}{2}		% define depth of toc
+\tableofcontents				% display table of contents
+\cleardoublepage
+
+% --------------------------
+% Body matter
+% --------------------------
+\pagenumbering{arabic}			% arabic page numbering
+\setcounter{page}{1}			% set page counter
+\pagestyle{scrheadings}			% header and footer style
+
+%% Uncomment the following lines using the \part command
+%% to add part sections
+%\part{Example Part}
+
+\input{content/chapter-introduction}
+\input{content/chapter-basics}
+\input{content/kapitel-3-methodik}
+\input{content/kapitel-4-lokal}
+\input{content/kapitel-5-mogon}
+\input{content/kapitel-6-diskussion}
+\input{content/chapter-conclusion}
+
+% Steinbruch: alte Kapitel liegen unter content/alt/ und werden nicht
+% eingebunden. Sie dienen als Rohmaterial beim Schreiben und koennen
+% am Ende geloescht werden.
+% content/alt/chapter-introduction-alt.tex  (alte Einleitung)
+% content/alt/chapter-description.tex       (Systeme, wird 2.5)
+% content/alt/chapter-related-work.tex      (wird 2.6)
+% content/alt/chapter-classification.tex    (Rahmen, Material fuer 2.6 und 3.3)
+% content/alt/chapter-methodology.tex       (alte Methodik)
+% content/alt/chapter-analysis.tex          (alter Vergleich)
+% content/alt/chapter-practical.tex         (altes Praxis-Kapitel, Material fuer Kapitel 4)
+% content/alt/chapter-discussion.tex        (alte Diskussion)
+% content/alt/chapter-appendix.tex          (alter Anhang)
+% content/alt/chapter-comparison.tex        (leer)
+
+% --------------------------
+% Back matter
+% --------------------------
+%
+{%
+\setstretch{1.1}
+\renewcommand{\bibfont}{\normalfont\small}
+\setlength{\biblabelsep}{0pt}
+\setlength{\bibitemsep}{0.5\baselineskip plus 0.5\baselineskip}
+\printbibliography[nottype=online]
+\newrefcontext[labelprefix={@}]
+\printbibliography[heading=subbibliography,title={Webpages},type=online]
+}
+\cleardoublepage
+
+\listoffigures
+\cleardoublepage
+
+\listoftables
+\cleardoublepage
+
+\lstlistoflistings
+\cleardoublepage
+
+\appendix\cleardoublepage
+\input{content/anhang-a-workflows}
+\input{content/anhang-b-runner}
+\input{content/anhang-c-zerlegung}
+\input{content/anhang-d-grafiken}
+
+\cleardoublepage
+\input{content/colophon}
+
+\cleardoublepage
+\input{content/declaration}
+\clearpage
+
+\newpage
+\mbox{}
+
+% **************************************************
+% End of Document CONTENT
+% **************************************************
+\end{document}
