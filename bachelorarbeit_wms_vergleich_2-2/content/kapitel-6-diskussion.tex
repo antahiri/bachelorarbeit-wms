@@ -1,0 +1,258 @@
+% !TEX root = ../my-thesis.tex
+
+\chapter{Diskussion}
+\label{sec:diskussion}
+
+\section{Beantwortung der Forschungsfragen}
+\label{sec:diskussion:fragen}
+
+\paragraph{F1: Modellierung der beiden Workflow-Muster.}
+Sowohl das Pipeline- als auch das Scatter-Gather-Muster ließen sich
+in allen fünf Systemen mit denselben Benchmark-Skripten umsetzen.
+Für die beiden untersuchten Muster stellt die grundsätzliche
+Abbildbarkeit damit kein wesentliches Unterscheidungsmerkmal der
+Systeme dar. Unterschiede zeigen sich vielmehr in der Art der
+Workflow-Beschreibung und darin, wie die Beziehungen zwischen den
+einzelnen Schritten ausgedrückt werden. Die
+beobachteten Beschreibungsformen reichen von systemeigenen Formaten
+über den Standard CWL bis zu Programmierschnittstellen und lassen
+sich damit in die von Suter et al. unterschiedenen Kategorien
+einordnen~\cite{suter2026terminology}.
+
+Beim Scatter-Gather-Muster treten diese Unterschiede deutlicher
+hervor. Neben den Abhängigkeiten müssen dort die Aufteilung in
+parallele Verarbeitungsinstanzen und deren anschließende
+Zusammenführung ausgedrückt werden. Auch eine Variation der
+Teilstückzahl erfordert je nach System unterschiedliche Änderungen
+an der Workflow-Beschreibung. Die Modellierungsuntersuchung zeigt
+damit, dass sich die betrachteten Systeme bei diesen beiden Mustern
+weniger durch ihre Ausdrucksfähigkeit als durch die Art der
+Workflow-Beschreibung und den Aufwand bei Änderungen unterscheiden.
+
+\paragraph{F2: Laufzeitverhalten der Workflow-Management-Systeme.}
+Auf beiden Untersuchungsebenen zeigt sich dieselbe Anordnung der
+Systeme. StreamFlow, Nextflow und Merlin liegen beim Overhead in
+einem gemeinsamen Bereich, AiiDA darüber, und Pegasus in der
+lokalen Untersuchung mit deutlichem Abstand an der Spitze. Dass
+diese Anordnung auf einem einzelnen Rechner und auf einem
+dedizierten Rechenknoten gleichermaßen auftritt, spricht dagegen,
+sie der jeweiligen Ausführungsumgebung zuzuschreiben. Ein
+proportionaler Zusammenhang zwischen Rechenlast und Overhead ist in
+keinem der Systeme erkennbar, weshalb der Overhead mit wachsender
+Rechenlast gegenüber der Rechenzeit an Gewicht verliert. Dies
+gehört zu den Gründen, aus denen die Aufteilung auf mehrere
+Teilstücke beim Scatter-Gather-Muster erst ab der mittleren
+Rechenlast spürbare Gewinne bringt, während bei der kurzen
+Rechenlast der Overhead einen größeren Teil der Gesamtlaufzeit ausmacht.
+
+Die beiden Koordinationsgrößen zeigen, an welchen Stellen ein
+wesentlicher Teil dieser Unterschiede entsteht. Besonders deutlich ist dies bei Pegasus und AiiDA. Bei Pegasus fällt die mediane Übergangslatenz von rund 20 Sekunden mit dem höchsten gemessenen Overhead zusammen. Bei AiiDA fallen die Übergangslatenzen mit ein bis zwei Sekunden geringer aus, liegen aber auf beiden Ebenen deutlich über denen der drei übrigen Systeme und erklären bereits im Pipeline-Muster einen wesentlichen Teil des Overheads. Die Ergebnisse sprechen damit dafür, dass die höheren Overhead-Werte von Pegasus und AiiDA zu einem erheblichen Teil mit der Koordination und Übergabe
+zwischen aufeinanderfolgenden Workflow-Schritten zusammenhängen.
+
+Die Startspreizung ist davon getrennt zu betrachten. Sie beschreibt, wie gut das System Parallelität koordinieren kann. Merlin zeigt das deutlich: Lokal liegt seine
+Startspreizung bei vier Teilstücken mit rund 0,73 Sekunden in
+derselben Größenordnung wie bei AiiDA, während sein Overhead
+deutlich niedriger bleibt. Eine größere Startspreizung führt damit
+nicht zwangsläufig zu einem höheren Overhead. Beide
+Koordinationsgrößen ergänzen die Messung der Gesamtlaufzeit, indem
+sie unterschiedliche Stellen sichtbar machen, an denen ein
+Workflow-Management-System zusätzliche Zeit beansprucht.
+
+\paragraph{F3: Betrieb auf dem HPC-System.}
+Vier der fünf untersuchten Systeme ließen sich auf MOGON unter den
+Rechten eines gewöhnlichen Nutzerkontos bereitstellen und
+betreiben, Pegasus konnte nicht einbezogen werden. Dabei
+unterscheiden sich nicht nur die erforderlichen
+Einrichtungsschritte, sondern auch die Betriebsmodelle unter Slurm.
+Nextflow, StreamFlow und AiiDA reichen die Workflow-Schritte
+einzeln als Slurm-Jobs ein. Die Steuerung erfolgt bei Nextflow und
+StreamFlow durch einen Vordergrundprozess und bei AiiDA durch einen
+dauerhaft laufenden Daemon. Merlin verwendet dagegen eine
+gemeinsame Worker-Allokation, innerhalb derer die einzelnen
+Workflow-Schritte abgearbeitet werden. Damit fallen Warteschlange
+und Startphase eines Slurm-Jobs bei den ersten drei Systemen für
+jeden eingereichten Schritt erneut an, bei Merlin dagegen nur
+einmal beim Start der Allokation.
+
+Für die Laufzeitzusammensetzung zeigt der reguläre Slurm-Betrieb,
+dass die Ausführungsumgebung einen wesentlich größeren Einfluss
+haben kann als das Workflow-Management-System selbst. In den
+Beobachtungsläufen schwankte die Wartezeit in der
+Slurm-Warteschlange zwischen 6 und 17 Sekunden je Job. Hinzu kamen
+vor Beginn der eigentlichen Nutzlast durchgehend mehr als
+40 Sekunden. Die anschließende systemspezifische Untersuchung
+zeigte dagegen, dass der innerhalb dieses Zeitraums
+identifizierbare Anteil der Workflow-Management-Systeme bei den
+Systemen mit einzelnen Slurm-Jobs lediglich zwischen 55 und
+104 Millisekunden lag. Eine Ende-zu-Ende-Messung im regulären
+Clusterbetrieb würde damit überwiegend die zum Messzeitpunkt
+vorliegenden Clusterbedingungen abbilden und die Unterschiede
+zwischen den Systemen überlagern. Für den eigentlichen
+Systemvergleich war deshalb eine bereits bestehende
+Slurm-Allokation erforderlich, innerhalb derer Warteschlange und
+Jobstart nicht erneut für jeden Workflow-Schritt anfielen.
+
+Für den HPC-Betrieb ist damit auch die Einbindung in die
+Ausführungsumgebung von Bedeutung. Die Art der Slurm-Einbindung beeinflusst, wie häufig die vom Cluster verursachten Zeitanteile innerhalb eines
+Workflows anfallen. Bei AiiDA kam mit dem Ablageort von Datenbank
+und Repository ein weiterer Einflussfaktor hinzu, dessen
+Veränderung den gemessenen Overhead deutlich beeinflusste. Die gemessenen Laufzeiten hängen auf dem HPC-System daher nicht nur
+vom Workflow-Management-System selbst, sondern auch von den
+Bedingungen der Ausführungsumgebung ab.
+
+\paragraph{F4: Eignung für Workflow-Arten und Anwendungsfälle.}
+Aus den Ergebnissen ergibt sich kein System, das den übrigen in
+allen Belangen überlegen wäre. Die Eignung hängt vielmehr davon ab,
+welche Anforderungen hinsichtlich Modellierung, Laufzeitverhalten
+und HPC-Betrieb im Vordergrund stehen.
+
+Nextflow beschreibt Workflows datenflussorientiert und stellt die
+schnelle Entwicklung, parallele Ausführung und Reproduzierbarkeit
+in den Mittelpunkt~\cite{ditommaso2017nextflow}. Beide untersuchten
+Muster ließen sich kompakt über Prozesse und Kanäle abbilden, wobei
+auch Änderungen der Teilstückzahl keine Anpassung der
+Workflow-Struktur erforderten. Zusammen mit dem geringen Overhead,
+den niedrigen Koordinationszeiten und der direkten Slurm-Anbindung
+ergibt sich damit ein günstiges Profil für datenflussorientierte
+Workflows mit sequenziellen und parallelen Verarbeitungsschritten.
+Im regulären Clusterbetrieb ist allerdings zu berücksichtigen, dass
+jeder Prozess als eigener Slurm-Job eingereicht wird und damit die
+Warte- und Startzeiten des Ressourcenverwalters je Schritt erneut
+entstehen können.
+
+StreamFlow ist auf Workflows in hybriden Ausführungsumgebungen
+ausgerichtet und trennt die Workflow-Beschreibung von der
+Konfiguration der
+Ausführungsumgebung~\cite{colonnelli2021streamflow}. Diese Trennung
+bewährte sich beim Wechsel auf MOGON: Die in CWL formulierte
+Workflow-Beschreibung blieb unverändert, während lediglich die
+Ausführungskonfiguration angepasst wurde. Zusammen mit den
+niedrigsten gemessenen Übergangslatenzen eignet sich StreamFlow
+damit insbesondere, wenn eine standardisierte Workflow-Beschreibung
+und deren Übertragung zwischen unterschiedlichen
+Ausführungsumgebungen im Vordergrund stehen. Einschränkend war die
+Bereitstellung der untersuchten Vorabversion aufwendiger und
+erforderte Anpassungen für die Slurm-Ausführung.
+
+Merlin ist für große Ensembles von Rechenaufgaben auf HPC-Systemen
+ausgelegt und verteilt Aufgaben über ein
+Erzeuger-Verbraucher-Modell an
+Worker~\cite{peterson2022merlin}. Dieses Modell passt insbesondere
+zum Scatter-Gather-Muster mit mehreren gleichartigen parallelen
+Verarbeitungsschritten. Auf MOGON erwies sich außerdem die
+gemeinsame Worker-Allokation als charakteristisch: Die einzelnen
+Workflow-Schritte werden innerhalb bereits bereitgestellter
+Ressourcen ausgeführt, sodass Warte- und Startzeiten des
+Ressourcenverwalters nicht je Schritt erneut entstehen. Merlin
+bietet sich damit insbesondere für Workflows mit vielen
+gleichartigen Rechenaufgaben innerhalb einer gemeinsamen
+HPC-Allokation an, erfordert dafür jedoch zusätzliche Komponenten
+für Aufgabenvermittlung und Worker. Die von Merlin angestrebte
+Skalierung auf sehr große Aufgabenzahlen wurde in dieser Arbeit
+nicht untersucht, da das Scatter-Gather-Muster höchstens vier
+parallele Verarbeitungsinstanzen umfasste.
+
+AiiDA stellt die dauerhafte Nachvollziehbarkeit wissenschaftlicher
+Abläufe in den Mittelpunkt und hält Prozesse und Daten während der
+Ausführung in einem Provenienzgraphen
+fest~\cite{huber2020aiida}. Dieser Schwerpunkt geht mit einem
+umfangreicheren Betriebsmodell sowie in der Untersuchung mit
+höheren Koordinationszeiten und höherem Overhead als bei Nextflow,
+StreamFlow und Merlin einher. Zudem zeigte die Konfigurationsstudie
+einen deutlichen Einfluss des Ablageorts der Datenhaltung auf die
+gemessenen Zeiten. AiiDA bietet sich damit insbesondere für
+Anwendungsfälle an, in denen die dauerhafte Nachvollziehbarkeit von
+Prozessen und Daten den zusätzlichen Koordinations- und
+Betriebsaufwand rechtfertigt, wobei die absolute Höhe der
+gemessenen Zeiten von der Konfiguration der Datenhaltung abhängt.
+
+Pegasus trennt die abstrakte Beschreibung eines Workflows von
+dessen Abbildung auf die konkrete
+Ausführungsumgebung~\cite[S.~18--20]{deelman2015pegasus}. Dieser
+Ansatz eignet sich insbesondere für Workflows, die auf wechselnden
+oder verteilten Recheninfrastrukturen ausgeführt werden sollen. In
+der lokalen Untersuchung stand dem der mit Abstand höchste Overhead
+gegenüber, der bei kurzen Rechenschritten besonders stark ins
+Gewicht fiel. Die Dokumentation beschreibt den Aufwand beim
+Einplanen kurzer Jobs selbst als Problemfall und sieht dafür das
+Bündeln mehrerer Aufgaben vor~\cite{pegasusdocs-optimizing}. Für
+feingranulare Workflows ist dieser Ausführungsaufwand daher
+besonders zu berücksichtigen. Die Eignung für das untersuchte
+HPC-System konnte nicht bewertet werden, da sich Pegasus dort nicht bereitstellen ließ.
+
+Systemübergreifend tritt damit ein weiteres Kriterium für die
+Systemwahl hervor: die Größe der einzelnen Aufgaben im Zusammenspiel
+mit dem Ausführungsmodell. Sind die Rechenschritte groß, verlieren
+die Unterschiede in der Koordination an Gewicht, und die Wahl kann
+sich an den übrigen Anforderungen ausrichten, etwa an der
+Beschreibungsform, der Übertragbarkeit zwischen Umgebungen oder der
+Nachvollziehbarkeit. Bei kleinen Rechenschritten rückt dagegen in
+den Vordergrund, wie ein System seine Aufgaben ausführt. Wer jeden
+Schritt einzeln an den Ressourcenverwalter übergibt, trägt dessen
+Anteile je Job in voller Höhe, während ein Modell, das die Aufgaben
+innerhalb bereits bereitgestellter Ressourcen abarbeitet oder
+mehrere kurze Aufgaben zu größeren Einheiten bündelt, diese Anteile
+nur einmal anfallen lässt. Die Eignung eines
+Workflow-Management-Systems bemisst sich damit nicht allein an der
+Struktur des Workflows, sondern ebenso an der Größe der Aufgaben
+und an der Art, wie das System sie auf der Zielumgebung ausführt.
+Die Grenzen dieser Aussagen betrachtet
+Abschnitt~\ref{sec:diskussion:grenzen}.
+
+\section{Grenzen der Untersuchung}
+\label{sec:diskussion:grenzen}
+
+Die Untersuchung betrachtet mit dem Pipeline- und dem
+Scatter-Gather-Muster zwei grundlegende Workflow-Strukturen. Die
+Ergebnisse zeigen, wie die fünf Systeme diese Muster modellieren
+und ausführen. Komplexere Strukturen wie größere
+Abhängigkeitsgraphen oder verschachtelte Workflows wurden nicht untersucht. Aussagen zur Modellierung und Eignung gelten daher für die beiden betrachteten
+Muster.
+
+Die Rechenschritte selbst bestehen aus bewusst einfach gehaltenen
+Python-Skripten, damit alle Systeme dieselbe kontrollierte
+Rechenlogik ausführen. Dadurch konnten Unterschiede zwischen den
+Workflow-Management-Systemen unter kontrollierten Bedingungen
+untersucht werden. Die verwendeten Rechenaufgaben bilden jedoch
+keine reale wissenschaftliche Anwendung mit großen Datenmengen oder
+intensiven Dateizugriffen ab. Inwieweit sich die beobachteten
+Unterschiede unter solchen Anwendungslasten verändern, wurde daher
+nicht untersucht.
+
+Das Scatter-Gather-Muster wurde mit einem, zwei und vier
+Teilstücken ausgeführt. Die Ergebnisse beschreiben damit das
+Verhalten bei wenigen parallelen Verarbeitungsinstanzen. Ob sich
+die beobachteten Unterschiede bei deutlich größeren Aufgabenzahlen
+in gleicher Weise fortsetzen, lässt sich daraus nicht ableiten.
+Dies betrifft insbesondere Merlin, dessen Entwurf ausdrücklich auf
+große Ensembles zielt.
+
+Die Messungen fanden auf einem einzelnen Rechner und auf einem
+einzelnen HPC-System statt. Die absoluten Laufzeiten hängen damit
+von diesen beiden Umgebungen ab und lassen sich nicht unmittelbar auf andere
+Rechner oder HPC-Umgebungen übertragen.
+Die innerhalb einer Untersuchungsebene beobachteten Unterschiede 
+beziehen sich somit auf die jeweils verwendete Ausführungsumgebung.
+Dies gilt auch für die systemspezifischen Befunde auf MOGON, 
+beispielsweise die bei StreamFlow erforderliche Anpassung oder den bei AiiDA beobachteten Einfluss des Ablageorts der Datenhaltung. Ob diese Befunde unter
+anderen HPC-Umgebungen in gleicher Weise auftreten, wurde nicht
+untersucht.
+
+Eine weitere Eingrenzung ergibt sich aus der Definition des
+Overheads. Er wurde als zusätzlicher Zeitbedarf gegenüber einer
+Referenzausführung derselben Rechenlogik ohne
+Workflow-Management-System bestimmt. Die Messgröße gibt somit an,
+wie viel Zeit zusätzlich anfällt, nicht, an welcher Stelle im
+System sie entsteht. Die Übergangslatenzen und die Startspreizung
+grenzen einzelne Anteile davon näher ein, erfassen jedoch nicht sämtliche internen Vorgänge eines Systems.
+
+Jede Konfiguration wurde bei kurzer und mittlerer Rechenlast
+fünfmal, bei langer Rechenlast dreimal ausgeführt und über den
+Median ausgewertet. Die Verwendung des Medians reduziert den Einfluss einzelner abweichender Läufe, eine größere Zahl an Wiederholungen hätte jedoch eine genauere Beurteilung der Schwankungen zwischen den einzelnen Läufen ermöglicht.
+
+Pegasus konnte auf MOGON nicht ausgeführt werden, da es sich
+nicht bereitstellen ließ. Für dieses System liegen daher keine
+Laufzeitdaten auf der HPC-Ebene vor, die quantitativen Aussagen zu
+Pegasus stützen sich allein auf die lokale Untersuchung. Die
+fehlende Bereitstellbarkeit von Pegasus unter den gegebenen
+Bedingungen stellt dabei selbst ein Ergebnis der Untersuchung dar.

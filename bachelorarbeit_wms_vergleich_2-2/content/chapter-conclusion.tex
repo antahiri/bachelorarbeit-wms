@@ -1,0 +1,69 @@
+% !TEX root = ../my-thesis.tex
+
+\chapter{Fazit und Ausblick}
+\label{sec:conclusion}
+
+\section{Fazit}
+\label{sec:conclusion:fazit}
+
+Diese Arbeit hat fünf Workflow-Management-Systeme anhand zweier
+Workflow-Muster und derselben Rechenlogik verglichen, zunächst
+unter kontrollierten Bedingungen auf einem einzelnen Rechner und
+anschließend auf dem HPC-System MOGON. Untersucht wurden die
+Modellierung, das Laufzeitverhalten anhand von Makespan, Overhead
+und Koordinationsgrößen sowie der Betrieb unter Slurm.
+
+Beide Muster ließen sich in allen fünf Systemen umsetzen. Die
+wesentlichen Unterschiede liegen daher nicht in der Abbildbarkeit,
+sondern in der Art der Workflow-Beschreibung, im
+Koordinationsverhalten und im Betriebsmodell. Beim Overhead
+bildeten StreamFlow, Nextflow und Merlin auf beiden Ebenen eine
+Gruppe mit niedrigen Werten, AiiDA lag darüber und Pegasus in der
+lokalen Untersuchung mit großem Abstand an der Spitze. Da der
+Overhead nicht mit der Rechenlast wächst, verliert er mit
+zunehmender Aufgabengröße an Gewicht.
+
+Auf dem HPC-System zeigte sich ein starker Einfluss der
+Ausführungsumgebung auf die gemessenen Laufzeiten. Die vom Cluster verursachten Zeitanteile können die Unterschiede zwischen den Systemen vollständig überlagern, und die Systeme binden den Ressourcenverwalter
+unterschiedlich ein, von einzelnen Jobs je Schritt bis zur
+gemeinsamen Worker-Allokation. Aussagekräftige Vergleiche
+erforderten deshalb die Ausführung innerhalb einer bestehenden
+Allokation.
+
+Für die Eignungsfrage folgt daraus, dass sie sich nicht an der
+Abbildbarkeit der Muster festmachen lässt, denn diese war in allen
+fünf Systemen gegeben. Die Unterschiede lagen im Laufzeitverhalten
+und im Betrieb. Beim Laufzeitverhalten zeigte sich zugleich, dass
+der Overhead mit wachsender Rechenlast an Gewicht verliert, sodass
+die gemessenen Unterschiede bei hinreichend großen Rechenschritten
+kaum noch ins Gewicht fallen. Ab diesem Punkt entscheiden andere Eigenschaften über die Wahl, etwa die Ausrichtung auf hybride Ausführungsumgebungen bei
+StreamFlow, die Abarbeitung vieler gleichartiger Aufgaben innerhalb
+einer Allokation bei Merlin oder die dauerhafte Nachvollziehbarkeit
+bei AiiDA. Ein in allen Belangen überlegenes System ergab sich nicht,
+die Wahl richtet sich nach der Struktur des Workflows, der Größe
+der Aufgaben und den Anforderungen des Anwendungsfalls.
+
+\section{Ausblick}
+\label{sec:conclusion:ausblick}
+
+An den Grenzen der Untersuchung setzen mögliche weiterführende
+Arbeiten an. Der Vergleich ließe sich zunächst auf komplexere
+Workflow-Strukturen ausdehnen und mit Rechenlasten wiederholen, die
+realen wissenschaftlichen Anwendungen näherkommen, etwa mit großen
+Datenmengen und intensiven Dateizugriffen. So ließe sich prüfen, ob
+die hier beobachteten Unterschiede zwischen den Systemen auch unter
+solchen Bedingungen fortbestehen.
+
+Ein zweiter Ansatzpunkt ist die Skalierung. Die Untersuchung
+umfasste höchstens vier parallele Verarbeitungsinstanzen. Mit
+deutlich mehr Aufgaben ließe sich prüfen, wie sich die Systeme bei
+großen Aufgabenzahlen verhalten, insbesondere Merlin, dessen Entwurf
+genau darauf zielt. Messungen auf weiteren HPC-Systemen würden
+zudem zeigen, welche der auf MOGON beobachteten Betriebs- und
+Laufzeiteigenschaften an die konkrete Ausführungsumgebung gebunden
+sind.
+
+Offen bleibt schließlich der HPC-Vergleich für Pegasus. Lässt sich
+Pegasus mit der benötigten HTCondor-Umgebung auf einem Cluster
+betreiben, kann die quantitative Untersuchung auf alle fünf Systeme
+ausgeweitet werden.
