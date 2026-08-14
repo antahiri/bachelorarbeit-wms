@@ -7,7 +7,7 @@
 \section{Zielsetzung}
 \label{sec:mogon:ziel}
 
-Die lokale Ebene in Kapitel~\ref{sec:lokal} vergleicht die fünf
+Die lokale Evaluation in Kapitel~\ref{sec:lokal} betrachtet die fünf
 Systeme unter kontrollierten Bedingungen auf einem einzelnen
 Rechner. Damit ist die Frage, wie sich dieselben Systeme in einer
 HPC-Umgebung einsetzen lassen, noch nicht beantwortet. Ein
@@ -27,12 +27,14 @@ stammen. Aus dieser Betrachtung ergibt sich der Aufbau der
 anschließenden Messung, deren Ergebnisse den letzten Teil des
 Kapitels bilden.
 
-Die Workflows, die Benchmark-Skripte und die Instrumentierung sind
-dieselben wie auf der lokalen Ebene, ebenso die Definition der
-Messgrößen aus Abschnitt~\ref{sec:methodik:messgroessen}. Die
-Ausführungsbedingungen unterscheiden sich jedoch, weshalb die
-Ergebnisse beider Ebenen getrennt betrachtet und nicht unmittelbar
-gegeneinander gestellt werden.
+Workflows, Benchmark-Skripte, Instrumentierung und Messgrößen sind
+dieselben wie in Kapitel~\ref{sec:methodik} beschrieben, ebenso die
+Referenzmessung ohne Workflow-Management-System und die fünf
+beziehungsweise drei Wiederholungen je Konfiguration, über die die
+Messwerte zusammengefasst werden. Da sich die
+Ausführungsbedingungen beider Ebenen unterscheiden, werden die
+Ergebnisse getrennt betrachtet und nicht unmittelbar
+gegeneinander gestellt.
 
 
 \section{Versuchsumgebung}
@@ -485,8 +487,9 @@ Systemen nicht mehr durch die je Schritt anfallenden
 Warteschlangen- und Prologzeiten überlagert werden.
 
 Workflows, Benchmark-Skripte, Instrumentierung und Messgrößen sind
-dieselben wie in Kapitel~\ref{sec:methodik} beschrieben, ebenso die
-Referenzmessung ohne Workflow-Management-System und die fünf beziehungsweise drei Wiederholungen je Konfiguration aus denen der Median gebildet wurde. 
+dieselben wie in Kapitel~\ref{sec:methodik} beschrieben. Auch die
+Referenzmessung ohne Workflow-Management-System wurde unverändert
+übernommen.
 
 Die Allokation wurde zusätzlich exklusiv angefordert, sodass
 während der Messung keine Aufträge anderer Nutzender auf demselben
@@ -509,10 +512,9 @@ dem geteilten Knoten sogar niedriger aus. Die exklusive Messreihe bildet daher d
     \caption{Übergangslatenzen}
     \label{fig:mogon:delta-latenz}
   \end{subfigure}
-  \caption{Differenzen zwischen exklusivem und geteiltem Knoten je
-    Konfiguration, jeweils Median. Werte nahe null bedeuten, dass
-    die exklusive Reservierung das Ergebnis nicht wesentlich
-    verändert.}
+  \caption{Differenzen der Mediane zwischen exklusivem und geteiltem
+Knoten (exklusiv minus geteilt). Werte nahe null kennzeichnen
+geringe Unterschiede zwischen beiden Messreihen.}
   \label{fig:mogon:exklusivgeteilt}
 \end{figure}
 
@@ -529,10 +531,10 @@ enthalten, sodass die folgenden Ergebnisse vier Systeme mit jeweils zwölf Konfi
 Abbildung~\ref{fig:mogon:overhead} stellt den Overhead aller zwölf
 Konfigurationen gegenüber. Es bilden sich zwei Gruppen. StreamFlow,
 Nextflow und Merlin liegen in zehn der zwölf Konfigurationen
-zwischen 1,6 und 3,9 Sekunden und wechseln untereinander die
+zwischen 1,6 und 4,1 Sekunden und wechseln untereinander die
 Reihenfolge. Höhere Werte treten bei den Scatter-Gather-Läufen der
 langen Rechenlast mit einem und zwei Teilstücken auf, dort liegen
-StreamFlow bei 5,4 und 6,8 Sekunden und Nextflow bei 5,0 und 4,6
+StreamFlow bei 5,4 und 4,6 Sekunden und Nextflow bei 5,0 und 6,9
 Sekunden. AiiDA liegt mit 7,0 bis 14,9 Sekunden in allen zwölf
 Konfigurationen über den drei übrigen Systemen.
 
@@ -645,25 +647,28 @@ Teilstücke mehr als verdreißigfacht.
   \label{fig:mogon:spreizung}
 \end{figure}
 
-Über die einzelnen Kenngrößen hinweg fügen sich die Befunde zu
-einem stimmigen Bild. AiiDA weist sowohl beim Overhead als auch bei den
-Koordinationsgrößen die höchsten Werte auf. Bereits im
-Pipeline-Muster summieren sich die drei Übergangslatenzen von
+AiiDA weist beim Overhead und bei den Übergangslatenzen die
+höchsten Werte auf, bei der Startspreizung mit vier Teilstücken
+ebenfalls, bei zwei Teilstücken liegt dort Merlin darüber. Bereits
+im Pipeline-Muster summieren sich die drei Übergangslatenzen von
 jeweils rund zwei Sekunden auf etwa sechs Sekunden und erklären
 damit einen wesentlichen Teil des gemessenen Overheads von 7,0 bis
-8,8 Sekunden. Im Scatter-Gather-Muster treten mit zunehmender Zahl
+8,8\,Sekunden. Im Scatter-Gather-Muster treten mit zunehmender Zahl
 der Teilstücke zusätzlich höhere Latenzen beim Start und beim
 Zusammenführen der parallelen Verarbeitungsinstanzen auf, besonders
 deutlich in der Startspreizung, die bei vier Teilstücken in AiiDA
-etwa eine Sekunde erreicht. Bei StreamFlow, Nextflow und Merlin
-bleiben die Koordinationszeiten dagegen deutlich kleiner, was sich
-auch in ihren niedrigeren Overhead-Werten widerspiegelt. Wie bereits auf der lokalen Ebene sind die beobachteten Unterschiede damit auch auf dem HPC-System überwiegend der Koordination und den Übergaben durch die Workflow-Management-Systeme zuzuordnen.
+etwa eine Sekunde erreicht. Innerhalb der Gruppe aus StreamFlow,
+Nextflow und Merlin folgt die Höhe des Overheads dagegen nicht
+unmittelbar aus den Koordinationsgrößen. Merlin weist innerhalb
+dieser Gruppe die höchsten Übergangslatenzen und Startspreizungen
+auf, liegt beim Overhead aber in elf der zwölf Konfigurationen am
+niedrigsten.
 
 \section{Einfluss der AiiDA-Konfiguration}
 \label{sec:mogon:konfigstudie}
 
-AiiDA weist in der dedizierten Messung höhere Overhead- und
-Koordinationswerte auf als die drei übrigen Systeme. Zugleich ist
+AiiDA weist in der dedizierten Messung höhere Overhead-Werte und
+Übergangslatenzen auf als die drei übrigen Systeme. Zugleich ist
 es das einzige der vier Systeme, das während der Ausführung auf
 eine Datenbank und ein Repository zugreift, und beide lagen im
 bisherigen Aufbau auf dem gemeinsamen Dateisystem
@@ -678,10 +683,10 @@ Abbildung~\ref{fig:mogon:aiidakonfig} zeigt den Overhead der drei
 Konfigurationen über alle zwölf Messkonfigurationen. Die
 Verlagerung der Datenhaltung von \texttt{/fshpc} auf den
 knotenlokalen Speicher senkte den Overhead der SQLite-Konfiguration
-in allen zwölf Fällen von 12,6 bis 29,9 Sekunden auf 5,7 bis
-9,9 Sekunden. Je nach Messkonfiguration entspricht dies einer
-Verringerung um den Faktor 2 bis 3,7. Die
-PostgreSQL-Konfiguration liegt mit 8,4 bis 15,3 Sekunden bei
+in allen zwölf Fällen von 12,5 bis 29,9 Sekunden auf 3,5 bis
+11,6 Sekunden. Je nach Messkonfiguration entspricht dies einer
+Verringerung um den Faktor 2,2 bis 3,7. Die
+PostgreSQL-Konfiguration liegt mit 8,4 bis 15,4 Sekunden bei
 gleichem Ablageort \texttt{/fshpc} zwischen den beiden
 SQLite-Reihen.
 
@@ -703,13 +708,15 @@ Für die untersuchte SQLite-Konfiguration hat der Ablageort der
 Datenhaltung damit erheblichen Einfluss auf die gemessenen Zeiten.
 Da zwischen den beiden Läufen ausschließlich der Ablageort
 verändert wurde, ist der Unterschied auf die Verlagerung der
-Datenhaltung zurückzuführen. Zugleich bleibt AiiDA auch in der
-schnellsten der drei untersuchten Konfigurationen mit 5,7 bis
-9,9 Sekunden Overhead über dem Bereich der drei übrigen Systeme.
-Der in Abschnitt~\ref{sec:mogon:ergebnisse} beobachtete Abstand
-bleibt damit auch bei veränderter AiiDA-Konfiguration bestehen,
-während die absolute Höhe des Overheads deutlich von der
+Datenhaltung zurückzuführen. Zugleich bleibt der Overhead von
+AiiDA auch in der schnellsten der drei untersuchten Konfigurationen
+mit 3,5 bis 11,6\,Sekunden in nahezu allen Messkonfigurationen über
+dem der drei übrigen Systeme. Der in
+Abschnitt~\ref{sec:mogon:ergebnisse} beobachtete Abstand bleibt
+damit auch bei veränderter AiiDA-Konfiguration im Wesentlichen
+bestehen, während die absolute Höhe des Overheads deutlich von der
 Konfiguration beeinflusst wird.
+
 
 \section{Zwischenfazit}
 \label{sec:mogon:zwischenfazit}
@@ -733,21 +740,20 @@ Anteile der Workflow-Management-Systeme. Für den Vergleich wurden
 diese Einflüsse deshalb durch die Ausführung innerhalb einer
 bereits bestehenden Allokation ausgeschlossen. In der dedizierten
 Messung liegen StreamFlow, Nextflow und Merlin beim Overhead erneut
-in einem engen Bereich, während AiiDA höhere Overhead- und
-Koordinationswerte aufweist. Wie auf der lokalen Ebene stehen die
-Unterschiede dabei vor allem mit den Übergängen zwischen den
-Workflow-Schritten und dem Start paralleler Verarbeitungsinstanzen
-in Zusammenhang. Die ergänzende Untersuchung von AiiDA zeigt
-darüber hinaus, dass die Höhe dieser Werte deutlich von
-der gewählten AiiDA-Konfiguration und insbesondere vom Ablageort der
-Datenhaltung beeinflusst werden kann.
+überwiegend in einem engen Bereich, während AiiDA höhere
+Overhead-Werte und Übergangslatenzen aufweist. Der Abstand von
+AiiDA steht dabei wie auf der lokalen Ebene vor allem mit den
+Übergängen zwischen den Workflow-Schritten und dem Start paralleler
+Verarbeitungsinstanzen in Zusammenhang. Die ergänzende Untersuchung
+von AiiDA zeigt darüber hinaus, dass die Höhe dieser Werte deutlich
+von der gewählten AiiDA-Konfiguration und insbesondere vom
+Ablageort der Datenhaltung beeinflusst werden kann.
 
-Die HPC-Untersuchung bestätigt damit einerseits mehrere bereits auf
-der lokalen Ebene beobachtete Unterschiede zwischen den Systemen,
-zeigt andererseits aber zusätzliche Aspekte, die erst in
-einer Clusterumgebung sichtbar werden. Dazu gehören die
-Bereitstellung unter Nutzerrechten, die Einbindung des
-Ressourcenverwalters, clusterbedingte Zeitanteile und der Einfluss
-der Ausführungsumgebung auf einzelne Systeme. Diese Befunde bilden
-zusammen mit den Ergebnissen der lokalen Untersuchung die Grundlage
-für die abschließende Bewertung der Workflow-Management-Systeme.
+Die HPC-Untersuchung zeigt damit einerseits, dass mehrere der auf
+der lokalen Ebene beobachteten Unterschiede auch unter den
+Bedingungen des HPC-Systems bestehen bleiben, andererseits treten
+zusätzliche Aspekte hervor, die auf der lokalen Ebene keine Rolle
+spielten. Dazu gehören die Bereitstellung unter Nutzerrechten, die
+Einbindung des Ressourcenverwalters und die clusterbedingten
+Zeitanteile. Diese Befunde bilden zusammen mit den Ergebnissen der
+lokalen Untersuchung die Grundlage für die Diskussion, in der die Forschungsfragen beantwortet werden.

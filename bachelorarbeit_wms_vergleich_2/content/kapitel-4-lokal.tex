@@ -1044,7 +1044,11 @@ Konfiguration bei der kurzen und der mittleren Rechenlast sowie drei
 Wiederholungen bei der langen, berichtet wird jeweils der Median.
 Für jede Konfiguration wurde zusätzlich ein Referenzlauf erhoben,
 der dieselben Benchmark-Skripte in derselben Reihenfolge ohne
-Workflow-Management-System ausführt. Als Overhead wird im Folgenden die Differenz zwischen dem Median der Gesamtlaufzeit des Systemlaufs und dem Median des zugehörigen Referenzlaufs bezeichnet. Sie beschreibt den zusätzlich
+Workflow-Management-System ausführt, jeder Wiederholung ist dabei
+ein eigener Referenzlauf zugeordnet. Als Overhead wird im Folgenden
+der Median der je Wiederholung gebildeten Differenzen zwischen der
+Gesamtlaufzeit des Systemlaufs und der des zugehörigen
+Referenzlaufs bezeichnet. Er beschreibt den zusätzlich
 beobachteten Zeitbedarf gegenüber der Ausführung derselben
 Rechenlogik ohne Workflow-Management-System. Neben den Gesamtlaufzeiten
 werden zwei Koordinationsgrößen betrachtet, die Übergangslatenz
@@ -1079,7 +1083,7 @@ Abbildung~\ref{fig:mess:sg} zeigt die Gesamtlaufzeiten des
 Scatter-Gather-Patterns über die Zahl der Teilstücke. Bei der
 mittleren und der langen Rechenlast sinken die Laufzeiten der vier
 Systeme im engen Band mit jeder Verdopplung der Teilstückzahl
-deutlich, bei der langen Rechenlast etwa von 249 auf 66\,Sekunden in
+deutlich, bei der langen Rechenlast etwa von 248 auf 66\,Sekunden in
 StreamFlow und von 255 auf 73\,Sekunden in AiiDA. Bei der kurzen
 Rechenlast fällt der Rückgang geringer aus, AiiDA liegt dort bei
 vier Teilstücken mit 10,7\,Sekunden sogar leicht über dem Wert bei
@@ -1089,8 +1093,8 @@ auf 289\,Sekunden, bei der kurzen bleiben sie mit rund
 207\,Sekunden über alle Teilstückzahlen nahezu unverändert. Der
 Anteil, der nicht auf die Rechenlogik zurückgeht, verändert sich
 dabei in allen Systemen nur wenig, in StreamFlow, Nextflow und
-Merlin liegt er bei der langen Rechenlast zwischen 1,8 und
-3,5\,Sekunden, in AiiDA zwischen 8,8 und 10,3\,Sekunden und in
+Merlin liegt er bei der langen Rechenlast zwischen 1,5 und
+3,5\,Sekunden, in AiiDA zwischen 8,9 und 10,3\,Sekunden und in
 Pegasus zwischen 216 und 221\,Sekunden.
 
 \begin{figure}[H]
@@ -1101,19 +1105,20 @@ Pegasus zwischen 216 und 221\,Sekunden.
 \end{figure}
 
 Abbildung~\ref{fig:mess:overhead} stellt den Overhead aller zwölf
-Konfigurationen gegenüber. Die Systeme bilden drei Gruppen, deren Reihenfolge in jeder einzelnen Konfiguration gleich bleibt. StreamFlow,
-Nextflow und Merlin liegen zwischen 1,4 und 3,8\,Sekunden, einzig
-der Pipeline-Lauf der langen Rechenlast in StreamFlow liegt mit
-5,2\,Sekunden darüber, wobei dessen Einzelwerte zwischen 2,7 und
-5,3\,Sekunden streuen. AiiDA liegt zwischen 5,1 und 10,3\,Sekunden
-und Pegasus zwischen 171 und 221\,Sekunden. Mit der Rechenlast
-verändert sich der Overhead in keiner der Gruppen wesentlich,
-erkennbar ist stattdessen ein Zusammenhang mit dem Umfang des
-Workflows. Beim Scatter-Gather-Pattern mit seinen sechs Schritten
-liegt der Overhead von AiiDA und Pegasus durchgängig über dem des
-Pipeline-Patterns mit vier Schritten, bei AiiDA entspricht das der
+Konfigurationen gegenüber. Die Systeme bilden drei Gruppen, deren
+Reihenfolge in jeder einzelnen Konfiguration gleich bleibt.
+StreamFlow, Nextflow und Merlin liegen zwischen 1,4 und
+4,2\,Sekunden. AiiDA liegt zwischen 5,1 und 10,3\,Sekunden und
+Pegasus zwischen 171 und 221\,Sekunden. Ein proportionaler
+Zusammenhang zwischen Rechenlast und Overhead ist in keiner der
+Gruppen erkennbar. Ein Zusammenhang mit dem Umfang des Workflows
+zeigt sich dagegen bei einzelnen Systemen. Beim
+Scatter-Gather-Pattern mit seinen sechs Schritten liegt der
+Overhead von Pegasus durchgängig und der von AiiDA bei der kurzen
+und der mittleren Rechenlast über dem des Pipeline-Patterns mit
+vier Schritten. Bei AiiDA steht dies im Einklang mit der
 Abwicklung jedes Schritts als eigener CalcJob über Daemon und
-Datenbank, bei Pegasus dem größeren geplanten Graphen.
+Datenbank, bei Pegasus mit den zusätzlichen Übergängen des Musters, an denen jeweils der Abfragezyklus anfällt.
 
 \begin{figure}[H]
   \centering
@@ -1139,8 +1144,7 @@ und über beide Muster hinweg weitgehend gleich. Die Übergangslatenz zeigt sich
 
 Abbildung~\ref{fig:mess:spreizung} zeigt die Startspreizung der
 parallelen Verarbeitungsinstanzen, also den Abstand zwischen dem
-ersten und dem letzten Instanzstart. Auch hier liegen mehrere
-Größenordnungen zwischen den Systemen. Bei zwei Teilstücken reicht
+ersten und dem letzten Instanzstart. Die Werte reichen dabei von wenigen Millisekunden bis in den Bereich einer knappen Sekunde.. Bei zwei Teilstücken reicht
 der Median von 1\,Millisekunde in Nextflow über 9 in StreamFlow und
 19 in Pegasus bis zu 58 in AiiDA und 228 in Merlin, bei vier
 Teilstücken von 7 über 40 und 62 bis zu 698 und 734\,Millisekunden.
@@ -1163,9 +1167,9 @@ mit jeder weiteren Instanz.
 \end{figure}
 
 Über die einzelnen Kenngrößen hinweg fügen sich die Befunde zu
-einem stimmigen Bild. Bei Pegasus lässt sich der höhere Overhead
-des Scatter-Gather-Patterns aus der Übergangslatenz zusammensetzen,
-die Differenz der Overhead-Mediane beider Muster beträgt
+einem stimmigen Bild. Bei Pegasus entspricht der höhere Overhead
+des Scatter-Gather-Patterns näherungsweise den zusätzlichen
+Übergangslatenzen, die Differenz der Overhead-Mediane beider Muster beträgt
 37,9\,Sekunden, während das Muster zwei Übergänge mehr enthält als
 die Pipeline und zweimal 20,1\,Sekunden gemessener Latenz
 40,2\,Sekunden ergeben. Zugleich zeigt Pegasus, dass die beiden
@@ -1174,9 +1178,14 @@ sind mit Abstand die teuersten, seine Startspreizung liegt mit 19
 und 62\,Millisekunden dagegen im unteren Feld. AiiDA und Merlin
 wiederum, die als einzige jede Instanz einzeln in eine
 Warteschlange einreihen, liegen in beiden Koordinationsgrößen über
-den Systemen ohne Zwischenstelle. Die Unterschiede zwischen den
-Systemen entstehen damit an den Übergabestellen und nicht in der
-Ausführung der Rechenschritte selbst.
+Nextflow und StreamFlow, deren Laufzeitumgebung die Schritte und
+Instanzen unmittelbar selbst startet. Ein unmittelbarer Schluss von
+den Koordinationsgrößen auf die Höhe des Overheads ist damit nicht
+möglich. Merlin weist höhere Übergangslatenzen auf als Nextflow und
+StreamFlow, liegt beim Overhead aber in derselben Gruppe und in
+einzelnen Konfigurationen darunter. Die Koordinationsgrößen zeigen,
+an welchen Stellen ein System zusätzliche Zeit beansprucht, sie
+bestimmen den Overhead jedoch nicht allein.
 
 \section{Zwischenfazit}
 \label{sec:lokal:zwischenfazit}
@@ -1195,13 +1204,17 @@ Workflow-Beschreibung.
 
 Die Messungen zeigen drei Overhead-Gruppen, deren Reihenfolge in
 allen zwölf Konfigurationen gleich bleibt, StreamFlow, Nextflow und
-Merlin im unteren Bereich, AiiDA darüber und Pegasus mit einem
-nahezu konstanten Sockel deutlich darüber. Der Overhead hängt dabei
-nicht von der Rechenlast ab, sondern vom Umfang des Workflows und
-die beiden Koordinationsgrößen sind Eigenschaften des jeweiligen
-Systems, die Übergangslatenz reicht über mehrere Größenordnungen
-von StreamFlow bis Pegasus und bleibt je System nahezu unverändert,
-die Startspreizung wächst mit der Instanzzahl. Die beobachteten Unterschiede sind damit überwiegend der Koordination und den Übergaben durch die Workflow-Management-Systeme zuzuordnen, nicht unterschiedlichen fachlichen Rechenoperationen.
+Merlin im unteren Bereich, AiiDA darüber und Pegasus mit deutlichem
+Abstand darüber. Ein proportionaler Zusammenhang zwischen
+Rechenlast und Overhead ist dabei nicht erkennbar. Unterschiede
+zwischen den beiden Workflow-Mustern zeigen sich insbesondere bei
+AiiDA und Pegasus. Die Übergangslatenz reicht über mehrere
+Größenordnungen von StreamFlow bis Pegasus und bleibt innerhalb
+eines Systems weitgehend stabil, während die Startspreizung mit der
+Zahl der parallelen Instanzen wächst. Die Koordinationsgrößen
+machen damit Unterschiede in der Übergabe aufeinanderfolgender
+Schritte und im Start paralleler Instanzen sichtbar, ohne die Höhe
+des gesamten Overheads allein zu bestimmen.
 
 Diese Befunde beschreiben das Verhalten der Systeme unter den
 kontrollierten Bedingungen eines einzelnen Rechners.

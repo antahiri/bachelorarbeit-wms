@@ -6,12 +6,12 @@
 \label{sec:methodik}
 
 Dieses Kapitel beschreibt das Vorgehen der Untersuchung. Es legt das
-Untersuchungsdesign fest, begründet die Auswahl der fünf Systeme,
+Evaluationsdesign fest, begründet die Auswahl der fünf Systeme,
 führt die qualitativen Vergleichsaspekte und die quantitativen
 Messgrößen ein und beschreibt die Benchmark-Workflows, den
 Versuchsplan sowie das Mess- und Auswertungsverfahren.
 
-\section{Untersuchungsdesign}
+\section{Evaluationsdesign}
 \label{sec:methodik:design}
 
 Die Untersuchung vergleicht fünf Workflow-Management-Systeme entlang
@@ -34,7 +34,8 @@ zugewiesenen Ressource dieses Systems. Die lokale Ebene behandelt
 Kapitel~\ref{sec:lokal}, die HPC-Ebene Kapitel~\ref{sec:mogon}.
 
 In allen Systemen kommen dieselben Python-Skripte als Rechenschritte
-zum Einsatz. Unterschiede in den qualitativen Beobachtungen und den gemessenen Laufzeiten lassen sich dadurch den Workflow-Management-Systemen zurechnen.
+zum Einsatz. Unterschiede in den gemessenen Laufzeiten gehen damit
+nicht auf unterschiedliche fachliche Rechenoperationen zurück.
 
 \section{Auswahl der Systeme}
 \label{sec:methodik:auswahl}
@@ -56,8 +57,8 @@ niedergeschrieben wird und wie darin die Abhängigkeiten zwischen den
 Schritten und die parallele Verarbeitung ausgedrückt werden. Das
 dritte Merkmal ist die Architektur der Ausführung, einige Systeme
 führen Workflows in einer eigenen Laufzeit aus, andere übergeben die
-Ausführung an eigenständige Komponenten. Wie diese Merkmale in den
-einzelnen Systemen ausgeprägt sind, zeigt die Modellierung in
+Ausführung an eigenständige Komponenten. Wie sich diese Merkmale in den
+einzelnen Systemen zeigen, zeigt die Modellierung in
 Kapitel~\ref{sec:lokal}.
 
 Hinzu kamen praktische Erwägungen. Nextflow steht auf dem
@@ -123,7 +124,8 @@ Ausführung der Rechenschritte ebenso wie die Vorbereitung und die
 Übergaben zwischen den Schritten, und entspricht der Zeit, die
 Nutzende bei der Ausführung eines Workflows beobachten.
 
-\emph{Overhead:} Der Overhead bezeichnet die zusätzliche Zeit, die durch den Einsatz eines Workflow-Management-Systems gegenüber der Ausführung der reinen Rechenlogik entsteht. Er wird als Differenz zwischen der Gesamtlaufzeit eines Laufs und der Laufzeit eines Referenzlaufs bestimmt, der dieselben Rechenschritte in derselben Reihenfolge ohne Workflow-Management-System ausführt. Berichtet wird die Differenz der Mediane beider Laufreihen, sodass einzelne Ausreißer das Ergebnis nicht bestimmen.
+\emph{Overhead:} Der Overhead bezeichnet die zusätzliche Zeit, die durch den Einsatz eines Workflow-Management-Systems gegenüber der Ausführung der reinen Rechenlogik entsteht. Er wird als Differenz zwischen der Gesamtlaufzeit eines Laufs und der Laufzeit eines Referenzlaufs bestimmt, der dieselben Rechenschritte in derselben Reihenfolge ohne Workflow-Management-System ausführt. Berichtet wird der Median der je Wiederholung gebildeten
+Differenzen zwischen System- und Referenzlauf.
 
 \emph{Übergangslatenz:} Die Übergangslatenz bezeichnet die
 Zeitspanne zwischen dem Ende eines Rechenschritts und dem Beginn des
@@ -147,9 +149,8 @@ Workflow-Läufen an. Chen und Deelman analysieren den Zeitbedarf
 eines Workflow-Laufs anhand des Makespan und verschiedener
 Overhead-Anteile des Workflow-Management-Systems und der
 Ausführungsumgebung~\cite{chen2011overhead}. Die beiden
-Koordinationsgrößen werden für diese Arbeit eingeführt. Sie
-bestimmen den zeitlichen Abstand zwischen zwei aufeinanderfolgenden
-Rechenschritten beziehungsweise die Streuung der Startzeitpunkte
+Koordinationsgrößen werden für diese Arbeit eingeführt. Sie bestimmen den zeitlichen Abstand zwischen zwei aufeinanderfolgenden
+Rechenschritten beziehungsweise die Spreizung der Startzeitpunkte
 paralleler Instanzen. Beide Größen lassen sich in allen fünf
 Systemen auf dieselbe Weise erheben, ohne auf systemeigene
 Protokolle zurückzugreifen.
@@ -211,7 +212,7 @@ Workflows.
     \node[wfload, below=of p1] (c1) {compute};
     \node[wfstep, below=of c1] (o1) {postprocess};
     \node[lbl] at (g1.east) {Datenerzeugung};
-    \node[lbl] at (p1.east) {Filterung};f
+    \node[lbl] at (p1.east) {Filterung};
     \node[lbl] at (c1.east) {Matrixberechnung};
     \node[lbl] at (o1.east) {Zusammenfassung};
     \draw[arr] (g1) -- (p1);
@@ -279,7 +280,7 @@ Teilstücke zwischen eins, zwei und vier variiert, die parallele
 Phase umfasst damit bis zu vier gleichzeitig laufende
 Verarbeitungsinstanzen.
 
-Aus den Mustern, Rechenlasten und Teilstückzahlen ergeben sich der
+Aus den Mustern, Rechenlasten und Teilstückzahlen ergibt sich der
 Versuchsplan: zwölf Konfigurationen je System, drei für das Pipeline-Muster und neun für das Scatter-Gather-Muster. Jede Konfiguration wurde bei der kurzen und der mittleren Rechenlast fünfmal wiederholt, bei der langen Rechenlast aufgrund des deutlich höheren Zeitbedarfs je Lauf dreimal. Damit stellt die Zahl der Wiederholungen einen Kompromiss zwischen Messaufwand und praktischer Durchführbarkeit dar.
 
 
@@ -330,9 +331,12 @@ Abschnitte beschreiben die einzelnen Bestandteile.
     \node[ttl, font=\footnotesize\bfseries, anchor=north west, xshift=2mm, yshift=-1.2mm] at (gr.north west) {Referenzlauf};
     \node[ttl, font=\footnotesize\bfseries, anchor=north west, xshift=2mm, yshift=-1.2mm] at (gs.north west) {Systemlauf};
     \node[box, below=10mm of gw] (agg) {Median über die Wiederholungen};
-    \node[res, below=7mm of agg] (o1) {Gesamtlaufzeit: Median von $T_{\mathrm{Sys}}$};
-    \node[res, below=4mm of o1] (o2) {Overhead: Median von $T_{\mathrm{Sys}}$ minus Median von $T_{\mathrm{Ref}}$};
-    \node[res, below=4mm of o2] (o3) {Median von $L_i$ und von $S$};
+    \node[res, below=7mm of agg] (o1)
+  {Gesamtlaufzeit: Median von $T_{\mathrm{Sys},r}$};
+\node[res, below=4mm of o1] (o2)
+  {Overhead: Median von $T_{\mathrm{Sys},r}-T_{\mathrm{Ref},r}$};
+\node[res, below=4mm of o2] (o3)
+  {Übergangslatenz: Median von $L_{i,r}$, Startspreizung: Median von $S_r$};
     \draw[arr] (cfg) -- (r1);
     \draw[arr] (r1) -- (r2);
     \draw[arr] (r2) -- (r3);
@@ -517,12 +521,12 @@ der Overhead $O$ sind dann
 \[
   T = \operatorname{Median}_{r}\bigl(T_{\mathrm{Sys},r}\bigr),
   \qquad
-  O = \operatorname{Median}_{r}\bigl(T_{\mathrm{Sys},r}\bigr)
-      - \operatorname{Median}_{r}\bigl(T_{\mathrm{Ref},r}\bigr).
+  O = \operatorname{Median}_{r}\bigl(T_{\mathrm{Sys},r}
+      - T_{\mathrm{Ref},r}\bigr).
 \]
 Der Overhead wird damit entsprechend seiner Definition in
-Abschnitt~\ref{sec:methodik:messgroessen} als Differenz der
-Mediane beider Laufreihen bestimmt.
+Abschnitt~\ref{sec:methodik:messgroessen} als Median der je
+Wiederholung gebildeten Differenzen bestimmt.
 
 Die Koordinationsgrößen ergeben sich aus den Timing-Dateien. Für
 einen Übergang $i$ vom Schritt $a$ zum Schritt $b$ bezeichnet
