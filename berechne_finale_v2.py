@@ -13,6 +13,9 @@ MESS = REPO / "messungen"
 ALT  = MESS / "finale_Ergebnisse"
 NEU  = MESS / "finale_Ergebnisse_v2"
 
+# Reihenfolge der Rechenlasten in den Ausgabedateien
+WL_ORDNUNG = {"short": 0, "medium": 1, "long": 2}
+
 # Ebene -> Zielname der zentralen Datei, Quellordner je System (raw-Dateien)
 EBENEN = {
     "lokal_mac": ("central_results.csv", {
@@ -100,7 +103,9 @@ def hauptlauf():
             gruppen = {}
             for pat, wl, ch, r, w in rohe:
                 gruppen.setdefault((pat, wl, ch), []).append((r, w))
-            for (pat, wl, ch), paare in sorted(gruppen.items()):
+            for (pat, wl, ch), paare in sorted(
+                    gruppen.items(),
+                    key=lambda g: (g[0][0], WL_ORDNUNG.get(g[0][1], 9), g[0][2])):
                 ref_med = st.median(r for r, _ in paare)
                 wms_med = st.median(w for _, w in paare)
                 ov      = st.median(w - r for r, w in paare)   # NEU

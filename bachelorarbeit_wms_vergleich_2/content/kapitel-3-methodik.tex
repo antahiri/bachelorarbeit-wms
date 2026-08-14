@@ -1,0 +1,585 @@
+% !TEX root = ../my-thesis.tex
+
+\lstset{breaklines=true, breakatwhitespace=false}
+
+\chapter{Methodik}
+\label{sec:methodik}
+
+Dieses Kapitel beschreibt das Vorgehen der Untersuchung. Es legt das
+Untersuchungsdesign fest, begründet die Auswahl der fünf Systeme,
+führt die qualitativen Vergleichsaspekte und die quantitativen
+Messgrößen ein und beschreibt die Benchmark-Workflows, den
+Versuchsplan sowie das Mess- und Auswertungsverfahren.
+
+\section{Untersuchungsdesign}
+\label{sec:methodik:design}
+
+Die Untersuchung vergleicht fünf Workflow-Management-Systeme entlang
+zweier Workflow-Muster und verbindet dabei zwei Blickrichtungen.
+Qualitativ wird zunächst betrachtet, wie sich die Muster in den
+Systemen beschreiben lassen und wie sich die Umsetzungen entlang
+fester Vergleichsaspekte unterscheiden. Anschließend wird
+quantitativ gemessen, wie lange die Systeme für die Ausführung der
+Muster benötigen, welchen Zeitanteil die Systeme der reinen
+Rechenlogik hinzufügen, wie sie die Übergaben zwischen den Schritten
+abwickeln und wie die parallelen Instanzen gestartet werden.
+
+Die Untersuchung ist zweistufig aufgebaut. Auf der lokalen Ebene
+werden beide Muster in allen fünf Systemen auf einem einzelnen
+Rechner umgesetzt und vermessen, diese Ebene bildet die gemeinsame
+Vergleichsbasis. Auf der zweiten Ebene wird untersucht, wie sich die
+Systeme auf einem Slurm-basierten HPC-System bereitstellen und
+betreiben lassen, ergänzt um Messungen auf einer dediziert
+zugewiesenen Ressource dieses Systems. Die lokale Ebene behandelt
+Kapitel~\ref{sec:lokal}, die HPC-Ebene Kapitel~\ref{sec:mogon}.
+
+In allen Systemen kommen dieselben Python-Skripte als Rechenschritte
+zum Einsatz. Unterschiede in den qualitativen Beobachtungen und den gemessenen Laufzeiten lassen sich dadurch den Workflow-Management-Systemen zurechnen.
+
+\section{Auswahl der Systeme}
+\label{sec:methodik:auswahl}
+Untersucht werden Nextflow, StreamFlow, Merlin, Pegasus und AiiDA. Alle fünf sind für wissenschaftliche Workflows entwickelt, unterscheiden sich aber in ihrem Entstehungskontext. Nextflow stammt aus dem Umfeld der Bioinformatik und richtet sich auf die Reproduzierbarkeit von Auswertungen großer biologischer Datensätze~\cite[S.~316]{ditommaso2017nextflow}. StreamFlow zielt darauf, denselben Workflow in verschiedenen Ausführungsumgebungen auszuführen~\cite[S.~1723]{colonnelli2021streamflow}. Merlin ist für große Ensembles wissenschaftlicher Simulationen ausgelegt, deren Ergebnisse für maschinelles Lernen aufbereitet werden~\cite[S.~255]{peterson2022merlin}. Pegasus richtet sich auf großskalige, mehrstufige Simulations- und Analyse-Abläufe, deren Rechen- und Datenumfang ein System erfordert, das Datentransfer und Aufgabenausführung auf verteilten Rechenressourcen zuverlässig koordiniert und automatisiert~\cite[S.~17]{deelman2015pegasus}. AiiDA verbindet die Ausführung mit einer durchgängigen Aufzeichnung der Datenherkunft in einer Datenbank~\cite[S.~1]{huber2020aiida}. Eine Kurzvorstellung der Systeme gibt Kapitel~\ref{sec:basics}.
+
+Die Auswahl zielte darauf, unterschiedliche Ansätze
+wissenschaftlicher Workflow-Management-Systeme abzudecken, Grundlage
+waren die Veröffentlichungen und Dokumentationen der Systeme.
+Berücksichtigt wurden drei Merkmale. Das erste ist der
+Anwendungskontext, in dem die Systeme entstanden sind, er wurde oben
+je System benannt und reicht von der Bioinformatik bis zur
+Forschungsdatenverwaltung mit durchgängiger Provenance. Auch Suter
+et al. unterscheiden Systeme danach, ob sie einer Fachgemeinschaft
+entstammen oder anwendungsneutral ausgelegt
+sind~\cite[S.~4]{suter2026terminology}. Das zweite
+Merkmal ist die Art der Workflow-Beschreibung, die Systeme
+unterscheiden sich darin, in welcher Form ein Workflow
+niedergeschrieben wird und wie darin die Abhängigkeiten zwischen den
+Schritten und die parallele Verarbeitung ausgedrückt werden. Das
+dritte Merkmal ist die Architektur der Ausführung, einige Systeme
+führen Workflows in einer eigenen Laufzeit aus, andere übergeben die
+Ausführung an eigenständige Komponenten. Wie diese Merkmale in den
+einzelnen Systemen ausgeprägt sind, zeigt die Modellierung in
+Kapitel~\ref{sec:lokal}.
+
+Hinzu kamen praktische Erwägungen. Nextflow steht auf dem
+betrachteten HPC-System bereits als Modul zur Verfügung, StreamFlow
+wurde von der betreuenden Arbeitsgruppe vorgeschlagen.
+Für alle Systeme wurde vorausgesetzt, dass sie frei verfügbar sind, aktiv
+weiterentwickelt werden~\cite{wcisystems}, sich auf einem einzelnen
+Rechner installieren lassen und eine öffentliche Dokumentation
+besitzen, da beide Muster zunächst lokal umgesetzt und vermessen
+werden.
+
+Das Feld wissenschaftlicher Workflow-Management-Systeme umfasst
+mehrere hundert Vertreter~\cite{suter2026terminology,wcisystems}.
+Eine vollständige Erhebung ist im Rahmen dieser Arbeit nicht
+möglich, da jedes System einzeln bereitgestellt, in beiden Mustern
+umgesetzt und vermessen wird. Die Auswahl ist deshalb eine
+begründete Stichprobe unterschiedlicher Ansätze.
+
+\section{Qualitative Vergleichsaspekte}
+\label{sec:methodik:qualitativ}
+Der qualitative Vergleich betrachtet die Umsetzungen entlang von
+sieben Aspekten: dem Ausdruck des Musters, dem Modellierungs- und
+Konfigurationsaufwand, der Sichtbarkeit von Datenfluss und Abhängigkeiten, der
+Ausführung und Steuerung, der Trennung von Workflow-Logik und
+Ausführungsumgebung, der Nachvollziehbarkeit der Ausführung 
+und der Verständlichkeit aus Einsteigerperspektive. Zusammen decken sie den
+Weg eines Workflows von der Beschreibung über die Ausführung bis
+zur Nachvollziehbarkeit ab. Die folgenden Absätze
+begründen die Wahl der einzelnen Aspekte.
+
+\emph{Ausdruck des Patterns:} Dieser Aspekt betrachtet, mit welchen Mitteln eines Systems die Struktur der beiden Workflow-Muster beschrieben wird, insbesondere die Abfolge der Schritte und die parallele Verarbeitung der Teilstücke. Er bildet die Grundlage des Vergleichs, da die Workflow-Muster in allen fünf Systemen dieselben sind, ihre Umsetzung jedoch unterschiedlich erfolgt. Untersucht wird der Aspekt anhand der Workflow-Beschreibungen beider Muster in allen fünf Systemen.
+
+\emph{Modellierungs- und Konfigurationsaufwand:} Dieser Aspekt betrachtet, welcher Beschreibungs- und Konfigurationsaufwand nötig ist, um ein Workflow-Muster in einem System umzusetzen und anzupassen. Da sich der Aufwand nicht unmittelbar messen lässt, wird er über zwei nachvollziehbare Größen erfasst: die Zahl der manuell erstellten Artefakte zur Beschreibung und Konfiguration des
+Workflows sowie die Frage, welche Stellen bei einer Änderung der Rechenlast oder der Teilstückzahl angepasst werden müssen. Beide Größen sind unmittelbar an den Workflow-Beschreibungen und Konfigurationsdateien der Umsetzungen ablesbar.
+
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Dieser Aspekt betrachtet, ob sich aus der Workflow-Beschreibung ablesen lässt, welche Dateien zwischen den Schritten weitergegeben werden und wodurch die Abhängigkeiten zwischen ihnen entstehen. Je unmittelbarer diese Informationen aus der Beschreibung hervorgehen, desto leichter lässt sich der Ablauf eines Workflows nachvollziehen. Der
+Aspekt wird anhand der Workflow-Beschreibungen beider Muster in
+allen fünf Systemen untersucht.
+
+\emph{Ausführung und Steuerung:} Dieser Aspekt betrachtet, welche Komponente einen beschriebenen Workflow ausführt und wodurch der Beginn eines einzelnen Schritts ausgelöst wird. Damit bildet er die Verbindung zwischen der Workflow-Beschreibung und dem beobachtbaren Ablauf eines Workflows, da sich daraus ergibt, wann und auf welchem Weg einzelne Schritte ausgeführt werden. Untersucht wird der Aspekt anhand der Komponenten und Mechanismen, die die Ausführung der Workflow-Schritte übernehmen und ihren Ablauf bestimmen.
+
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Dieser Aspekt betrachtet, ob die fachliche Beschreibung eines Workflows unabhängig von der Umgebung formuliert ist, in der er ausgeführt wird, und über welchen Mechanismus beides verbunden wird. Eine Trennung von Workflow-Logik und Ausführungsumgebung erleichtert es, denselben Workflow in unterschiedlichen Ausführungsumgebungen einzusetzen und ist für diese Arbeit besonders relevant, da beide Workflow-Muster zunächst lokal und anschließend auf einem HPC-System betrachtet werden. Mehrere der untersuchten Systeme nennen diese Trennung selbst als Entwurfsziel~\cite[S.~1723]{colonnelli2021streamflow}\cite[S.~18--20]{deelman2015pegasus}. Untersucht wird der Aspekt anhand der Mechanismen, mit denen die Systeme Workflow-Beschreibung und Ausführungsumgebung voneinander trennen, sowie daran, welche Teile der Umsetzung bei einem Wechsel der Ausführungsumgebung angepasst werden müssten.
+
+\emph{Nachvollziehbarkeit der Ausführung:} Dieser Aspekt betrachtet, welche Möglichkeiten ein System bietet, den Fortschritt eines Laufs zu verfolgen, und welche Artefakte nach dem Lauf zur Verfügung stehen. Die Aufzeichnung des Ausführungsverlaufs erleichtert es, Ergebnisse nachzuvollziehen und Fehlerquellen im Ablauf einzugrenzen und ist insbesondere in komplexen Workflows und HPC-Umgebungen von Bedeutung~\cite{davidson2008provenance,sacco2024provenance}. Untersucht wird der Aspekt anhand der Ausgaben während der Ausführung, der verbleibenden Verzeichnisse und Protokolle sowie weiterer Artefakte und Darstellungen, die sich aus einem Lauf erzeugen lassen.
+
+\emph{Verständlichkeit aus Einsteigerperspektive:} Dieser Aspekt
+betrachtet, welche systemeigenen Konzepte verstanden sein müssen,
+bevor sich ein Workflow in einem System umsetzen und ausführen
+lässt. Die Einstiegshürde ist für die Wahl eines Systems von
+praktischer Bedeutung.  Untersucht wird der Aspekt anhand der Konzepte, die für die erstmalige Umsetzung der beiden Workflow-Muster in den einzelnen Systemen verstanden werden mussten. Die Einordnung beruht auf dieser erstmaligen Umsetzung und ersetzt keine Nutzerstudie.
+
+
+\section{Quantitative Messgrößen}
+\label{sec:methodik:messgroessen}
+Der quantitative Vergleich stützt sich auf vier Messgrößen: die Gesamtlaufzeit (Makespan), den Overhead gegenüber einem Referenzlauf sowie die beiden Koordinationsgrößen Übergangslatenz und Startspreizung. Die folgenden Absätze definieren die vier
+Größen, die zugehörige Instrumentierung beschreibt
+Abschnitt~\ref{sec:methodik:instrumentierung}.
+
+\emph{Gesamtlaufzeit:} Als Gesamtlaufzeit wird die Zeitspanne vom
+Aufruf des Workflow-Management-Systems bis zu dessen Beendigung
+bezeichnet. Sie umfasst damit alle Vorgänge eines Laufs, die
+Ausführung der Rechenschritte ebenso wie die Vorbereitung und die
+Übergaben zwischen den Schritten, und entspricht der Zeit, die
+Nutzende bei der Ausführung eines Workflows beobachten.
+
+\emph{Overhead:} Der Overhead bezeichnet die zusätzliche Zeit, die durch den Einsatz eines Workflow-Management-Systems gegenüber der Ausführung der reinen Rechenlogik entsteht. Er wird als Differenz zwischen der Gesamtlaufzeit eines Laufs und der Laufzeit eines Referenzlaufs bestimmt, der dieselben Rechenschritte in derselben Reihenfolge ohne Workflow-Management-System ausführt. Berichtet wird die Differenz der Mediane beider Laufreihen, sodass einzelne Ausreißer das Ergebnis nicht bestimmen.
+
+\emph{Übergangslatenz:} Die Übergangslatenz bezeichnet die
+Zeitspanne zwischen dem Ende eines Rechenschritts und dem Beginn des
+nachfolgenden. Sie erfasst damit den Zeitbedarf, der beim Übergang
+zwischen zwei Schritten entsteht, und wird für jeden Übergang eines
+Musters einzeln bestimmt.
+
+\emph{Startspreizung:} Die Startspreizung bezeichnet den Abstand
+zwischen dem Beginn der ersten und dem Beginn der letzten parallelen
+Verarbeitungsinstanz eines Scatter-Gather-Laufs. Sie erfasst, wie
+eng beieinander ein System die Instanzen der parallelen Phase startet,
+und ist bei einem einzelnen Teilstück nicht definiert.
+
+Die vier Größen erfassen den zeitlichen Einfluss eines
+Workflow-Management-Systems auf zwei Ebenen. Gesamtlaufzeit und
+Overhead beschreiben den Zeitbedarf eines vollständigen Laufs,
+Übergangslatenz und Startspreizung betrachten zwei
+Koordinationsvorgänge innerhalb eines Laufs gesondert. Makespan und
+Overhead knüpfen an bestehende Arbeiten zur Leistungsanalyse von
+Workflow-Läufen an. Chen und Deelman analysieren den Zeitbedarf
+eines Workflow-Laufs anhand des Makespan und verschiedener
+Overhead-Anteile des Workflow-Management-Systems und der
+Ausführungsumgebung~\cite{chen2011overhead}. Die beiden
+Koordinationsgrößen werden für diese Arbeit eingeführt. Sie
+bestimmen den zeitlichen Abstand zwischen zwei aufeinanderfolgenden
+Rechenschritten beziehungsweise die Streuung der Startzeitpunkte
+paralleler Instanzen. Beide Größen lassen sich in allen fünf
+Systemen auf dieselbe Weise erheben, ohne auf systemeigene
+Protokolle zurückzugreifen.
+
+\section{Benchmark-Workflows und Versuchsplan}
+\label{sec:methodik:versuchsplan}
+
+Für die Untersuchung wurden zwei Benchmark-Workflows entworfen, die
+die beiden in Kapitel~\ref{sec:basics} eingeführten Workflow-Muster
+umsetzen. Der Pipeline-Workflow bildet eine vollständig
+sequenzielle Verarbeitungskette ab, der Scatter-Gather-Workflow
+erweitert diese Kette um eine parallele Verarbeitungsphase mit
+anschließender Zusammenführung. Die Wahl fiel auf diese beiden
+Muster, da sie in der Literatur als grundlegende Strukturen
+wissenschaftlicher Workflows beschrieben werden. Suter et al.
+nennen Datenverarbeitungs-Pipelines und
+Fan-out/Fan-in-Ausführungsmuster als die einfachen Formen, aus
+denen sich komplexere Workflows
+zusammensetzen~\cite[S.~4]{suter2026terminology}.
+
+Der Pipeline-Workflow besteht aus vier Schritten.
+\texttt{generate\_input} erzeugt einen reproduzierbaren
+Eingabedatensatz. \texttt{preprocess} bereitet die Daten für die
+Verarbeitung vor, indem Werte unterhalb einer Schwelle entfernt
+werden. \texttt{compute} führt als einziger Schritt die
+rechenintensive Verarbeitung aus. \texttt{postprocess} fasst das
+Ergebnis zu einer abschließenden Ausgabedatei zusammen.
+
+Der Scatter-Gather-Workflow übernimmt die Vor- und
+Nachbereitungsschritte des Pipeline-Workflows und erweitert die
+Verarbeitung um eine parallele Phase. Nach der Vorverarbeitung
+zerlegt \texttt{split} den Datensatz in eine einstellbare Zahl von
+Teilstücken. Für jedes Teilstück wird eine eigene Instanz von
+\texttt{compute} ausgeführt. \texttt{aggregate} führt die
+Teilergebnisse zu einem gemeinsamen Ergebnis zusammen, bevor
+\texttt{postprocess} den Workflow abschließt.
+
+Abbildung~\ref{fig:methodik:workflows} zeigt den Aufbau beider
+Workflows.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      node distance=6.5mm and 8mm,
+      wfstep/.style={draw=ctcolorgraylight, fill=ctcolorgraylighter!45,
+        rounded corners=2pt, minimum width=26mm, minimum height=6mm,
+        align=center, font={\small\ttfamily}},
+      wfload/.style={wfstep, draw=ctcolormain!70, fill=ctcolormain!8},
+      wfinst/.style={wfload, minimum width=18mm},
+      lbl/.style={font=\scriptsize\itshape, text=ctcolorgray, anchor=west,
+        xshift=1.5mm},
+      head/.style={font=\small\bfseries, text=ctcolorgray},
+      arr/.style={-stealth, semithick, draw=ctcolorgray,
+        shorten <=0.5pt, shorten >=0.5pt}]
+    % Pipeline (links)
+    \node[head] (h1) {Pipeline};
+    \node[wfstep, below=4mm of h1] (g1) {generate\_input};
+    \node[wfstep, below=of g1] (p1) {preprocess};
+    \node[wfload, below=of p1] (c1) {compute};
+    \node[wfstep, below=of c1] (o1) {postprocess};
+    \node[lbl] at (g1.east) {Datenerzeugung};
+    \node[lbl] at (p1.east) {Filterung};f
+    \node[lbl] at (c1.east) {Matrixberechnung};
+    \node[lbl] at (o1.east) {Zusammenfassung};
+    \draw[arr] (g1) -- (p1);
+    \draw[arr] (p1) -- (c1);
+    \draw[arr] (c1) -- (o1);
+    % Scatter-Gather (rechts)
+    \node[head, right=58mm of h1] (h2) {Scatter-Gather};
+    \node[wfstep, below=4mm of h2] (g2) {generate\_input};
+    \node[wfstep, below=of g2] (p2) {preprocess};
+    \node[wfstep, below=of p2] (s2) {split};
+    \node[wfinst, below left=8.5mm and 2mm of s2] (ca) {compute$_1$};
+    \node[wfinst, below right=8.5mm and 2mm of s2] (cb) {compute$_n$};
+    \node[text=ctcolorgray] at ($(ca.east)!0.5!(cb.west)$) {$\dots$};
+    \node[wfstep, below=23mm of s2] (a2) {aggregate};
+    \node[wfstep, below=of a2] (o2) {postprocess};
+    \node[lbl] at (s2.east) {Zerlegung in $n$ Teilstücke};
+    \node[lbl] at (a2.east) {Zusammenführung};
+    \draw[arr] (g2) -- (p2);
+    \draw[arr] (p2) -- (s2);
+    \draw[arr] (s2.south) -- (ca.north);
+    \draw[arr] (s2.south) -- (cb.north);
+    \draw[arr] (ca.south) -- (a2.north west);
+    \draw[arr] (cb.south) -- (a2.north east);
+    \draw[arr] (a2) -- (o2);
+  \end{tikzpicture}
+  \caption{Aufbau der beiden Benchmark-Workflows. Hervorgehoben ist der \texttt{compute}-Schritt als einziger Träger der Rechenlast, beim Scatter-Gather-Muster in $n$ parallelen Instanzen.}
+  \label{fig:methodik:workflows}
+\end{figure}
+
+Die Struktur der beiden Workflows orientiert sich an
+Grundkomponenten, die Bharathi et al. aus fünf realen
+wissenschaftlichen Anwendungen abstrahieren und ihrerseits als
+Grundlage für Benchmark-Workflows nutzen, darunter sequenzielle
+Verarbeitungsketten, die Zerlegung von Datensätzen in Teilstücke
+und deren anschließende
+Zusammenführung~\cite[S.~3]{bharathi2008characterization}. Die
+konkrete Ausgestaltung der einzelnen Schritte stellt eine
+vereinfachte Benchmark-Implementierung dieser Grundstrukturen dar.
+
+Alle Schritte sind Python-Skripte, die ihre Ein- und Ausgabepfade
+als Argumente entgegennehmen und ihre Ergebnisse als Dateien
+ablegen. \texttt{generate\_input} erzeugt einhundert ganzzahlige
+Werte mit einem festen Startwert des Zufallszahlengenerators, die
+Eingabe ist dadurch in jedem Lauf identisch. Die eigentliche
+Rechenlast liegt ausschließlich im \texttt{compute}-Schritt: Für
+jeden Eingabewert wird das Produkt zweier Matrizen der Größe
+$96 \times 96$ berechnet, die deterministisch aus dem Wert
+abgeleitet werden, und zu einer Prüfsumme zusammengefasst. Die
+übrigen Schritte beschränken sich auf das Erzeugen, Filtern,
+Zerlegen und Zusammenführen der Textdateien und tragen keine
+nennenswerte Rechenlast.
+
+Die Untersuchung verwendet drei Rechenlasten, die sich
+ausschließlich in der Zahl der Wiederholungen der Matrixberechnung
+je Eingabewert unterscheiden: einmal bei der kurzen, dreizehnmal
+bei der mittleren und sechzigmal bei der langen Rechenlast. Die
+Ausführung der reinen Rechenlogik benötigt auf der lokalen Ebene
+etwa fünf Sekunden, eine Minute beziehungsweise viereinhalb
+Minuten. Die drei Rechenlasten ermöglichen damit die Untersuchung
+sowohl kurzer Workflows, bei denen der Koordinationsaufwand der
+Systeme einen vergleichsweise hohen Anteil an der Gesamtlaufzeit
+hat, als auch längerer Workflows, bei denen die Rechenzeit
+dominiert. Beim Scatter-Gather-Workflow wird die Zahl der
+Teilstücke zwischen eins, zwei und vier variiert, die parallele
+Phase umfasst damit bis zu vier gleichzeitig laufende
+Verarbeitungsinstanzen.
+
+Aus den Mustern, Rechenlasten und Teilstückzahlen ergeben sich der
+Versuchsplan: zwölf Konfigurationen je System, drei für das Pipeline-Muster und neun für das Scatter-Gather-Muster. Jede Konfiguration wurde bei der kurzen und der mittleren Rechenlast fünfmal wiederholt, bei der langen Rechenlast aufgrund des deutlich höheren Zeitbedarfs je Lauf dreimal. Damit stellt die Zahl der Wiederholungen einen Kompromiss zwischen Messaufwand und praktischer Durchführbarkeit dar.
+
+
+\section{Messverfahren}
+\label{sec:methodik:messverfahren}
+
+Die Messung erfolgt auf zwei Ebenen. Eine äußere Messung um den
+Lauf liefert die Gesamtlaufzeit und, im Vergleich mit einem
+Referenzlauf, den Overhead. Eine innere Instrumentierung in den
+Benchmark-Skripten liefert die Zeitpunkte, aus denen Übergangslatenz
+und Startspreizung berechnet werden.
+Abbildung~\ref{fig:methodik:messung} gibt einen Überblick über das
+Mess- und Auswertungsverfahren einer Konfiguration, die folgenden
+Abschnitte beschreiben die einzelnen Bestandteile.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      node distance=4mm,
+      box/.style={draw=ctcolorgraylight, fill=ctcolorgraylighter!45,
+        rounded corners=2pt, minimum width=62mm, minimum height=6.5mm,
+        align=center, font=\small},
+      clk/.style={box, fill=white, minimum height=5.5mm, font=\footnotesize},
+      wfout/.style={box, minimum width=24mm, minimum height=5.5mm, font=\footnotesize},
+      res/.style={box, draw=ctcolormain!70, fill=ctcolormain!8,
+        minimum width=72mm, font=\small},
+      grp/.style={draw=ctcolorgray, dashed, rounded corners=3pt,
+        inner sep=2.5mm},
+      sgrp/.style={draw=ctcolorgraylight, rounded corners=3pt,
+        inner sep=2mm, inner ysep=5.5mm},
+      ttl/.style={font=\small\bfseries, text=ctcolorgray},
+      arr/.style={-stealth, semithick, draw=ctcolorgray}]
+    \node[box] (cfg) {Konfiguration: Muster, Rechenlast, Teilstückzahl $n$};
+    \node[clk, below=21mm of cfg] (r1) {äußere Messung: Startzeitpunkt};
+    \node[box, below=of r1] (r2) {Schritte des Musters ohne\\ Workflow-Management-System};
+    \node[clk, below=of r2] (r3) {äußere Messung: Endzeitpunkt};
+    \node[sgrp, fit=(r1)(r2)(r3)] (gr) {};
+    \node[wfout, right=7mm of gr] (tref) {$T_{\mathrm{Ref},r}$};
+    \node[clk, below=11mm of gr.south] (s1) {äußere Messung: Startzeitpunkt};
+    \node[box, below=of s1] (s2) {Schritte des Musters mit\\ Workflow-Management-System};
+    \node[clk, below=of s2] (s3) {äußere Messung: Endzeitpunkt};
+    \node[sgrp, fit=(s1)(s2)(s3)] (gs) {};
+    \node[wfout, right=7mm of gs] (tsys) {$T_{\mathrm{Sys},r}$};
+    \node[box, below=9mm of gs.south] (tim) {Timing-Dateien beider Läufe};
+    \node[wfout, right=7mm of tim] (tco) {$L_{i,r}$, $S_r$};
+    \node[grp, fit=(gr)(gs)(tim)(tref)(tco)] (gw) {};
+    \node[ttl, anchor=south east, yshift=1mm] at (gw.north east) {Wiederholung $r = 1, \dots, R$};
+    \node[ttl, font=\footnotesize\bfseries, anchor=north west, xshift=2mm, yshift=-1.2mm] at (gr.north west) {Referenzlauf};
+    \node[ttl, font=\footnotesize\bfseries, anchor=north west, xshift=2mm, yshift=-1.2mm] at (gs.north west) {Systemlauf};
+    \node[box, below=10mm of gw] (agg) {Median über die Wiederholungen};
+    \node[res, below=7mm of agg] (o1) {Gesamtlaufzeit: Median von $T_{\mathrm{Sys}}$};
+    \node[res, below=4mm of o1] (o2) {Overhead: Median von $T_{\mathrm{Sys}}$ minus Median von $T_{\mathrm{Ref}}$};
+    \node[res, below=4mm of o2] (o3) {Median von $L_i$ und von $S$};
+    \draw[arr] (cfg) -- (r1);
+    \draw[arr] (r1) -- (r2);
+    \draw[arr] (r2) -- (r3);
+    \draw[arr] (gr.east) -- (tref);
+    \draw[arr] (gr.south) -- (gs.north);
+    \draw[arr] (s1) -- (s2);
+    \draw[arr] (s2) -- (s3);
+    \draw[arr] (gs.east) -- (tsys);
+    \draw[arr] (gs.south) -- (tim);
+    \draw[arr] (tim.east) -- (tco);
+    \draw[arr] (gw.south) -- (agg);
+    \draw[arr] (agg) -- (o1);
+    \draw[arr] (o1) -- (o2);
+    \draw[arr] (o2) -- (o3);
+  \end{tikzpicture}
+  \caption{Ablauf des Mess- und Auswertungsverfahrens für eine Konfiguration. Jede Wiederholung umfasst einen Referenzlauf und den zugehörigen Systemlauf, beide werden nach demselben Verfahren von außen gemessen und erzeugen Timing-Dateien. Aus den Wiederholungen werden anschließend die berichteten Kennwerte gebildet.}
+  \label{fig:methodik:messung}
+\end{figure}
+
+\subsection{Referenzmessung}
+\label{sec:methodik:referenz}
+
+Der Overhead eines Systems lässt sich nicht unmittelbar messen,
+sondern nur als Differenz zu einer Ausführung derselben Rechenlogik
+ohne Workflow-Management-System. Zu jeder Wiederholung einer
+Konfiguration wurde deshalb neben dem Systemlauf ein Referenzlauf
+erhoben, der als Bezugsgröße dient.
+
+Der Referenzlauf verwendet dieselben Benchmark-Skripte und dieselben
+fachlichen Ein- und Ausgaben wie der zugehörige Systemlauf und führt
+sie in der Reihenfolge des jeweiligen Musters aus. Das Steuerskript
+startet die Skripte unmittelbar als eigene Prozesse. Beim Pipeline-Muster
+laufen die vier Schritte nacheinander ab. Beim
+Scatter-Gather-Muster folgen auf die Vorverarbeitung und die
+Zerlegung so viele gleichzeitig gestartete Verarbeitungsprozesse,
+wie Teilstücke vorgesehen sind, anschließend das Zusammenführen und
+die Nachbereitung. Da die Eingabe über einen festen Startwert
+erzeugt wird, verarbeiten Referenz- und Systemlauf dieselben Werte.
+Der Referenzlauf bildet damit dieselbe Rechenlogik und dieselbe
+Struktur ab wie der Systemlauf, jedoch ohne die Orchestrierung durch ein Workflow-Management-System.
+
+Innerhalb einer Wiederholung wurde stets zuerst der Referenzlauf
+und anschließend der zugehörige Systemlauf ausgeführt. Beide liefen
+in eigenen Arbeitsverzeichnissen und wurden nach demselben
+Verfahren von außen gemessen. Durch die unmittelbare zeitliche
+Paarung bleiben Unterschiede der Ausführungsbedingungen gering, der
+wesentliche Unterschied zwischen beiden Läufen liegt in der
+Steuerung durch das Workflow-Management-System.
+
+\subsection{Äußere Messung}
+\label{sec:methodik:aussen}
+
+Die äußere Messung erfasst die Gesamtlaufzeit eines Laufs.
+Unmittelbar vor der Übergabe des Workflows an ein System und nach
+dessen vollständigem Abschluss nimmt das Steuerskript je einen
+Zeitstempel, die Zeitspanne dazwischen bildet die Gesamtlaufzeit
+$T_{\mathrm{Sys}}$ eines Systemlaufs beziehungsweise
+$T_{\mathrm{Ref}}$ des zugehörigen Referenzlaufs.
+
+Der Beginn der Messung liegt bei allen Systemen unmittelbar vor dem
+Startbefehl. Wie das Ende eines Laufs festgestellt wird, hängt vom
+Ausführungsmodell ab. Bei Nextflow und StreamFlow kehrt der Aufruf
+erst zurück, wenn der Workflow abgeschlossen ist, das Ende der
+Messung fällt mit der Rückkehr des Aufrufs zusammen. Merlin, AiiDA
+und Pegasus übergeben die Ausführung an eine eigenständige
+Komponente, der Startbefehl kehrt vorher zurück. Das Steuerskript
+fragt in diesen Fällen den Zustand des Laufs zyklisch ab und
+beendet die Messung, sobald alle Schritte abgeschlossen sind.
+Tabelle~\ref{tab:methodik:endeerkennung} fasst je System zusammen,
+womit ein Lauf gestartet und woran sein Ende erkannt wird.
+
+\begin{table}[H]
+  \caption{Start der Läufe und Erkennung des Laufendes in der äußeren Messung}
+  \label{tab:methodik:endeerkennung}
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{l l p{6.4cm}}
+    \hline
+    \textbf{System} & \textbf{Start der Messung} & \textbf{Erkennung des Laufendes} \\
+    \hline
+    Nextflow
+    & vor \texttt{nextflow run}
+    & Rückkehr des blockierenden Aufrufs \\
+
+    StreamFlow
+    & vor \texttt{streamflow run}
+    & Rückkehr des blockierenden Aufrufs \\
+
+    Merlin
+    & vor \texttt{merlin run}
+    & \texttt{MERLIN\_STATUS.json} mit Status \texttt{FINISHED} und
+      \texttt{MERLIN\_FINISHED} im Workspace des terminalen Schritts
+      \texttt{postprocess}, Abfrage alle 20\,ms \\
+
+    AiiDA
+    & vor dem Einreichen der WorkChain
+    & terminaler Zustand des obersten WorkChain-Prozessknotens,
+      Abfrage alle 50\,ms \\
+
+    Pegasus
+    & vor \texttt{pegasus-plan}
+    & erfolgreicher Workflow-Zustand über
+      \texttt{pegasus-status -l}, Abfrage alle 500\,ms \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Bei Pegasus umfasst die Messung damit den vorgelagerten
+Planungsschritt, da dieser Teil der Ausführung eines Workflows ist. Dauerhaft laufende Komponenten wie Worker, Daemon oder HTCondor sind beim Start der Messung bereits aktiv, ihr Start zählt nicht zur Gesamtlaufzeit. Die äußere Messung umfasst damit in allen Systemen denselben Abschnitt: Sie beginnt mit der Übergabe des vorbereiteten Workflows an das jeweilige System und endet, sobald dieses den vollständigen Workflow als abgeschlossen meldet.
+
+\subsection{Innere Instrumentierung}
+\label{sec:methodik:instrumentierung}
+
+Die beiden Koordinationsgrößen erfordern Zeitpunkte einzelner
+Schritte innerhalb eines Laufs. Diese Zeitpunkte werden nicht den
+Protokollen der Systeme entnommen, sondern in den
+Benchmark-Skripten selbst erhoben. Da alle fünf Systeme dieselben
+Skripte ausführen, entsteht dadurch in jedem System dieselbe
+Datenquelle, unabhängig davon, welche Aufzeichnungen ein System von
+sich aus führt und in welcher Form und Auflösung es sie ablegt.
+
+Jeder Schritt nimmt unmittelbar nach dem Start und unmittelbar vor
+dem Ende einen Zeitstempel und legt anschließend eine Timing-Datei
+in seinem Arbeitsverzeichnis ab, die den Namen des Schritts sowie
+beide Zeitpunkte enthält. Aus den Zeitpunkten aufeinanderfolgender
+Schritte ergibt sich die Übergangslatenz, aus den Startzeitpunkten
+der parallelen Instanzen eines Scatter-Gather-Laufs die
+Startspreizung. Die Instanzen tragen dabei die Nummer ihres
+Teilstücks im Namen und lassen sich dadurch einzeln auswerten.
+Listing~\ref{lst:methodik:timing} zeigt den Aufbau eines
+instrumentierten Schritts.
+
+\begin{lstlisting}[language=Python,
+  caption={Aufbau eines instrumentierten Benchmark-Schritts},
+  label={lst:methodik:timing}]
+task_start_ns = time.time_ns()
+
+# fachliche Verarbeitung des Schritts
+
+task_end_ns = time.time_ns()
+write_timing("preprocess", task_start_ns, task_end_ns)
+
+
+def write_timing(task_name, start_ns, end_ns):
+    Path(f"timing_{task_name}.txt").write_text(
+        f"task_name={task_name}\n"
+        f"task_start_ns={start_ns}\n"
+        f"task_end_ns={end_ns}\n"
+    )
+\end{lstlisting}
+
+Als Zeitquelle dient die Systemuhr in Nanosekunden
+(\texttt{time.time\_ns()}). Da die Übergangslatenzen aus
+Zeitpunkten verschiedener Prozesse berechnet werden, müssen alle
+Schritte dieselbe Zeitbasis verwenden. Die gewählte Zeitquelle
+ermöglicht dadurch den direkten Vergleich der Zeitstempel aller
+Benchmark-Schritte.
+
+Da Referenzlauf und Systemlauf dieselben Benchmark-Skripte
+verwenden, entstehen in beiden Fällen Timing-Dateien mit
+identischem Aufbau. Die Instrumentierung ist dadurch unabhängig
+vom verwendeten Workflow-Management-System und liefert für alle
+fünf Systeme dieselbe Grundlage zur Berechnung der
+Koordinationsgrößen.
+
+\subsection{Auswertung}
+\label{sec:methodik:auswertung}
+
+Nach Abschluss aller Wiederholungen einer Konfiguration werden die
+äußeren Laufzeiten und die Timing-Dateien zusammengeführt. Aus den
+äußeren Laufzeiten ergeben sich Gesamtlaufzeit und Overhead, aus
+den Timing-Dateien die beiden Koordinationsgrößen. Anschließend
+werden die Messwerte über die Wiederholungen zusammengefasst.
+
+Sei $R$ die Zahl der Wiederholungen einer Konfiguration und
+$r \in \{1,\ldots,R\}$ der Index einer Wiederholung,
+$T_{\mathrm{Sys},r}$ und $T_{\mathrm{Ref},r}$ die in Wiederholung
+$r$ von außen gemessenen Laufzeiten des Systemlaufs und des
+zugehörigen Referenzlaufs. Die berichtete Gesamtlaufzeit $T$ und
+der Overhead $O$ sind dann
+\[
+  T = \operatorname{Median}_{r}\bigl(T_{\mathrm{Sys},r}\bigr),
+  \qquad
+  O = \operatorname{Median}_{r}\bigl(T_{\mathrm{Sys},r}\bigr)
+      - \operatorname{Median}_{r}\bigl(T_{\mathrm{Ref},r}\bigr).
+\]
+Der Overhead wird damit entsprechend seiner Definition in
+Abschnitt~\ref{sec:methodik:messgroessen} als Differenz der
+Mediane beider Laufreihen bestimmt.
+
+Die Koordinationsgrößen ergeben sich aus den Timing-Dateien. Für
+einen Übergang $i$ vom Schritt $a$ zum Schritt $b$ bezeichnet
+$L_{i,r}$ den Abstand zwischen dem Ende von $a$ und dem Beginn von
+$b$, für die parallele Phase eines Scatter-Gather-Laufs mit $n$
+Teilstücken bezeichnet $S_r$ den Abstand zwischen dem frühesten und
+dem spätesten Start der Instanzen:
+\[
+  L_{i,r} = t^{\text{start}}_{b,r} - t^{\text{ende}}_{a,r},
+  \qquad
+  S_r = \max_{1 \le k \le n} t^{\text{start}}_{k,r}
+      - \min_{1 \le k \le n} t^{\text{start}}_{k,r}.
+\]
+Berichtet werden auch hier die Mediane über die Wiederholungen,
+$L_i = \operatorname{Median}_{r}(L_{i,r})$ und
+$S = \operatorname{Median}_{r}(S_r)$.
+
+Der Median wurde dem arithmetischen Mittel vorgezogen, da bei einer
+kleinen Zahl von Wiederholungen vereinzelte ungewöhnlich lange
+Laufzeiten das Ergebnis sonst bestimmen würden.
+
+Das Auswertungsskript liest nach Abschluss aller Wiederholungen die
+Laufzeitmessungen und sämtliche Timing-Dateien einer Konfiguration
+ein. Anschließend prüft es die Vollständigkeit der erwarteten
+Schritte, ordnet die Zeitstempel den jeweiligen Workflow-Schritten
+zu, berechnet daraus die Messgrößen jeder Wiederholung und bildet
+abschließend die Mediane.
+
+Auf der HPC-Ebene bleiben Instrumentierung und Auswertung
+unverändert. Die Ausführungsbedingungen unterscheiden sich dort
+jedoch, weshalb die Ergebnisse beider Ebenen getrennt betrachtet
+werden. Kapitel~\ref{sec:mogon} geht darauf ein.
+
+\subsection{Grenzen des Messverfahrens}
+\label{sec:methodik:grenzen}
+
+Das Messverfahren ist darauf ausgerichtet, die
+Workflow-Management-Systeme unter vergleichbaren Bedingungen und
+mit derselben Rechenlogik zu vermessen. Einige Eigenschaften des
+Versuchsaufbaus sind bei der Einordnung der Ergebnisse zu
+berücksichtigen.
+
+Die Zahl der Wiederholungen beträgt für die kurze und die mittlere
+Rechenlast fünf, für die lange Rechenlast aufgrund des deutlich
+höheren Zeitbedarfs drei. Die berichteten Mediane beruhen damit je
+nach Rechenlast auf unterschiedlich vielen Beobachtungen.
+
+Referenzlauf und Systemlauf werden innerhalb einer Wiederholung
+unmittelbar nacheinander ausgeführt und bilden dadurch möglichst
+vergleichbare Bedingungen. Dennoch unterliegen beide Läufe den
+üblichen Schwankungen der Ausführungsumgebung, die sich nicht
+vollständig vermeiden lassen.
+
+Das Messverfahren erfasst die von außen beobachtbaren Laufzeiten
+eines Systems. Die Messgrößen beschreiben damit den zeitlichen
+Effekt der Ausführung, erlauben jedoch keine unmittelbare Zuordnung
+der gemessenen Zeiten zu einzelnen internen Mechanismen oder
+Komponenten eines Workflow-Management-Systems. Die Auswirkungen
+dieser Einschränkungen auf die Interpretation der Ergebnisse werden
+in Abschnitt~\ref{sec:diskussion:grenzen} diskutiert.
