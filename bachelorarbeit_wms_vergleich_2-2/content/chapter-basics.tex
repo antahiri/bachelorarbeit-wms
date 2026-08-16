@@ -1,0 +1,230 @@
+% !TEX root = ../my-thesis.tex
+
+\chapter{Grundlagen und verwandte Arbeiten}
+\label{sec:basics}
+
+
+
+\section{Wissenschaftliche Workflows und Workflow-Management-Systeme}
+\label{sec:basics:wms}
+Wissenschaftliche Workflows beschreiben wissenschaftliche
+Berechnungs- oder Analyseprozesse, die aus mehreren miteinander
+verbundenen Rechenschritten bestehen. Ein solcher Workflow verfolgt
+ein bestimmtes Forschungs- oder Analyseziel und beschreibt, wie die
+einzelnen Schritte innerhalb des Ablaufs zusammenhängen. Dazu
+gehören insbesondere ihre Reihenfolge sowie die zwischen ihnen
+bestehenden Daten- und
+Kontrollabhängigkeiten~\cite[S.~2]{suter2026terminology}.
+Anschaulich lässt sich diese Struktur als Graph darstellen. Die
+Knoten stehen dabei für die einzelnen Rechenschritte, in der
+Literatur meist als Tasks bezeichnet, während die Kanten die Daten-
+oder Kontrollabhängigkeiten zwischen ihnen
+darstellen~\cite[S.~28\,f.]{badia2017workflows}. Eine verbreitete
+Form eines Rechenschritts ist ein eigenständiges ausführbares
+Programm, das Eingabedaten verarbeitet und daraus Ausgaben
+erzeugt~\cite[S.~4]{suter2026terminology}. Die zwischen den
+Rechenschritten ausgetauschten Daten liegen dabei häufig als Dateien
+vor~\cite[S.~29]{badia2017workflows}. In dieser
+Arbeit wird durchgehend der Begriff Schritt verwendet.
+ 
+Die Ausführung eines Workflows wird durch ein
+Workflow-Management-System gesteuert. Badia et al. definieren ein
+solches System als Softwareumgebung, die die Ausführung einer Menge
+voneinander abhängiger Rechenaufgaben orchestriert, welche
+untereinander Daten austauschen, um ein bestimmtes Experiment
+durchzuführen~\cite[S.~28]{badia2017workflows}.
+Zu seinen Aufgaben gehören je nach System die Planung und
+Koordination der Ausführung, die Übertragung von Daten sowie die
+Überwachung des Ausführungszustands~\cite[S.~29]{badia2017workflows}\cite[S.~3]{suter2026terminology}.
+
+\section{Workflow-Struktur und Ausführung}
+\label{sec:basics:struktur}
+Zwischen den Schritten eines Workflows bestehen Abhängigkeiten, die
+bestimmen, wann ein Schritt ausgeführt werden kann. Badia et al.
+unterscheiden dabei Datenabhängigkeiten von
+Kontrollabhängigkeiten~\cite[S.~28]{badia2017workflows}. Bei
+Datenabhängigkeiten ergibt sich die Verbindung zwischen den
+Schritten aus dem Datenfluss, also aus den zwischen ihnen
+weitergegebenen Daten, während Kontrollabhängigkeiten die
+Ausführungsreihenfolge unabhängig von dieser Datenweitergabe
+festlegen. In beiden Fällen wird ein Schritt erst ausführbar, wenn
+die Schritte abgeschlossen sind, von denen er
+abhängt~\cite[S.~8, 10]{russell2006patterns}. Das
+Workflow-Management-System orchestriert die Ausführung so, dass die
+bestehenden Abhängigkeiten eingehalten
+werden~\cite[S.~4]{suter2026terminology}.
+ 
+Aus den Abhängigkeiten ergibt sich, welche Schritte nacheinander und
+welche gleichzeitig ausgeführt werden können. Bei einer sequenziellen Ausführung werden aufeinanderfolgende Schritte einer nach dem anderen
+ausgeführt~\cite[S.~8]{russell2006patterns}.
+Ein Ausführungszweig kann sich aber auch in mehrere Zweige
+aufteilen, die gleichzeitig ausgeführt
+werden~\cite[S.~9]{russell2006patterns}. Mehrere Zweige können anschließend wieder in einem gemeinsamen Folgeschritt zusammengeführt werden, der erst beginnt, wenn alle eingehenden Zweige abgeschlossen sind~\cite[S.~10]{russell2006patterns}.
+
+Wissenschaftliche Workflows können aus solchen einfachen Strukturen
+zu komplexeren Abläufen zusammengesetzt
+sein~\cite[S.~2]{bharathi2008characterization}. Bharathi et al.
+beschreiben als einfachste Struktur einen einzelnen
+Verarbeitungsschritt, der Eingabedaten verarbeitet und daraus eine
+Ausgabe erzeugt~\cite[S.~3]{bharathi2008characterization}. Werden mehrere solcher Schritte hintereinandergeschaltet, entsteht eine Pipeline, in der jeder Schritt auf der Ausgabe des vorherigen
+arbeitet und seine Ausgabe an den nächsten weitergibt~\cite[S.~3]{bharathi2008characterization}.
+Daneben beschreiben sie Schritte, die einen Datensatz in kleinere
+Teilstücke zerlegen, damit nachfolgende Schritte diese parallel
+verarbeiten können, sowie Schritte, die die Ergebnisse mehrerer
+Schritte zu einem gemeinsamen Ergebnis
+zusammenführen~\cite[S.~3]{bharathi2008characterization}. Suter et
+al. nennen Datenverarbeitungs-Pipelines und Fan-out/Fan-in-Muster
+entsprechend als einfache Formen wissenschaftlicher
+Workflows~\cite[S.~4]{suter2026terminology}. Die Verbindung aus
+Zerlegen, paralleler Verarbeitung der Teilstücke und Zusammenführen
+wird in dieser Arbeit als Scatter-Gather-Muster bezeichnet. Die
+parallel ausgeführten Einheiten desselben Schritts werden im
+Folgenden als Verarbeitungsinstanzen bezeichnet.
+
+
+
+\section{HPC-Systeme und Ressourcenverwaltung}
+\label{sec:basics:hpc}
+High-Performance Computing (HPC) dient der Bearbeitung
+rechenintensiver Probleme, deren Berechnung auf einem einzelnen
+Rechner zu aufwendig oder zu zeitintensiv wäre. Dafür kommen unter anderem Supercomputer zum Einsatz, die aus hunderten oder tausenden über ein
+Hochgeschwindigkeitsnetzwerk verbundenen Rechnern bestehen
+können~\cite{zdvhpc}. Der Zugang zu einem HPC-System erfolgt über
+Login-Knoten, auf denen Nutzende Daten bereitstellen,
+Rechenaufträge vorbereiten und einreichen sowie deren Zustand
+verfolgen können~\cite{slurmdocs-admin}. Die eigentlichen
+Berechnungen werden dagegen auf den Rechenknoten
+ausgeführt~\cite{slurmdocs-admin}. Da mehrere Aufträge um die
+verfügbaren Rechenressourcen konkurrieren können, muss deren
+Zuteilung koordiniert werden. Ein Ressourcenverwalter teilt dazu
+den Zugriff auf Rechenressourcen zu und verwaltet konkurrierende
+Anforderungen~\cite{slurmdocs-quickstart}.
+Workflow-Management-Systeme können die Ressourcenzuteilung an einen
+solchen Ressourcenverwalter delegieren. In HPC-Systemen übernimmt
+diese Aufgabe typischerweise ein
+Batch-Scheduler~\cite[S.~5]{suter2026terminology}. In dieser Arbeit
+wird hierfür Slurm eingesetzt.
+
+Rechenaufträge werden bei Slurm als Jobs eingereicht. Für
+Batch-Jobs erfolgt dies mit dem Kommando \texttt{sbatch}, das ein
+Jobskript an Slurm übermittelt. Das Skript kann über
+\texttt{\#SBATCH}-Direktiven unter anderem die benötigten CPUs, den
+Hauptspeicher, ein Zeitlimit und die gewünschte Partition
+festlegen~\cite{slurmdocs-sbatch}. Nach erfolgreicher Einreichung
+weist Slurm dem Job eine Job-ID zu. Stehen die angeforderten
+Ressourcen nicht unmittelbar zur Verfügung, kann der Job zunächst
+in der Warteschlange ausstehender Jobs verbleiben, bis die
+benötigten Ressourcen verfügbar
+sind~\cite{slurmdocs-sbatch}. Die Rechenknoten sind in Slurm in
+Partitionen gegliedert, also in Gruppen von Knoten, innerhalb derer
+den Jobs Ressourcen zugeteilt
+werden~\cite{slurmdocs-quickstart}. Teilt Slurm einem Job die
+angeforderten Ressourcen zu, erhält er eine Allokation, also den
+Zugriff auf diese Ressourcen für eine begrenzte
+Dauer~\cite{slurmdocs-quickstart}. Der Zugriff kann exklusiv oder
+geteilt mit anderen Jobs erfolgen. Bei einer exklusiven Allokation
+teilt der Job die zugeteilten Knoten nicht mit anderen laufenden
+Jobs~\cite{slurmdocs-sbatch}. Nach erteilter Allokation führt Slurm
+das Jobskript auf dem ersten der zugeteilten Knoten
+aus~\cite{slurmdocs-sbatch}.
+
+Vor der eigentlichen Ausführung eines Jobs können auf den
+zugeteilten Rechenknoten systemseitige Vorbereitungen stattfinden.
+Slurm stellt dafür unter anderem Prolog-Programme bereit, die auf
+den Rechenknoten ausgeführt werden, bevor dort die Aufgaben des
+Jobs beginnen~\cite{slurmdocs-prolog}. Diese vorbereitenden
+Arbeiten sind von der eigentlichen Nutzlast des Jobs zu
+unterscheiden. Slurm überträgt ausführbare Dateien und Daten nicht
+automatisch auf die einem Job zugeteilten Knoten. Die benötigten
+Dateien müssen daher entweder auf dem lokalen Speicher des
+jeweiligen Knotens oder in einem gemeinsam erreichbaren
+Dateisystem vorliegen~\cite{slurmdocs-quickstart}. Werden
+aufeinanderfolgende Schritte eines Workflows auf unterschiedlichen
+Knoten ausgeführt, müssen die zwischen ihnen weitergegebenen
+Dateien für die jeweils nachfolgenden Knoten erreichbar sein,
+beispielsweise über ein gemeinsames Dateisystem.
+
+\section{Untersuchte Workflow-Management-Systeme}
+\label{sec:basics:systeme}
+
+
+\subsection{Nextflow}
+\label{sec:basics:nextflow}
+Nextflow ist ein Workflow-Management-System aus der Bioinformatik.
+Es wurde entwickelt, um rechnergestützte Analysen über
+unterschiedliche Rechenumgebungen hinweg reproduzierbar zu machen,
+und setzt dafür unter anderem auf
+Container~\cite[S.~316]{ditommaso2017nextflow}. Workflows werden in
+einer systemeigenen Sprache beschrieben, die auf dem
+Datenfluss-Modell beruht. Ein Workflow setzt sich aus Prozessen
+zusammen, die über Channels verbunden werden, indem die Ausgaben
+eines Prozesses als Eingaben eines anderen dienen. Ein Prozess
+startet, sobald seine Eingaben über die Channels
+eintreffen~\cite[S.~317]{ditommaso2017nextflow}.
+
+
+\subsection{StreamFlow}
+\label{sec:basics:streamflow}
+StreamFlow ist ein Workflow-Management-System, das die Ausführung
+eines Workflows über mehrere, auch unterschiedliche Ausführungsumgebungen hinweg ermöglicht, etwa über Cloud- und HPC-Ressourcen gemeinsam~\cite[S.~1723]{colonnelli2021streamflow}. Dazu erweitert StreamFlow ein klassisches Workflow-Modell um die Beschreibung verschiedener Ausführungsumgebungen und die Zuordnung von Workflow-Schritten zu diesen Umgebungen~\cite[S.~1723]{colonnelli2021streamflow}. Als Workflow-Beschreibung verwendet StreamFlow die Common Workflow Language (CWL)~\cite[S.~1723]{colonnelli2021streamflow}.
+
+\subsection{Merlin}
+\label{sec:basics:merlin}
+Merlin ist ein Workflow-System aus dem HPC-Umfeld. Es wurde
+entwickelt, um sehr große Ensembles von Simulationsläufen zu
+erzeugen, etwa als Trainingsdaten für maschinelles
+Lernen~\cite[S.~255\,f.]{peterson2022merlin}. Workflows werden in
+einer Spezifikation beschrieben, in der eine Studie aus Schritten
+mit Kommandos, Abhängigkeiten und Parametern festgelegt
+wird~\cite[S.~258]{peterson2022merlin}.
+Für die Ausführung verwendet Merlin Celery, ein verteiltes System zur
+Aufgabenverwaltung~\cite[S.~258]{peterson2022merlin}\cite{merlindocs-configuration}. Merlin übersetzt die Schritte des Workflows dazu in Aufgaben und stellt diese über einen Nachrichtenvermittler (Broker) in einer
+Warteschlange bereit~\cite[S.~258]{peterson2022merlin}\cite{merlindocs-configuration}. Worker sind Prozesse, die Aufgaben aus dieser Warteschlange
+beziehen und ausführen~\cite[S.~258]{peterson2022merlin}\cite{merlindocs-configuration}. Dadurch sind die Worker von der Erzeugung der Aufgaben entkoppelt und können unabhängig davon auf den Rechenressourcen gestartet
+werden~\cite[S.~261]{peterson2022merlin}.
+
+
+\subsection{Pegasus}
+\label{sec:basics:pegasus}
+Pegasus beruht auf der Trennung zwischen der Beschreibung eines
+Workflows und seiner konkreten Ausführung. Nutzende erstellen
+einen abstrakten Workflow, den Pegasus in einen ausführbaren
+Workflow überführt~\cite[S.~18]{deelman2015pegasus}. Der abstrakte
+Workflow wird als gerichteter azyklischer Graph in einem
+XML-Format namens DAX beschrieben~\cite[S.~19]{deelman2015pegasus}. Die Überführung in einen ausführbaren Workflow übernimmt ein Planer, der Mapper.
+Dabei bestimmt er unter anderem, auf welchen Ressourcen die Jobs
+ausgeführt und von welchen Speicherorten benötigte Daten bezogen
+werden~\cite[S.~20]{deelman2015pegasus}. Für die anschließende
+Ausführung verwendet Pegasus standardmäßig HTCondor DAGMan als
+Workflow-Engine. DAGMan berücksichtigt die Abhängigkeiten des
+ausführbaren Workflows und gibt einen Job zur Ausführung frei,
+sobald dessen Vorgänger abgeschlossen
+sind~\cite[S.~20]{deelman2015pegasus}. Die einzelnen Jobs werden
+dabei über HTCondor verwaltet und können je nach
+Ausführungsumgebung lokal oder an entfernte Ressourcenverwalter
+übergeben werden~\cite[S.~20]{deelman2015pegasus}.
+
+\subsection{AiiDA}
+\label{sec:basics:aiida}
+AiiDA stellt die Nachvollziehbarkeit der erzeugten Daten in den
+Mittelpunkt. Jede vom System ausgeführte Berechnung und jeder
+Workflow werden automatisch in einem Provenance-Graphen
+aufgezeichnet, um die Reproduzierbarkeit der Ergebnisse zu
+ermöglichen~\cite[S.~2]{huber2020aiida}. Für die Ablage stellt
+AiiDA zwei Speicher bereit: Die Eigenschaften der Knoten liegen
+als Attribute in einer relationalen Datenbank, Dateien werden in
+einem Dateirepository abgelegt~\cite[S.~8]{huber2020aiida}.
+Workflows werden in Python beschrieben. Dazu stellt AiiDA die
+Klasse \texttt{WorkChain} bereit, in der die Schritte als
+logischer Ablauf in einer Prozessspezifikation festgelegt
+werden~\cite[S.~4\,f.]{huber2020aiida}. Berechnungen, die externe
+Programme ausführen, etwa über einen Job-Scheduler, übernimmt die
+Klasse \texttt{CalcJob}~\cite[S.~4]{huber2020aiida}.
+Für die Ausführung von Prozessen verwendet AiiDA mehrere Runner,
+die von einem Daemon überwacht werden~\cite[S.~3]{huber2020aiida}. Die dabei
+anfallenden Aufgaben werden über eine Aufgabenwarteschlange
+verteilt, die mit dem Nachrichtenvermittler RabbitMQ umgesetzt
+ist~\cite[S.~3]{huber2020aiida}.
+
+\section{Verwandte Arbeiten und Abgrenzung}
+\label{sec:basics:related}
