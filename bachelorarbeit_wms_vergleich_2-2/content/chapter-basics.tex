@@ -49,7 +49,7 @@ weitergegebenen Daten, während Kontrollabhängigkeiten die
 Ausführungsreihenfolge unabhängig von dieser Datenweitergabe
 festlegen. In beiden Fällen wird ein Schritt erst ausführbar, wenn
 die Schritte abgeschlossen sind, von denen er
-abhängt~\cite[S.~8, 10]{russell2006patterns}. Das
+abhängt~\cite[S.~8, ~10]{russell2006patterns}. Das
 Workflow-Management-System orchestriert die Ausführung so, dass die
 bestehenden Abhängigkeiten eingehalten
 werden~\cite[S.~4]{suter2026terminology}.
@@ -228,3 +228,29 @@ ist~\cite[S.~3]{huber2020aiida}.
 
 \section{Verwandte Arbeiten und Abgrenzung}
 \label{sec:basics:related}
+Workflow-Management-Systeme wurden bereits in verschiedenen
+Arbeiten anhand unterschiedlicher Kriterien verglichen.
+Diercks et al. leiten Anforderungen an Workflow-Management-Systeme
+aus Anwendungsszenarien des Computational Science and Engineering
+ab und vergleichen sechs Systeme anhand dieser Anforderungen.
+Im Mittelpunkt stehen dabei insbesondere die Beschreibung,
+Reproduzierbarkeit und Wiederverwendung wissenschaftlicher
+Workflows~\citeS.[~1]{diercks2023evaluation}.
+Singh et al. vergleichen fünf wissenschaftliche
+Workflow-Management-Systeme anhand qualitativer Merkmale wie
+Orchestrierung, Datenverwaltung und Provenance.
+Dabei betrachten sie die Systeme insbesondere im Hinblick auf
+daten- und rechenintensive wissenschaftliche
+Workflows~\cite[S.~4553]{singh2019evaluating}.
+Larsonneur et al. vergleichen fünf Workflow-Management-Systeme,
+darunter Nextflow und Pegasus, anhand eines
+Bioinformatik-Workflows. Die Systeme werden dabei anhand von
+zehn Effizienzmetriken wie Laufzeit, CPU- und Speicherbedarf
+bewertet~\cite[S.~2773\,f.]{larsonneur2018evaluating}.
+
+Die vorliegende Arbeit unterscheidet sich von diesen Arbeiten
+durch die Auswahl der Systeme und den experimentellen Aufbau.
+Mit StreamFlow und Merlin werden zwei Systeme betrachtet, die in
+den genannten Vergleichen nicht vertreten sind. Für alle fünf
+Systeme werden dieselben Workflow-Muster mit identischer Nutzlast
+sowohl lokal als auch auf einem HPC-System mit Slurm untersucht.
