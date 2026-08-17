@@ -110,8 +110,7 @@ kommen dieselben Python-Skripte zum Einsatz, die ihre Ein- und
 Ausgabepfade als Argumente entgegennehmen. Unterschiede zwischen den
 Systemen gehen deshalb nicht auf die Rechenlogik zurück, sondern
 darauf, wie der Ablauf beschrieben, wie die Dateien weitergegeben und
-wie die Ausführung gesteuert wird. Die vollständigen
-Workflow-Beschreibungen stehen in Anhang~\ref{app:workflows}.
+wie die Ausführung gesteuert wird. Die vollständigen Workflow-Beschreibungen sind im Repositorium zu dieser Arbeit abgelegt~\cite{barepo}.
 
 \subsection{Nextflow}
 \label{sec:lokal:pipeline:nextflow}
@@ -159,9 +158,10 @@ Eingabe-Channel Daten enthält, der Startzeitpunkt jedes Prozesses ergibt sich d
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:}
 Workflow-Beschreibung und Ausführungsparameter liegen getrennt vor.
-Angaben wie Executor und Ressourcen stehen in einer eigenen
-Konfigurationsdatei, sodass ein Wechsel der Ausführungsumgebung die
-Workflow-Datei unberührt lässt.
+Angaben zur Ausführungsumgebung, die Nextflow über sogenannte
+Executor konfiguriert, sowie zu den benötigten Ressourcen stehen in
+einer eigenen Konfigurationsdatei, sodass ein Wechsel der
+Ausführungsumgebung die Workflow-Datei unberührt lässt.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Während des Laufs zeigt die
@@ -569,9 +569,8 @@ Phase. Nach \texttt{generate\_input} und \texttt{preprocess} zerlegt
 einem, zwei und vier Teilstücken. Wie beim Pipeline-Pattern kommen in
 allen fünf Systemen dieselben Python-Skripte zum Einsatz, die
 Unterschiede liegen darin, wie die Aufteilung, die parallele
-Verarbeitung und das Zusammenführen beschrieben werden. Die
-vollständigen Workflow-Beschreibungen stehen in
-Anhang~\ref{app:workflows}.
+Verarbeitung und das Zusammenführen beschrieben werden. Die vollständigen Workflow-Beschreibungen sind im Repositorium zu
+dieser Arbeit abgelegt~\cite{barepo}.
 
 \subsection{Nextflow}
 \label{sec:lokal:sg:nextflow}
