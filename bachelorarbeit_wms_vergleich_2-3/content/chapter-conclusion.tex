@@ -19,29 +19,27 @@ sondern in der Art der Workflow-Beschreibung, im
 Koordinationsverhalten und im Betriebsmodell. Beim Overhead
 bildeten StreamFlow, Nextflow und Merlin auf beiden Ebenen eine
 Gruppe mit niedrigen Werten, AiiDA lag darüber und Pegasus in der
-lokalen Untersuchung mit großem Abstand an der Spitze. Da der
-Overhead nicht mit der Rechenlast wächst, verliert er mit
-zunehmender Aufgabengröße an Gewicht.
+lokalen Untersuchung mit großem Abstand an der Spitze. Mit zunehmender Rechenlast verliert der Overhead gegenüber der
+eigentlichen Rechenzeit an Bedeutung.
 
 Auf dem HPC-System zeigte sich ein starker Einfluss der
-Ausführungsumgebung auf die gemessenen Laufzeiten. Die vom Cluster verursachten Zeitanteile können die Unterschiede zwischen den Systemen vollständig überlagern, und die Systeme binden den Ressourcenverwalter
+Ausführungsumgebung auf die gemessenen Laufzeiten. Die vom Cluster verursachten Zeitanteile können die Unterschiede zwischen den Systemen überlagern, und die Systeme binden den Ressourcenverwalter
 unterschiedlich ein, von einzelnen Jobs je Schritt bis zur
-gemeinsamen Worker-Allokation. Aussagekräftige Vergleiche
-erforderten deshalb die Ausführung innerhalb einer bestehenden
-Allokation.
+gemeinsamen Worker-Allokation. Für den Systemvergleich in dieser Arbeit wurde deshalb innerhalb einer bestehenden Allokation gemessen.
 
 Für die Eignungsfrage folgt daraus, dass sie sich nicht an der
 Abbildbarkeit der Muster festmachen lässt, denn diese war in allen
-fünf Systemen gegeben. Die Unterschiede lagen im Laufzeitverhalten
-und im Betrieb. Beim Laufzeitverhalten zeigte sich zugleich, dass
-der Overhead mit wachsender Rechenlast an Gewicht verliert, sodass
-die gemessenen Unterschiede bei hinreichend großen Rechenschritten
-kaum noch ins Gewicht fallen. Ab diesem Punkt entscheiden andere Eigenschaften über die Wahl, etwa die Ausrichtung auf hybride Ausführungsumgebungen bei
-StreamFlow, die Abarbeitung vieler gleichartiger Aufgaben innerhalb
-einer Allokation bei Merlin oder die dauerhafte Nachvollziehbarkeit
-bei AiiDA. Ein in allen Belangen überlegenes System ergab sich nicht,
-die Wahl richtet sich nach der Struktur des Workflows, der Größe
-der Aufgaben und den Anforderungen des Anwendungsfalls.
+fünf Systemen gegeben. Unterschiede zeigten sich dagegen im
+Laufzeitverhalten und im Betrieb. Mit abnehmender Bedeutung des
+Overheads können für die Wahl daher andere, aus der Ausrichtung der
+Systeme hervorgehende Eigenschaften stärker ins Gewicht fallen.
+Dazu zählen beispielsweise die Unterstützung hybrider
+Ausführungsumgebungen bei StreamFlow, die Ausrichtung von Merlin
+auf große Ensembles von Rechenaufgaben oder die dauerhafte
+Nachvollziehbarkeit bei AiiDA. Eine allgemeine Rangfolge der
+Systeme ergibt sich daraus nicht. Welches System geeignet
+erscheint, hängt damit auch davon ab, welche dieser Eigenschaften
+für den jeweiligen Anwendungsfall im Vordergrund stehen.
 
 \section{Ausblick}
 \label{sec:conclusion:ausblick}

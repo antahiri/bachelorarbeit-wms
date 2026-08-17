@@ -35,21 +35,21 @@ untereinander Daten austauschen, um ein bestimmtes Experiment
 durchzuführen~\cite[S.~28]{badia2017workflows}.
 Zu seinen Aufgaben gehören je nach System die Planung und
 Koordination der Ausführung, die Übertragung von Daten sowie die
-Überwachung des Ausführungszustands~\cite[S.~29]{badia2017workflows}\cite[S.~3]{suter2026terminology}.
+Überwachung des Ausführungszustands~\cite[S.~29]{badia2017workflows}\cite[S.~2]{suter2026terminology}.
 
 \section{Workflow-Struktur und Ausführung}
 \label{sec:basics:struktur}
 Zwischen den Schritten eines Workflows bestehen Abhängigkeiten, die
 bestimmen, wann ein Schritt ausgeführt werden kann. Badia et al.
 unterscheiden dabei Datenabhängigkeiten von
-Kontrollabhängigkeiten~\cite[S.~28]{badia2017workflows}. Bei
-Datenabhängigkeiten ergibt sich die Verbindung zwischen den
-Schritten aus dem Datenfluss, also aus den zwischen ihnen
-weitergegebenen Daten, während Kontrollabhängigkeiten die
-Ausführungsreihenfolge unabhängig von dieser Datenweitergabe
-festlegen. In beiden Fällen wird ein Schritt erst ausführbar, wenn
+Kontrollabhängigkeiten~\cite[S.~28]{badia2017workflows}. Eine
+Datenabhängigkeit besteht, wenn ein Schritt Daten benötigt, die
+von einem anderen Schritt erzeugt werden. Eine
+Kontrollabhängigkeit besteht dagegen, wenn der Abschluss eines
+Schritts Voraussetzung dafür ist, dass ein anderer Schritt
+ausgeführt werden kann~\cite[S.~259]{zhou2008control}. In beiden Fällen wird ein Schritt erst ausführbar, wenn
 die Schritte abgeschlossen sind, von denen er
-abhängt~\cite[S.~8, ~10]{russell2006patterns}. Das
+abhängt~\cite[S.~8,~10]{russell2006patterns}. Das
 Workflow-Management-System orchestriert die Ausführung so, dass die
 bestehenden Abhängigkeiten eingehalten
 werden~\cite[S.~4]{suter2026terminology}.
@@ -235,7 +235,7 @@ aus Anwendungsszenarien des Computational Science and Engineering
 ab und vergleichen sechs Systeme anhand dieser Anforderungen.
 Im Mittelpunkt stehen dabei insbesondere die Beschreibung,
 Reproduzierbarkeit und Wiederverwendung wissenschaftlicher
-Workflows~\citeS.[~1]{diercks2023evaluation}.
+Workflows~\cite.[S.~1]{diercks2023evaluation}.
 Singh et al. vergleichen fünf wissenschaftliche
 Workflow-Management-Systeme anhand qualitativer Merkmale wie
 Orchestrierung, Datenverwaltung und Provenance.
@@ -253,4 +253,4 @@ durch die Auswahl der Systeme und den experimentellen Aufbau.
 Mit StreamFlow und Merlin werden zwei Systeme betrachtet, die in
 den genannten Vergleichen nicht vertreten sind. Für alle fünf
 Systeme werden dieselben Workflow-Muster mit identischer Nutzlast
-sowohl lokal als auch auf einem HPC-System mit Slurm untersucht.
+sowohl lokal als auch auf einem HPC-System mit Slurm betrachtet.

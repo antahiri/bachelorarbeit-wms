@@ -17,7 +17,7 @@ einzelnen Schritten ausgedrückt werden. Die
 beobachteten Beschreibungsformen reichen von systemeigenen Formaten
 über den Standard CWL bis zu Programmierschnittstellen und lassen
 sich damit in die von Suter et al. unterschiedenen Kategorien
-einordnen~\cite{suter2026terminology}.
+einordnen~\cite[S.~8]{suter2026terminology}.
 
 Beim Scatter-Gather-Muster treten diese Unterschiede deutlicher
 hervor. Neben den Abhängigkeiten müssen dort die Aufteilung in
@@ -30,10 +30,10 @@ weniger durch ihre Ausdrucksfähigkeit als durch die Art der
 Workflow-Beschreibung und den Aufwand bei Änderungen unterscheiden.
 
 \paragraph{F2: Laufzeitverhalten der Workflow-Management-Systeme.}
-Auf beiden Untersuchungsebenen zeigt sich dieselbe Anordnung der
-Systeme. StreamFlow, Nextflow und Merlin liegen beim Overhead in
-einem gemeinsamen Bereich, AiiDA darüber, und Pegasus in der
-lokalen Untersuchung mit deutlichem Abstand an der Spitze. Dass
+Auf beiden Untersuchungsebenen zeigt sich ein ähnliches Bild beim
+Overhead. StreamFlow, Nextflow und Merlin liegen in einem
+gemeinsamen Bereich, AiiDA darüber, und Pegasus in der lokalen
+Untersuchung mit deutlichem Abstand an der Spitze. Dass
 diese Anordnung auf einem einzelnen Rechner und auf einem
 dedizierten Rechenknoten gleichermaßen auftritt, spricht dagegen,
 sie der jeweiligen Ausführungsumgebung zuzuschreiben. Ein
@@ -87,10 +87,9 @@ Systemen mit einzelnen Slurm-Jobs lediglich zwischen 55 und
 104 Millisekunden lag. Eine Ende-zu-Ende-Messung im regulären
 Clusterbetrieb würde damit überwiegend die zum Messzeitpunkt
 vorliegenden Clusterbedingungen abbilden und die Unterschiede
-zwischen den Systemen überlagern. Für den eigentlichen
-Systemvergleich war deshalb eine bereits bestehende
-Slurm-Allokation erforderlich, innerhalb derer Warteschlange und
-Jobstart nicht erneut für jeden Workflow-Schritt anfielen.
+zwischen den Systemen überlagern. Für den eigentlichen Systemvergleich wurde deshalb eine bereits bestehende Slurm-Allokation verwendet, innerhalb derer
+Warteschlange und Jobstart nicht erneut für jeden Workflow-Schritt
+anfielen.
 
 Für den HPC-Betrieb ist damit auch die Einbindung in die
 Ausführungsumgebung von Bedeutung. Die Art der Slurm-Einbindung beeinflusst, wie häufig die vom Cluster verursachten Zeitanteile innerhalb eines
@@ -101,15 +100,15 @@ vom Workflow-Management-System selbst, sondern auch von den
 Bedingungen der Ausführungsumgebung ab.
 
 \paragraph{F4: Eignung für Workflow-Arten und Anwendungsfälle.}
-Aus den Ergebnissen ergibt sich kein System, das den übrigen in
-allen Belangen überlegen wäre. Die Eignung hängt vielmehr davon ab,
-welche Anforderungen hinsichtlich Modellierung, Laufzeitverhalten
-und HPC-Betrieb im Vordergrund stehen.
+Aus den Ergebnissen ergibt sich keine allgemeine Rangfolge der
+Systeme. Welches System geeignet erscheint, hängt vielmehr davon
+ab, welche Eigenschaften für den jeweiligen Anwendungsfall im
+Vordergrund stehen.
 
 Nextflow beschreibt Workflows datenflussorientiert und stellt die
 schnelle Entwicklung, parallele Ausführung und Reproduzierbarkeit
 in den Mittelpunkt~\cite{ditommaso2017nextflow}. Beide untersuchten
-Muster ließen sich kompakt über Prozesse und Kanäle abbilden, wobei
+Muster ließen sich kompakt über Prozesse und Channels abbilden, wobei
 auch Änderungen der Teilstückzahl keine Anpassung der
 Workflow-Struktur erforderten. Zusammen mit dem geringen Overhead,
 den niedrigen Koordinationszeiten und der direkten Slurm-Anbindung
@@ -124,79 +123,79 @@ StreamFlow ist auf Workflows in hybriden Ausführungsumgebungen
 ausgerichtet und trennt die Workflow-Beschreibung von der
 Konfiguration der
 Ausführungsumgebung~\cite{colonnelli2021streamflow}. Diese Trennung
-bewährte sich beim Wechsel auf MOGON: Die in CWL formulierte
-Workflow-Beschreibung blieb unverändert, während lediglich die
+zeigte sich beim Wechsel auf MOGON: Die in CWL formulierte
+Workflow-Beschreibung blieb unverändert, während die
 Ausführungskonfiguration angepasst wurde. Zusammen mit den
-niedrigsten gemessenen Übergangslatenzen eignet sich StreamFlow
-damit insbesondere, wenn eine standardisierte Workflow-Beschreibung
-und deren Übertragung zwischen unterschiedlichen
-Ausführungsumgebungen im Vordergrund stehen. Einschränkend war die
+niedrigen gemessenen Koordinationszeiten bietet sich StreamFlow
+damit insbesondere an, wenn eine standardisierte
+Workflow-Beschreibung und die Trennung von Workflow und
+Ausführungsumgebung im Vordergrund stehen. Einschränkend war die
 Bereitstellung der untersuchten Vorabversion aufwendiger und
 erforderte Anpassungen für die Slurm-Ausführung.
 
 Merlin ist für große Ensembles von Rechenaufgaben auf HPC-Systemen
 ausgelegt und verteilt Aufgaben über ein
 Erzeuger-Verbraucher-Modell an
-Worker~\cite{peterson2022merlin}. Dieses Modell passt insbesondere
-zum Scatter-Gather-Muster mit mehreren gleichartigen parallelen
-Verarbeitungsschritten. Auf MOGON erwies sich außerdem die
-gemeinsame Worker-Allokation als charakteristisch: Die einzelnen
-Workflow-Schritte werden innerhalb bereits bereitgestellter
-Ressourcen ausgeführt, sodass Warte- und Startzeiten des
-Ressourcenverwalters nicht je Schritt erneut entstehen. Merlin
-bietet sich damit insbesondere für Workflows mit vielen
-gleichartigen Rechenaufgaben innerhalb einer gemeinsamen
-HPC-Allokation an, erfordert dafür jedoch zusätzliche Komponenten
-für Aufgabenvermittlung und Worker. Die von Merlin angestrebte
-Skalierung auf sehr große Aufgabenzahlen wurde in dieser Arbeit
-nicht untersucht, da das Scatter-Gather-Muster höchstens vier
-parallele Verarbeitungsinstanzen umfasste.
+Worker~\cite{peterson2022merlin}. Dieses Modell ließ sich beim
+Scatter-Gather-Muster für die parallelen Verarbeitungsinstanzen
+nutzen. Auf MOGON wurden die Workflow-Schritte innerhalb einer
+gemeinsamen Worker-Allokation ausgeführt. Dadurch fielen die
+Warte- und Startzeiten des Ressourcenverwalters nicht für jeden
+Schritt erneut an. Merlin bietet sich damit insbesondere an, wenn
+mehrere Rechenaufgaben innerhalb bereits bereitgestellter
+HPC-Ressourcen abgearbeitet werden sollen. Die von Merlin
+angestrebte Skalierung auf sehr große Aufgabenzahlen wurde in
+dieser Arbeit jedoch nicht untersucht, da das
+Scatter-Gather-Muster höchstens vier parallele
+Verarbeitungsinstanzen umfasste.
 
 AiiDA stellt die dauerhafte Nachvollziehbarkeit wissenschaftlicher
 Abläufe in den Mittelpunkt und hält Prozesse und Daten während der
-Ausführung in einem Provenancegraphen
+Ausführung in einem Provenance-Graphen
 fest~\cite{huber2020aiida}. Dieser Schwerpunkt geht mit einem
 umfangreicheren Betriebsmodell sowie in der Untersuchung mit
 höheren Koordinationszeiten und höherem Overhead als bei Nextflow,
 StreamFlow und Merlin einher. Zudem zeigte die Konfigurationsstudie
 einen deutlichen Einfluss des Ablageorts der Datenhaltung auf die
-gemessenen Zeiten. AiiDA bietet sich damit insbesondere für
-Anwendungsfälle an, in denen die dauerhafte Nachvollziehbarkeit von
-Prozessen und Daten den zusätzlichen Koordinations- und
-Betriebsaufwand rechtfertigt, wobei die absolute Höhe der
+gemessenen Zeiten. Damit stellt AiiDA insbesondere dann eine relevante Option dar, wenn die dauerhafte Nachvollziehbarkeit von Prozessen und Daten
+für den Anwendungsfall stärker gewichtet wird als der in dieser
+Untersuchung beobachtete zusätzliche Koordinations- und
+Betriebsaufwand, wobei die absolute Höhe der
 gemessenen Zeiten von der Konfiguration der Datenhaltung abhängt.
 
 Pegasus trennt die abstrakte Beschreibung eines Workflows von
 dessen Abbildung auf die konkrete
-Ausführungsumgebung~\cite[S.~18--20]{deelman2015pegasus}. Dieser
-Ansatz eignet sich insbesondere für Workflows, die auf wechselnden
-oder verteilten Recheninfrastrukturen ausgeführt werden sollen. In
-der lokalen Untersuchung stand dem der mit Abstand höchste Overhead
-gegenüber, der bei kurzen Rechenschritten besonders stark ins
-Gewicht fiel. Die Dokumentation beschreibt den Aufwand beim
-Einplanen kurzer Jobs selbst als Problemfall und sieht dafür das
-Bündeln mehrerer Aufgaben vor~\cite{pegasusdocs-optimizing}. Für
-feingranulare Workflows ist dieser Ausführungsaufwand daher
-besonders zu berücksichtigen. Die Eignung für das untersuchte
-HPC-System konnte nicht bewertet werden, da sich Pegasus dort nicht bereitstellen ließ.
+Ausführungsumgebung~\cite[S.~18--20]{deelman2015pegasus}. Damit
+steht bei Pegasus insbesondere die Trennung zwischen der
+Workflow-Beschreibung und ihrer konkreten Ausführung im
+Vordergrund. In der lokalen Untersuchung wies Pegasus allerdings
+den mit Abstand höchsten Overhead auf, der bei kurzen
+Rechenschritten besonders stark ins Gewicht fiel. Die
+Dokumentation beschreibt den Aufwand beim Einplanen kurzer Jobs
+selbst als Problemfall und sieht dafür das Bündeln mehrerer
+Aufgaben vor~\cite{pegasusdocs-optimizing}. Pegasus erscheint
+damit für die hier untersuchten feingranularen Workflows weniger
+günstig, wenn ein geringer Laufzeit-Overhead im Vordergrund steht.
+Die Eignung für das untersuchte HPC-System konnte nicht bewertet
+werden, da sich Pegasus dort nicht bereitstellen ließ.
 
-Systemübergreifend tritt damit ein weiteres Kriterium für die
-Systemwahl hervor: die Größe der einzelnen Aufgaben im Zusammenspiel
-mit dem Ausführungsmodell. Sind die Rechenschritte groß, verlieren
-die Unterschiede in der Koordination an Gewicht, und die Wahl kann
-sich an den übrigen Anforderungen ausrichten, etwa an der
-Beschreibungsform, der Übertragbarkeit zwischen Umgebungen oder der
-Nachvollziehbarkeit. Bei kleinen Rechenschritten rückt dagegen in
-den Vordergrund, wie ein System seine Aufgaben ausführt. Wer jeden
-Schritt einzeln an den Ressourcenverwalter übergibt, trägt dessen
-Anteile je Job in voller Höhe, während ein Modell, das die Aufgaben
-innerhalb bereits bereitgestellter Ressourcen abarbeitet oder
-mehrere kurze Aufgaben zu größeren Einheiten bündelt, diese Anteile
-nur einmal anfallen lässt. Die Eignung eines
-Workflow-Management-Systems bemisst sich damit nicht allein an der
-Struktur des Workflows, sondern ebenso an der Größe der Aufgaben
-und an der Art, wie das System sie auf der Zielumgebung ausführt.
-Die Grenzen dieser Aussagen betrachtet
+Systemübergreifend zeigt sich, dass die Bedeutung des
+Laufzeit-Overheads von der Größe der einzelnen Rechenaufgaben
+abhängt. Bei kurzen Rechenschritten kann die zusätzlich durch das
+Workflow-Management-System beanspruchte Zeit einen erheblichen
+Anteil der Gesamtlaufzeit ausmachen. Mit zunehmender Rechenlast
+verliert dieser Anteil dagegen an Gewicht. Für die Systemwahl
+können dann andere Eigenschaften stärker in den Vordergrund
+rücken, etwa die Art der Workflow-Beschreibung, das Betriebsmodell
+oder die Nachvollziehbarkeit von Prozessen und Daten.
+Auf einem HPC-System kommt hinzu, wie das jeweilige System den
+Ressourcenverwalter einbindet. Im regulären Slurm-Betrieb fielen
+bei einzeln eingereichten Jobs Warte- und Startzeiten für jeden
+Workflow-Schritt erneut an, während Merlin die Schritte innerhalb
+einer gemeinsamen Worker-Allokation ausführte. Welche dieser
+Eigenschaften für die Eignung eines Systems entscheidend sind,
+hängt damit von den Anforderungen des jeweiligen Anwendungsfalls
+ab. Die Grenzen dieser Aussagen betrachtet
 Abschnitt~\ref{sec:diskussion:grenzen}.
 
 \section{Grenzen der Untersuchung}

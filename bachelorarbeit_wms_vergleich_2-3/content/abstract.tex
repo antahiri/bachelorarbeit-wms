@@ -1,0 +1,28 @@
+% !TEX root = ../my-thesis.tex
+%
+\pdfbookmark[0]{Abstract}{Abstract}
+\addchap*{Abstract}
+\label{sec:abstract}
+Diese Arbeit vergleicht die fünf Workflow-Management-Systeme
+Nextflow, StreamFlow, Merlin, Pegasus und AiiDA anhand zweier
+Workflow-Muster, einer Pipeline und eines Scatter-Gather-Musters,
+die in allen Systemen mit derselben Rechenlogik umgesetzt werden.
+Betrachtet werden die Modellierung der Workflows, das
+Laufzeitverhalten anhand von Makespan, Overhead und
+Koordinationsgrößen sowie der Betrieb in einer HPC-Umgebung.
+Zunächst werden alle fünf Systeme unter kontrollierten Bedingungen
+auf einem einzelnen Rechner verglichen. Anschließend wird der
+Einsatz auf dem HPC-System MOGON unter Slurm betrachtet, auf dem
+vier der fünf Systeme betrieben werden konnten.
+Beide Workflow-Muster ließen sich in allen fünf Systemen umsetzen.
+Die wesentlichen Unterschiede zeigen sich in der Art der
+Workflow-Beschreibung, im Koordinationsverhalten und im
+Betriebsmodell. Beim Laufzeitverhalten liegen StreamFlow, Nextflow und Merlin beim Overhead in einem ähnlichen Bereich, während AiiDA höhere Werte
+aufweist und Pegasus in der lokalen Untersuchung deutlich darüber
+liegt. Mit zunehmender Rechenlast verliert der Overhead gegenüber
+der eigentlichen Rechenzeit an Bedeutung. Auf MOGON zeigte sich
+zudem, dass durch die Clusterumgebung verursachte Zeitanteile die
+Unterschiede zwischen den Systemen überlagern können. Insgesamt
+unterscheiden sich die Systeme sowohl in der Modellierung und
+Ausführung der Workflows als auch in ihrem Betrieb in der
+HPC-Umgebung.

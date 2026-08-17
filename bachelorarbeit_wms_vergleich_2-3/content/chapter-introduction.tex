@@ -1,0 +1,72 @@
+% !TEX root = ../my-thesis.tex
+\chapter{Einleitung}
+\label{sec:intro}
+
+\section{Motivation}
+\label{sec:intro:motivation}
+Wissenschaftliche Workflows bestehen aus mehreren miteinander
+verbundenen Rechenschritten, zwischen denen Daten weitergegeben
+werden und die in ihrer Ausführung voneinander abhängen können.
+Bei komplexeren Abläufen wird es dadurch zunehmend aufwendig, die
+einzelnen Schritte von Hand in der richtigen Reihenfolge
+auszuführen und die benötigten Daten zwischen ihnen weiterzugeben.
+Workflow-Management-Systeme automatisieren diese Abläufe und
+übernehmen dabei unter anderem die Planung und Koordination der
+Ausführung, die Übertragung von Daten sowie die Überwachung des
+Ausführungszustands~\cite[S.~28\,f.]{badia2017workflows}\cite[S.~2]{suter2026terminology}.
+Es steht eine große Zahl solcher Systeme zur Verfügung. Die Wahl
+eines Systems wird dabei unter anderem durch die Anforderungen der
+jeweiligen Fachgemeinschaft, die Verbreitung einzelner Systeme
+oder historische Gründe beeinflusst~\cite[S.~28]{badia2017workflows}. Eine einzelne, für alle wissenschaftlichen Prozesse und Ausführungsumgebungen geeignete Lösung gibt es nicht~\cite[S.~2]{suter2026terminology}. Wer ein System auswählen will, steht damit vor der Frage, wie sich die Systeme in der
+Beschreibung von Workflows, im Laufzeitverhalten und im Betrieb
+unterscheiden. Für den Einsatz auf einem HPC-System kommt
+zusätzlich die Frage hinzu, wie sich die Systeme dort
+bereitstellen und mit dem Ressourcenverwalter betreiben lassen.
+
+Hier setzt die vorliegende Arbeit an. Sie vergleicht mit Nextflow,
+StreamFlow, Merlin, Pegasus und AiiDA fünf
+Workflow-Management-Systeme anhand zweier Workflow-Muster, einer
+Pipeline und eines Scatter-Gather-Musters, die in allen Systemen
+mit derselben Nutzlast umgesetzt werden. Die Systeme werden
+zunächst auf einem einzelnen Rechner und anschließend auf dem
+HPC-System MOGON unter Slurm untersucht. Dabei werden sowohl
+qualitative Unterschiede zwischen den Systemen als auch ihr
+Laufzeitverhalten betrachtet.
+
+
+\section{Zielsetzung und Forschungsfragen}
+\label{sec:intro:goal}
+Ziel der Arbeit ist ein systematischer Vergleich ausgewählter
+Workflow-Management-Systeme hinsichtlich ihrer Modellierung,
+ihres Laufzeitverhaltens und ihres Einsatzes in einer
+HPC-Umgebung. Die Arbeit orientiert sich an vier
+Forschungsfragen. Die erste Frage betrifft die Modellierung:
+Wie unterscheiden sich die betrachteten
+Workflow-Management-Systeme bei der Umsetzung eines Pipeline- und
+eines Scatter-Gather-Workflows (F1)? Die zweite Frage richtet sich
+auf das Laufzeitverhalten: Welches Laufzeitverhalten zeigen die Systeme
+bei der Ausführung dieser Workflows, gemessen an Makespan, Overhead und Koordinationsgrößen (F2)? Die
+dritte Frage gilt dem Einsatz auf dem HPC-System: Wie lassen sich
+die Systeme auf einem Slurm-basierten HPC-System betreiben, und
+wie setzen sich die Laufzeiten unter Clusterbedingungen zusammen
+(F3)? Die vierte Frage zielt auf die Einordnung: Für welche Arten
+von Workflows und Anwendungsfällen erscheinen die einzelnen
+Systeme besonders geeignet (F4)?
+
+\section{Aufbau der Arbeit}
+\label{sec:intro:structure}
+Die Arbeit ist wie folgt aufgebaut.
+Kapitel~\ref{sec:basics} erläutert die Grundlagen wissenschaftlicher
+Workflows und HPC-Systeme, stellt die betrachteten
+Workflow-Management-Systeme vor und ordnet die Arbeit gegenüber
+verwandten Arbeiten ein. Kapitel~\ref{sec:methodik} beschreibt das
+Evaluationsdesign, die verwendeten Workflow-Muster und das Vorgehen
+für den Vergleich der Systeme. Kapitel~\ref{sec:lokal} beschreibt
+die Umsetzung der Workflow-Muster in den fünf Systemen und stellt
+die Ergebnisse der lokalen Messungen dar.
+Kapitel~\ref{sec:mogon} betrachtet anschließend den Einsatz der
+Systeme auf dem HPC-System MOGON und die dort durchgeführten
+Messungen. Kapitel~\ref{sec:diskussion} diskutiert die Ergebnisse
+entlang der Forschungsfragen und ordnet die Eignung der Systeme
+sowie die Grenzen der Arbeit ein. Kapitel~\ref{sec:conclusion}
+fasst die Ergebnisse zusammen und gibt einen Ausblick.
