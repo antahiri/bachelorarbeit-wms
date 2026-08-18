@@ -557,12 +557,13 @@ Die Beschreibung folgt dem Aufbau des Pipeline-Workflows und liegt
 wieder vollständig in einer Datei, die Zahl der Teilstücke steht als
 Parameter am Dateianfang.
 
-\emph{Ausdruck des Patterns:} Aufteilung und Zusammenführung werden
-über zwei Operatoren auf den Channels ausgedrückt. \texttt{SPLIT}
-liefert die Teilstücke als eine Ausgabe, \texttt{flatten} zerlegt sie
-in einzelne Elemente, sodass \texttt{COMPUTE} für jedes Element
-gestartet wird und \texttt{collect} sammelt die Teilergebnisse
-wieder zu einer Eingabe für \texttt{AGGREGATE}.
+\emph{Ausdruck des Patterns:} Die parallele Phase wird über die
+Operatoren \texttt{flatten} und \texttt{collect} auf den Channels
+ausgedrückt. \texttt{SPLIT} erzeugt die Teilstücke als gemeinsame
+Ausgabe, \texttt{flatten} gibt sie als einzelne Elemente weiter,
+sodass \texttt{COMPUTE} für jedes Element gestartet wird.
+\texttt{collect} sammelt anschließend die Teilergebnisse zu einer
+gemeinsamen Eingabe für \texttt{AGGREGATE}.
 
 \begin{lstlisting}[caption={Fan-out und Fan-in im workflow-Block (Nextflow, Scatter-Gather)},label={lst:sg:nf}]
     chunks_ch = SPLIT(prepared_ch)
@@ -581,18 +582,19 @@ Berechnungsskripts, ebenfalls eine Zeile.
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Der Weg der
 Dateien durch die parallele Phase ist in der Beschreibung ablesbar.
 \texttt{SPLIT} deklariert seine Ausgabe als Dateimuster, an dem
-sichtbar ist, dass hier mehrere Dateien entstehen. Jede Instanz von
-\texttt{COMPUTE} erhält genau ein Teilstück als deklarierte Eingabe
-in ihrem Arbeitsverzeichnis bereitgestellt und \texttt{AGGREGATE}
-erhält die gesammelten Ergebnisdateien zusammen als eine Eingabe.
-Welches Ergebnis zu welchem Teilstück gehört, bleibt dabei am
-Dateinamen ablesbar, da dieser die Kennung des Teilstücks trägt.
+sichtbar ist, dass mehrere Dateien entstehen. Nach
+\texttt{flatten} erhält jede Instanz von \texttt{COMPUTE} genau ein
+Teilstück als Eingabe, während \texttt{AGGREGATE} nach
+\texttt{collect} die Ergebnisdateien aller Instanzen erhält. Die
+Abhängigkeiten entstehen wie beim Pipeline-Pattern durch die
+Übergabe dieser Ausgaben über die Channels an die nachfolgenden
+Prozesse.
 
 \emph{Ausführung und Steuerung:} Für jedes Element des
-Eingabe-Channels startet die Laufzeit eine eigene Instanz von
-\texttt{COMPUTE}, die Instanzen laufen nebeneinander.
-\texttt{AGGREGATE} startet erst, wenn \texttt{collect} die Ergebnisse
-aller Instanzen zusammengeführt hat.
+Eingabe-Channels startet die Nextflow-Laufzeit eine eigene Instanz
+von \texttt{COMPUTE}, die Instanzen laufen nebeneinander.
+\texttt{AGGREGATE} startet erst, wenn \texttt{collect} die
+Ergebnisse aller Instanzen zusammengeführt hat.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
 Pipeline-Pattern steht die Ausführungsumgebung in der eigenen
@@ -609,24 +611,22 @@ Teilstücken sind in den Abbildungen~\ref{fig:nf:dag:sg}
 und~\ref{fig:nf:timeline:sg} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zum
-Channel-Modell sind die beiden Operatoren zu verstehen, die aus einer
-Ausgabe mehrere Elemente machen und mehrere Elemente wieder zu einer
-Eingabe bündeln.
+Channel-Konzept sind die beiden Operatoren \texttt{flatten} und
+\texttt{collect} zu verstehen, die mehrere ausgegebene Elemente
+einzeln weitergeben beziehungsweise wieder zu einer gemeinsamen
+Eingabe sammeln.
 
 \subsection{StreamFlow}
 \label{sec:lokal:sg:streamflow}
 
-Die Aufteilung auf die drei Dateien bleibt bestehen. Die parallele
-Phase wird vollständig in der CWL-Beschreibung ausgedrückt, die Zahl
-der Teilstücke ist ein Eingabewert des Workflows aus der
-Konfigurationsdatei.
+Die Umsetzung des Scatter-Gather-Patterns verwendet wie beim
+Pipeline-Pattern \texttt{workflow.cwl}, \texttt{streamflow.yml}
+und \texttt{config.yml}.
 
 \emph{Ausdruck des Patterns:} Die Aufteilung wird über das
 \texttt{scatter}-Attribut des \texttt{compute}-Schritts ausgedrückt.
 Der Schritt erhält das von \texttt{split} erzeugte Feld der
-Teilstücke und wird für jedes Element einzeln instanziiert. Da jede
-Instanz einen eigenen Ergebnisnamen benötigt, wird paarweise über
-zwei Listen verteilt, die Teilstücke und die Liste der Ergebnisnamen.
+Teilstücke und wird für jedes Element einzeln ausgeführt.
 Für die Zusammenführung verweist \texttt{aggregate} mit
 \texttt{result\_files: compute/result\_file} auf die Ausgaben aller
 Instanzen und erhält sie als eine Liste.
@@ -640,35 +640,36 @@ Instanzen und erhält sie als eine Liste.
     scatterMethod: dotproduct
 \end{lstlisting}
 
-\emph{Modellierungs- und Konfigurationsaufwand:} Die
-\texttt{workflow.cwl} bleibt über alle Varianten unverändert, die
-parallele Phase ist vollständig in ihr enthalten. Eine Änderung der
-Teilstückzahl betrifft allein die Konfigurationsdatei, dort ändern
-sich der Eingabewert und die Liste der Ergebnisnamen, die einen
-Eintrag je Teilstück enthält. Der Wechsel der Rechenlast betrifft wie
-beim Pipeline-Pattern genau eine Zeile, den Pfad des
+\emph{Modellierungs- und Konfigurationsaufwand:} Wie beim
+Pipeline-Pattern werden drei Dateien für Beschreibung und
+Konfiguration verwendet. Die \texttt{workflow.cwl} bleibt über alle
+Varianten unverändert. Eine Änderung der Teilstückzahl betrifft allein
+die \texttt{config.yml}. Dort ändern sich der Eingabewert und die
+Liste der Ergebnisnamen, die einen Eintrag je Teilstück enthält. Der
+Wechsel der Rechenlast betrifft ebenfalls nur die
+\texttt{config.yml}, dort ändert sich der Pfad des
 Berechnungsskripts.
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
-Pipeline-Pattern sind für jede Eingabe Typ und Herkunft deklariert.
-An den Typangaben ist zusätzlich ablesbar, ob ein einzelnes Teilstück
-oder ein Feld von Dateien übergeben wird. \texttt{split} deklariert
-seine Ausgabe als Feld von Dateien, jede Instanz von \texttt{compute}
-erhält daraus ein einzelnes Teilstück als Eingabe und
-\texttt{aggregate} erhält das Feld aller Ergebnisdateien als eine
-Eingabe.
+Pipeline-Pattern sind die weitergegebenen Dateien und ihre Herkunft
+in den Eingaben der Schritte sichtbar. Zusätzlich zeigen die
+Typangaben, ob eine einzelne Datei oder ein Feld von Dateien
+weitergegeben wird. \texttt{split} erzeugt ein Feld von Teilstücken,
+aus dem jede Ausführung von \texttt{compute} ein Teilstück erhält.
+\texttt{aggregate} verweist anschließend auf die Ausgaben von
+\texttt{compute} und erhält das Feld aller Ergebnisdateien. Die
+Abhängigkeiten zwischen den Schritten ergeben sich damit wie beim
+Pipeline-Pattern aus diesen Verweisen auf die jeweiligen Ausgaben.
 
 \emph{Ausführung und Steuerung:} Die Laufzeit startet für jedes
 Element eine eigene Instanz des \texttt{compute}-Schritts, die
-Instanzen laufen nebeneinander in der zugewiesenen Umgebung.
+Instanzen laufen parallel in der zugewiesenen Umgebung.
 \texttt{aggregate} startet erst, wenn die Ergebnisse aller Instanzen
 vorliegen.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
 Pipeline-Pattern steht die Zuordnung zur Ausführungsumgebung in
-\texttt{streamflow.yml}. Auch der Parallelitätsgrad liegt außerhalb
-der CWL-Beschreibung, da die Teilstückzahl aus der
-Konfigurationsdatei kommt.
+\texttt{streamflow.yml}.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Der Lauf lässt sich wie
@@ -678,26 +679,23 @@ eines Scatter-Gather-Laufs ist in
 Abbildung~\ref{fig:sf:timeline:sg} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
-Konzepten des Pipeline-Patterns sind das \texttt{scatter}-Attribut
-und die Feld-Typen zu verstehen. Zu beachten ist außerdem, dass die
-Liste der Ergebnisnamen in der Konfigurationsdatei zur Teilstückzahl
-passen muss.
+Konzepten des Pipeline-Patterns ist das \texttt{scatter}-Attribut zu
+verstehen sowie die Unterscheidung, ob eine Ein- oder Ausgabe eine
+einzelne Datei oder eine Sammlung von Dateien bezeichnet.
 
 \subsection{Merlin}
 \label{sec:lokal:sg:merlin}
 
-Die Workflow-Beschreibung bleibt eine einzelne
-YAML-Spezifikation. Die parallele Phase wird über einen Parameter
-ausgedrückt, der Verarbeitungsschritt selbst steht nur einmal in der
-Spezifikation.
+Merlin beschreibt auch das Scatter-Gather-Pattern in einer
+YAML-Spezifikation.
 
-\emph{Ausdruck des Patterns:} Der Parameter \texttt{CHUNK} trägt eine
-Werteliste mit einem Eintrag je Teilstück. Merlin erzeugt daraus für
-jeden Wert einen eigenen Verarbeitungsschritt, im Befehl bezeichnet
-der Parameterwert das Teilstück und den Ergebnisnamen. Für die
-Zusammenführung verweist \texttt{aggregate} unter \texttt{depends}
-mit einem Platzhalter auf alle aus der Expansion hervorgegangenen
-Schritte.
+\emph{Ausdruck des Patterns:} Die parallele Verarbeitung wird über
+den Parameter \texttt{CHUNK} ausgedrückt, dessen Werteliste einen
+Eintrag je Teilstück enthält. Der einmal beschriebene
+\texttt{compute}-Schritt wird dadurch für jeden Parameterwert
+instanziiert. Jede Instanz hängt von \texttt{split} ab. Für den
+anschließenden Fan-in verweist \texttt{aggregate} unter
+\texttt{depends} mit \texttt{compute\_*} auf alle hervorgegangenen Compute-Instanzen.
 
 \begin{lstlisting}[caption={Parametrisierter Verarbeitungsschritt und Fan-in (Merlin, Scatter-Gather)},label={lst:sg:me}]
   - name: compute
@@ -716,52 +714,52 @@ Werteliste des Parameters und im Argument des Zerlegeschritts. Der
 Wechsel der Rechenlast betrifft wie beim Pipeline-Pattern allein den
 Aufruf des Berechnungsskripts.
 
-\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
-Pipeline-Pattern steht der Datenfluss unmittelbar im Befehl. Jede
-Instanz liest ihr Teilstück über den Parameterwert aus dem
-Arbeitsverzeichnis von \texttt{split} und der Ergebnisname trägt
-denselben Wert, sodass die Zuordnung ablesbar bleibt. Das Einsammeln
-ist ebenfalls als Pfadangabe formuliert, \texttt{aggregate} liest die
-Ergebnisse über ein Muster aus den Arbeitsverzeichnissen aller
-Instanzen. Abhängigkeit und Datenweitergabe stehen damit wieder an
-zwei Stellen desselben Schritts, einmal unter \texttt{depends} und
-einmal als Pfadmuster im Befehl.
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
+Abhängigkeiten werden wie beim Pipeline-Pattern über
+\texttt{depends} ausdrücklich angegeben. Welche Dateien
+weitergegeben werden, ist in den Befehlen sichtbar. Jede
+\texttt{compute}-Instanz liest über den jeweiligen Wert von
+\texttt{CHUNK} eine Datei aus dem Arbeitsverzeichnis von
+\texttt{split} und erzeugt die entsprechende Ergebnisdatei.
+\texttt{aggregate} verweist anschließend auf die Ergebnisdateien
+aller Compute-Instanzen. Abhängigkeiten und Datenweitergabe stehen
+damit auch im Scatter-Gather-Pattern an getrennten Stellen der
+Beschreibung.
 
-\emph{Ausführung und Steuerung:} Die aus der Expansion hervorgegangenen Schritte werden wie beim Pipeline-Pattern als Aufgaben in die Warteschlange eingestellt. In der lokalen Untersuchung
-nahm ein einzelner Worker alle Aufgaben entgegen und bearbeitete
-laut Spezifikation bis zu vier davon gleichzeitig, die
-Verarbeitungsinstanzen liefen dadurch nebeneinander.
-\texttt{aggregate} startet erst, wenn alle Verarbeitungsschritte
-abgeschlossen sind.
+\emph{Ausführung und Steuerung:} Die aus der Parametrisierung
+hervorgegangenen Compute-Instanzen werden wie beim Pipeline-Pattern
+als Aufgaben in die Warteschlange eingestellt und von den
+Celery-Workern ausgeführt. Eine Compute-Instanz wird nach Abschluss
+von \texttt{split} zur Ausführung freigegeben. \texttt{aggregate}
+wird erst freigegeben, wenn alle unter
+\texttt{depends: [compute\_*]} erfassten Compute-Instanzen
+abgeschlossen sind. In der lokalen Untersuchung konnte der Worker
+laut Spezifikation bis zu vier Aufgaben gleichzeitig bearbeiten.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
-Entkopplung von der ausführenden Ressource über die Warteschlange
-bleibt wie beim Pipeline-Pattern bestehen. Ein Teil der
-Ausführungssteuerung steht jedoch in der Spezifikation selbst, der
-Abschnitt \texttt{resources} legt fest, wie viele Aufgaben der
-Worker gleichzeitig ausführt.
+Trennung entspricht dem Pipeline-Pattern. Die Compute-Instanzen
+werden als Aufgaben über die Warteschlange an die Worker übergeben,
+ohne dass ihre ausführende Ressource in den einzelnen
+Workflow-Schritten festgelegt wird. Die Anzahl gleichzeitig
+bearbeitbarer Aufgaben wird für den Worker im Abschnitt
+\texttt{resources} konfiguriert.
 
-
-\emph{Nachvollziehbarkeit der Ausführung:} Die aus der Expansion
-hervorgegangenen Schritte erscheinen in den Ausgaben des Workers
-einzeln, mit eigenem Namen, Arbeitsverzeichnis und Abschlussmeldung,
-und hinterlassen jeweils ein eigenes Arbeitsverzeichnis.
-Statusabfragen über die Kommandozeile stehen wie beim
-Pipeline-Pattern zur Verfügung, eine Graphausgabe weiterhin nicht.
+\emph{Nachvollziehbarkeit der Ausführung:} Die einzelnen
+Compute-Instanzen erscheinen in den Ausgaben des Workers mit eigenem
+Namen, Arbeitsverzeichnis und Abschlussmeldung und hinterlassen
+jeweils ein eigenes Arbeitsverzeichnis. Statusabfragen über die
+Kommandozeile stehen wie beim Pipeline-Pattern zur Verfügung, eine
+Graphausgabe weiterhin nicht.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
 Konzepten des Pipeline-Patterns ist das Parameter-Konzept zu
-verstehen, also die Expansion eines Schritts über eine Werteliste
-sowie die Platzhalter für den Parameterwert und die expandierten
-Schrittnamen. Zu beachten ist außerdem, dass die Werteliste und das
-Argument des Zerlegeschritts zueinander passen müssen.
+verstehen. Zu beachten ist außerdem, dass die Werteliste und die im Zerlegeschritt angegebene Zahl der Teilstücke zueinander passen müssen.
 
 \subsection{Pegasus}
 \label{sec:lokal:sg:pegasus}
 
-Der Aufbau über das Erzeugungsskript und die Kataloge bleibt
-bestehen. Die Zahl der Teilstücke wird dem Erzeugungsskript als
-Aufrufargument übergeben.
+Beim Scatter-Gather-Pattern wird der Workflow ebenfalls über das
+Erzeugungsskript \texttt{build\_workflow.py} aufgebaut.
 
 \emph{Ausdruck des Patterns:} Die parallele Phase entsteht im
 Erzeugungsskript. Eine Schleife legt je Teilstück einen eigenen
@@ -783,21 +781,25 @@ for index, (chunk_file, result_file) in enumerate(zip(chunk_files, result_files)
     compute_jobs.append(compute_job)
 \end{lstlisting}
 
-\emph{Modellierungs- und Konfigurationsaufwand:} Das Erzeugungsskript
-ist für alle Varianten dasselbe, die Teilstückzahl geht als
-Aufrufargument ein. Die erzeugte Workflow-Datei wächst mit der
-Teilstückzahl, da je Teilstück ein Verarbeitungsjob und zwei
-Dateiobjekte hinzukommen. Der Wechsel der Rechenlast betrifft wie
-beim Pipeline-Pattern genau eine Zeile im erzeugten
-Transformationskatalog, die Pfadangabe des Berechnungsskripts.
+\emph{Modellierungs- und Konfigurationsaufwand:} Die vier für das
+Pipeline-Pattern benötigten Dateien bleiben bestehen. Das
+Erzeugungsskript ist für alle Teilstückzahlen einer Rechenlast
+dasselbe, die Teilstückzahl wird ihm als Aufrufargument übergeben.
+Die erzeugte Workflow-Datei wächst mit der Teilstückzahl, da je
+Teilstück ein Verarbeitungsjob und die zugehörigen Dateiobjekte
+hinzukommen. Eine Änderung der Rechenlast betrifft wie beim
+Pipeline-Pattern allein den Pfad des Berechnungsskripts im
+Erzeugungsskript.
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
-Pipeline-Pattern sind die Dateien als eigene Objekte benannt und in
-den Jobs referenziert. Die parallele Phase ist daran ablesbar, dass
-das Zerlegen alle Teilstücke als Ausgaben deklariert, jeder
-Verarbeitungsjob genau ein Teilstück als Eingabe führt und der
-\texttt{aggregate}-Job die Ergebnisdateien aller Teilstücke als
-Eingaben aufführt.
+Pipeline-Pattern werden die weitergegebenen Dateien als eigene
+\texttt{File}-Objekte angelegt und bei den Jobs als Ein- und
+Ausgaben angegeben. Die parallele Phase ist daran ablesbar, dass
+\texttt{split} alle Teilstücke als Ausgaben deklariert, jeder
+\texttt{compute}-Job genau eines dieser Teilstücke als Eingabe
+verwendet und \texttt{aggregate} die Ergebnisdateien aller
+\texttt{compute}-Jobs als Eingaben erhält. Die Abhängigkeiten
+zwischen den Jobs entstehen damit aus diesen Ein- und Ausgaben.
 
 \emph{Ausführung und Steuerung:} Planung und Ausführung bleiben
 getrennt. Bei vier Teilstücken enthält die abstrakte Beschreibung
@@ -818,15 +820,11 @@ den Abbildungen~\ref{fig:pg:dag:sg}, \ref{fig:pg:dag:sg:files}
 und~\ref{fig:pg:dag:sg:concrete} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
-Konzepten des Pipeline-Patterns ist das Zusammenspiel zweier Ebenen
-zu verstehen, des Python-Programms, das den Workflow erzeugt und
-der daraus erzeugten Beschreibung. Die parallele Phase wird nicht
-über ein Sprachmittel des Systems ausgedrückt, sondern mit den
-Mitteln der Programmiersprache ausgeschrieben. Eine andere
-Teilstückzahl erfordert deshalb das erneute Erzeugen der
-Workflow-Datei und in der Beschreibung ist die Parallelität nur
-daran erkennbar, dass die Verarbeitungsjobs keine Dateien
-voneinander lesen.
+Konzepten des Pipeline-Patterns ist zu verstehen, dass die parallele
+Phase nicht über ein Sprachmittel des Systems ausgedrückt, sondern
+im Erzeugungsskript ausgeschrieben wird. In der erzeugten
+Beschreibung ist sie nur daran erkennbar, dass die
+Verarbeitungsjobs keine Dateien voneinander lesen.
 
 \subsection{AiiDA}
 \label{sec:lokal:sg:aiida}
@@ -858,12 +856,10 @@ Zusammenführen ein.
 \end{lstlisting}
 
 \emph{Modellierungs- und Konfigurationsaufwand:} Eine eigene Fassung
-je Teilstückzahl oder Rechenlast entfällt, beide werden dem
+je Teilstückzahl oder Rechenlast entfällt. Beide werden dem
 Submit-Skript als Argumente übergeben und gehen als Eingaben in die
 WorkChain ein. Die Rechenlast wählt wie beim Pipeline-Pattern das
-Berechnungsskript aus. Auch die Liste der nach dem Zerlegen
-abzurufenden Teilstücke wird aus der Teilstückzahl erzeugt und
-wächst mit, ohne dass die Beschreibung angepasst wird.
+Berechnungsskript aus.
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Weitergabe
 ist wie beim Pipeline-Pattern an drei Stellen beschrieben, als
@@ -871,42 +867,35 @@ Quellordner, als Zuordnung und als Abrufliste, nun jedoch je Instanz.
 Jede Verarbeitungsinstanz erhält den Ordner des Zerlegeschritts als
 Quelle mit der Zuordnung genau ihres Teilstücks. Beim Zusammenführen
 erhält der \texttt{aggregate}-CalcJob die Ordner aller Instanzen als
-Quellen mit einer Zuordnung je Ergebnisdatei. Die Kennung des
-Teilstücks erscheint dabei im Namen der Instanz, des Teilstücks und
-der Ergebnisdatei.
+Quellen mit einer Zuordnung je Ergebnisdatei.
 
-\emph{Ausführung und Steuerung:} Die WorkChain läuft weiterhin im
-Daemon, der die eingereichten CalcJobs ausführt. Da alle
-Verarbeitungsinstanzen in einem Outline-Schritt eingereicht werden,
-führt der Daemon sie nebeneinander aus und die WorkChain setzt erst
-fort, wenn alle abgeschlossen sind. Vor dem Zusammenführen prüft sie
-für jede Instanz einzeln, ob sie erfolgreich abgeschlossen wurde,
-und bricht andernfalls mit dem eigenen Fehlercode ab.
+\emph{Ausführung und Steuerung:} Die WorkChain wird weiterhin über
+den Daemon ausgeführt. Die Ausführung übernehmen dabei mehrere parallel laufende Runner, die Aufgaben unabhängig voneinander verarbeiten. Da die
+Verarbeitungsinstanzen gemeinsam eingereicht werden, können ihre
+CalcJobs gleichzeitig verarbeitet werden. Durch \texttt{ToContext}
+setzt die WorkChain erst fort, wenn alle eingereichten CalcJobs
+beendet sind.
 
 
-\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
-Pipeline-Pattern sind Rechner und Code Eingaben der WorkChain und in
-der Datenbank abgelegt. Die parallele Phase ändert daran nichts, alle
-Verarbeitungsinstanzen erhalten denselben Rechner und denselben Code
-als Eingabe.
+\emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
+Trennung entspricht dem Pipeline-Pattern: Rechner und Code sind in
+der AiiDA-Datenbank abgelegt und werden der WorkChain als Eingaben
+übergeben.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Der Provenance-Graph
 enthält die Verarbeitungsinstanzen als eigene Prozessknoten, die
-sämtlich mit der WorkChain verbunden sind und die Kanten zeigen, aus
+sämtlich mit der WorkChain verbunden sind. Die Kanten zeigen, aus
 welchem Ordnerknoten jede Instanz ihr Teilstück bezogen hat und
-welche Ergebnisse in das Zusammenführen eingegangen sind. Die Kennung
-des Teilstücks erscheint dabei als Bezeichnung des Prozessknotens.
-Der Provenance-Graph eines Scatter-Gather-Laufs ist in
+welche Ergebnisse in das Zusammenführen eingegangen sind. Der
+Provenance-Graph eines Scatter-Gather-Laufs ist in
 Abbildung~\ref{fig:ai:prov:sg} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
 Konzepten des Pipeline-Patterns ist zu verstehen, dass ein
-Outline-Schritt mehrere CalcJobs einreichen kann und die Parallelität
-allein daraus folgt, dass die Schleife innerhalb eines Schritts
-steht. Im Kontext liegen dadurch mehrere Instanzen zugleich, deren
-Namen erst in der Schleife vergeben und beim Zusammenführen wieder
-aufgelöst werden.
+Outline-Schritt mehrere CalcJobs einreichen kann und
+\texttt{ToContext} die WorkChain anschließend auf deren Abschluss
+warten lässt, bevor der nächste Outline-Schritt beginnt.
 
 \subsection{Vergleichende Beobachtungen zum Scatter-Gather-Pattern}
 \label{sec:lokal:sg:zusammenfassung}
@@ -932,10 +921,10 @@ Phase darin abbildet.
     \hline
      & \textbf{Nextflow} & \textbf{Stream\-Flow} & \textbf{Merlin} & \textbf{Pegasus} & \textbf{AiiDA} \\
     \hline
-    Ausdruck des Patterns & Operatoren \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut am Schritt & Werteliste des Parameters, Platzhalter unter \texttt{depends} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
-    Änderung der Teilstückzahl & ein Parameter, eine Zeile & Eingabewert und Namensliste in der Konfiguration & zwei Stellen der Spezifikation & Aufruf\-argument, Beschreibung wird neu erzeugt & Aufruf\-argument beim Übergeben des Laufs \\
-    Datenfluss und Abhängigkeiten & Dateimuster in den \texttt{path}-Angaben & Feld-Typen der Ein- und Ausgaben & Pfadmuster im Befehl & Datei\-objekte der Jobs & Quellordner und Zuordnungen je Instanz \\
-    Ausführung und Steuerung & eigene Laufzeit, eine Instanz je Teilstück & eigene Laufzeit, eine Instanz je Teilstück & Celery-Worker, ein Schritt je Teilstück & HTCondor, ein Job je Teilstück & Daemon, ein CalcJob je Teilstück \\
+    Ausdruck des Patterns & \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut & Parameter \texttt{CHUNK}, \texttt{compute\_*} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
+    Änderung der Teilstückzahl & ein Parameter & Eingabewert und Namensliste in \texttt{config.yml} & zwei Stellen der Spezifikation & Aufruf\-argument, Workflow-Datei wird neu erzeugt & Aufruf\-argument, WorkChain bleibt unverändert \\
+    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben und Datei-/Feldtypen & \texttt{depends} und Pfade in den Befehlen & \texttt{File}-Objekte als Ein- und Ausgaben & Quellordner und Zuordnungen je Instanz \\
+    Ausführung und Steuerung & Nextflow-Laufzeit, eine Instanz je Teilstück & StreamFlow-Laufzeit, eine Instanz je Teilstück & Celery-Worker, eine Aufgabe je Instanz & HTCondor, ein Job je Teilstück & Daemon/Runner, ein CalcJob je Teilstück \\
     Trennung Logik und Umgebung & Konfigurations\-datei unverändert & Deployment-Datei unverändert & Warteschlange unverändert & abstrakte Beschreibung und Kataloge unverändert & Rechner und Code unverändert \\
     Nachvollziehbarkeit & Instanzen als Aufgaben desselben Prozesses & Instanzen einzeln in der Terminal\-ausgabe & Instanzen einzeln in den Worker-Ausgaben & Instanzen einzeln in der Status\-abfrage & Instanzen einzeln in Status\-abfrage und Graph \\
     \hline
