@@ -26,8 +26,9 @@ abwickeln und wie die parallelen Instanzen gestartet werden.
 
 Die Untersuchung ist zweistufig aufgebaut. Auf der lokalen Ebene
 werden beide Muster in allen fünf Systemen auf einem einzelnen
-Rechner umgesetzt und vermessen, diese Ebene bildet die gemeinsame
-Vergleichsbasis. Auf der zweiten Ebene wird untersucht, wie sich die
+Rechner umgesetzt und vermessen. Diese Ebene bildet die
+Vergleichsbasis, da dort alle fünf Systeme vertreten sind und
+unter denselben Bedingungen ausgeführt werden. Auf der zweiten Ebene wird untersucht, wie sich die
 Systeme auf einem Slurm-basierten HPC-System bereitstellen und
 betreiben lassen, ergänzt um Messungen auf einer dediziert
 zugewiesenen Ressource dieses Systems. Die lokale Ebene behandelt
@@ -39,15 +40,12 @@ nicht auf unterschiedliche fachliche Rechenoperationen zurück.
 
 \section{Auswahl der Systeme}
 \label{sec:methodik:auswahl}
-Untersucht werden Nextflow, StreamFlow, Merlin, Pegasus und AiiDA. Alle fünf sind für wissenschaftliche Workflows entwickelt, unterscheiden sich aber in ihrem Entstehungskontext. Nextflow stammt aus dem Umfeld der Bioinformatik und richtet sich auf die Reproduzierbarkeit von Auswertungen großer biologischer Datensätze~\cite[S.~316]{ditommaso2017nextflow}. StreamFlow zielt darauf, denselben Workflow in verschiedenen Ausführungsumgebungen auszuführen~\cite[S.~1723]{colonnelli2021streamflow}. Merlin ist für große Ensembles wissenschaftlicher Simulationen ausgelegt, deren Ergebnisse für maschinelles Lernen aufbereitet werden~\cite[S.~255]{peterson2022merlin}. Pegasus richtet sich auf großskalige, mehrstufige Simulations- und Analyse-Abläufe, deren Rechen- und Datenumfang ein System erfordert, das Datentransfer und Aufgabenausführung auf verteilten Rechenressourcen zuverlässig koordiniert und automatisiert~\cite[S.~17]{deelman2015pegasus}. AiiDA verbindet die Ausführung mit einer durchgängigen Aufzeichnung der Datenherkunft in einer Datenbank~\cite[S.~1]{huber2020aiida}. Eine Kurzvorstellung der Systeme gibt Kapitel~\ref{sec:basics}.
+Untersucht werden Nextflow, StreamFlow, Merlin, Pegasus und AiiDA. Alle fünf sind für wissenschaftliche Workflows entwickelt, unterscheiden sich aber in ihrem Entstehungskontext. Nextflow stammt aus dem Umfeld der Bioinformatik und zielt auf die reproduzierbare Ausführung von Analysen großer biologischer Datensätze über unterschiedliche Rechenumgebungen hinweg~\cite[S.~316]{ditommaso2017nextflow}. StreamFlow zielt darauf, denselben Workflow in verschiedenen Ausführungsumgebungen auszuführen~\cite[S.~1723]{colonnelli2021streamflow}. Merlin ist für große Ensembles wissenschaftlicher Simulationen ausgelegt, deren Ergebnisse für maschinelles Lernen aufbereitet werden~\cite[S.~255]{peterson2022merlin}. Pegasus richtet sich auf großskalige, mehrstufige Simulations- und Analyse-Abläufe, deren Rechen- und Datenumfang ein System erfordert, das Datentransfer und Aufgabenausführung auf verteilten Rechenressourcen zuverlässig koordiniert und automatisiert~\cite[S.~17]{deelman2015pegasus}. AiiDA verbindet die Ausführung mit einer durchgängigen Aufzeichnung der Datenherkunft in einer Datenbank~\cite[S.~1]{huber2020aiida}. Eine Kurzvorstellung der Systeme gibt Kapitel~\ref{sec:basics}.
 
 Die Auswahl zielte darauf, unterschiedliche Ansätze
 wissenschaftlicher Workflow-Management-Systeme abzudecken, Grundlage
 waren die Veröffentlichungen und Dokumentationen der Systeme.
-Berücksichtigt wurden drei Merkmale. Das erste ist der
-Anwendungskontext, in dem die Systeme entstanden sind, er wurde oben
-je System benannt und reicht von der Bioinformatik bis zur
-Forschungsdatenverwaltung mit durchgängiger Provenance. Auch Suter
+Berücksichtigt wurden drei Merkmale. Das erste ist der Anwendungskontext, in dem die Systeme entstanden sind. Dieser wurde oben je System benannt und umfasst unter anderem Bioinformatik, große Simulationsensembles und einen besonderen Schwerpunkt auf Provenance. Auch Suter
 et al. unterscheiden Systeme danach, ob sie einer Fachgemeinschaft
 entstammen oder anwendungsneutral ausgelegt
 sind~\cite[S.~4]{suter2026terminology}. Das zweite
@@ -80,7 +78,7 @@ begründete Stichprobe unterschiedlicher Ansätze.
 \section{Qualitative Vergleichsaspekte}
 \label{sec:methodik:qualitativ}
 Der qualitative Vergleich betrachtet die Umsetzungen entlang von
-sieben Aspekten: dem Ausdruck des Musters, dem Modellierungs- und
+sieben Aspekten: dem Ausdruck des Patterns, dem Modellierungs- und
 Konfigurationsaufwand, der Sichtbarkeit von Datenfluss und Abhängigkeiten, der
 Ausführung und Steuerung, der Trennung von Workflow-Logik und
 Ausführungsumgebung, der Nachvollziehbarkeit der Ausführung 
@@ -98,7 +96,13 @@ Workflows sowie die Frage, welche Stellen bei einer Änderung der Rechenlast ode
 Aspekt wird anhand der Workflow-Beschreibungen beider Muster in
 allen fünf Systemen untersucht.
 
-\emph{Ausführung und Steuerung:} Dieser Aspekt betrachtet, welche Komponente einen beschriebenen Workflow ausführt und wodurch der Beginn eines einzelnen Schritts ausgelöst wird. Damit bildet er die Verbindung zwischen der Workflow-Beschreibung und dem beobachtbaren Ablauf eines Workflows, da sich daraus ergibt, wann und auf welchem Weg einzelne Schritte ausgeführt werden. Untersucht wird der Aspekt anhand der Komponenten und Mechanismen, die die Ausführung der Workflow-Schritte übernehmen und ihren Ablauf bestimmen.
+\emph{Ausführung und Steuerung:} Dieser Aspekt betrachtet, welche
+Komponente einen beschriebenen Workflow ausführt und wodurch der
+Beginn eines einzelnen Schritts ausgelöst wird. Damit bildet er die
+Verbindung zwischen der Workflow-Beschreibung und dem beobachtbaren
+Ablauf eines Workflows, da sich daraus ergibt, wann und auf welchem
+Weg einzelne Schritte ausgeführt werden. Der Aspekt wird anhand der
+Umsetzung und Ausführung der beiden Benchmark-Workflows betrachtet.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Dieser Aspekt betrachtet, ob die fachliche Beschreibung eines Workflows unabhängig von der Umgebung formuliert ist, in der er ausgeführt wird, und über welchen Mechanismus beides verbunden wird. Eine Trennung von Workflow-Logik und Ausführungsumgebung erleichtert es, denselben Workflow in unterschiedlichen Ausführungsumgebungen einzusetzen und ist für diese Arbeit besonders relevant, da beide Workflow-Muster zunächst lokal und anschließend auf einem HPC-System betrachtet werden. Mehrere der untersuchten Systeme nennen diese Trennung selbst als Entwurfsziel~\cite[S.~1723]{colonnelli2021streamflow}\cite[S.~18--20]{deelman2015pegasus}. Untersucht wird der Aspekt anhand der Mechanismen, mit denen die Systeme Workflow-Beschreibung und Ausführungsumgebung voneinander trennen, sowie daran, welche Teile der Umsetzung bei einem Wechsel der Ausführungsumgebung angepasst werden müssten.
 
@@ -114,8 +118,7 @@ praktischer Bedeutung.  Untersucht wird der Aspekt anhand der Konzepte, die für
 \section{Quantitative Messgrößen}
 \label{sec:methodik:messgroessen}
 Der quantitative Vergleich stützt sich auf vier Messgrößen: die Gesamtlaufzeit (Makespan), den Overhead gegenüber einem Referenzlauf sowie die beiden Koordinationsgrößen Übergangslatenz und Startspreizung. Die folgenden Absätze definieren die vier
-Größen, die zugehörige Instrumentierung beschreibt
-Abschnitt~\ref{sec:methodik:instrumentierung}.
+Größen.
 
 \emph{Gesamtlaufzeit:} Als Gesamtlaufzeit wird die Zeitspanne vom
 Aufruf des Workflow-Management-Systems bis zu dessen Beendigung
@@ -143,12 +146,11 @@ Die vier Größen erfassen den zeitlichen Einfluss eines
 Workflow-Management-Systems auf zwei Ebenen. Gesamtlaufzeit und
 Overhead beschreiben den Zeitbedarf eines vollständigen Laufs,
 Übergangslatenz und Startspreizung betrachten zwei
-Koordinationsvorgänge innerhalb eines Laufs gesondert. Makespan und
-Overhead knüpfen an bestehende Arbeiten zur Leistungsanalyse von
-Workflow-Läufen an. Chen und Deelman analysieren den Zeitbedarf
-eines Workflow-Laufs anhand des Makespan und verschiedener
-Overhead-Anteile des Workflow-Management-Systems und der
-Ausführungsumgebung~\cite{chen2011overhead}. Die beiden
+Koordinationsvorgänge innerhalb eines Laufs gesondert. Makespan und Overhead knüpfen an bestehende Arbeiten zur
+Analyse des Laufzeitverhaltens wissenschaftlicher Workflows an.
+Chen und Deelman analysieren den Zeitbedarf eines Workflow-Laufs
+anhand des Makespan und verschiedener Overhead-Anteile des
+Workflow-Management-Systems und der Ausführungsumgebung~\cite{chen2011overhead}. Die beiden
 Koordinationsgrößen werden für diese Arbeit eingeführt. Sie bestimmen den zeitlichen Abstand zwischen zwei aufeinanderfolgenden
 Rechenschritten beziehungsweise die Spreizung der Startzeitpunkte
 paralleler Instanzen. Beide Größen lassen sich in allen fünf
@@ -239,13 +241,11 @@ Workflows.
 \end{figure}
 
 Die Struktur der beiden Workflows orientiert sich an
-Grundkomponenten, die Bharathi et al. aus fünf realen
-wissenschaftlichen Anwendungen abstrahieren und ihrerseits als
-Grundlage für Benchmark-Workflows nutzen, darunter sequenzielle
-Verarbeitungsketten, die Zerlegung von Datensätzen in Teilstücke
-und deren anschließende
-Zusammenführung~\cite[S.~3]{bharathi2008characterization}. Die
-konkrete Ausgestaltung der einzelnen Schritte stellt eine
+Grundstrukturen wissenschaftlicher Workflows, die Bharathi et al.
+beschreiben, darunter sequenzielle Verarbeitungsketten, die
+Zerlegung von Datensätzen in Teilstücke und deren anschließende
+Zusammenführung~\cite[S.~3]{bharathi2008characterization}.
+Die konkrete Ausgestaltung der einzelnen Schritte stellt eine
 vereinfachte Benchmark-Implementierung dieser Grundstrukturen dar.
 
 Alle Schritte sind Python-Skripte, die ihre Ein- und Ausgabepfade
@@ -361,18 +361,22 @@ ohne Workflow-Management-System. Zu jeder Wiederholung einer
 Konfiguration wurde deshalb neben dem Systemlauf ein Referenzlauf
 erhoben, der als Bezugsgröße dient.
 
-Der Referenzlauf verwendet dieselben Benchmark-Skripte und dieselben
-fachlichen Ein- und Ausgaben wie der zugehörige Systemlauf und führt
-sie in der Reihenfolge des jeweiligen Musters aus. Das Steuerskript
-startet die Skripte unmittelbar als eigene Prozesse. Beim Pipeline-Muster
-laufen die vier Schritte nacheinander ab. Beim
-Scatter-Gather-Muster folgen auf die Vorverarbeitung und die
-Zerlegung so viele gleichzeitig gestartete Verarbeitungsprozesse,
-wie Teilstücke vorgesehen sind, anschließend das Zusammenführen und
-die Nachbereitung. Da die Eingabe über einen festen Startwert
-erzeugt wird, verarbeiten Referenz- und Systemlauf dieselben Werte.
-Der Referenzlauf bildet damit dieselbe Rechenlogik und dieselbe
-Struktur ab wie der Systemlauf, jedoch ohne die Orchestrierung durch ein Workflow-Management-System.
+Der Referenzlauf verwendet dieselben Benchmark-Skripte und
+dieselben fachlichen Ein- und Ausgaben wie der zugehörige
+Systemlauf und führt sie in der Reihenfolge des jeweiligen Musters
+aus. Referenz- und Systemläufe werden für jedes System durch ein
+Steuerskript gestartet und gemessen. Für den Referenzlauf startet
+dieses Steuerskript die Benchmark-Skripte unmittelbar als eigene
+Prozesse. Beim Pipeline-Muster laufen die vier Schritte
+nacheinander ab. Beim Scatter-Gather-Muster folgen auf die
+Vorverarbeitung und die Zerlegung so viele gleichzeitig gestartete
+Verarbeitungsprozesse, wie Teilstücke vorgesehen sind, anschließend
+das Zusammenführen und die Nachbereitung. Da die Eingabe über einen
+festen Startwert erzeugt wird, verarbeiten Referenz- und Systemlauf
+dieselben Werte. Der Referenzlauf bildet damit dieselbe Rechenlogik
+sowie dieselbe Abfolge und Parallelität der Rechenschritte ab wie
+der Systemlauf, jedoch ohne die Steuerung durch ein
+Workflow-Management-System.
 
 Innerhalb einer Wiederholung wurde stets zuerst der Referenzlauf
 und anschließend der zugehörige Systemlauf ausgeführt. Beide liefen
@@ -385,15 +389,17 @@ Steuerung durch das Workflow-Management-System.
 \subsection{Äußere Messung}
 \label{sec:methodik:aussen}
 
-Die äußere Messung erfasst die Gesamtlaufzeit eines Laufs.
-Unmittelbar vor der Übergabe des Workflows an ein System und nach
-dessen vollständigem Abschluss nimmt das Steuerskript je einen
-Zeitstempel, die Zeitspanne dazwischen bildet die Gesamtlaufzeit
-$T_{\mathrm{Sys}}$ eines Systemlaufs beziehungsweise
-$T_{\mathrm{Ref}}$ des zugehörigen Referenzlaufs.
+Die äußere Messung erfasst die Gesamtlaufzeit eines Laufs. Das
+Steuerskript nimmt unmittelbar vor dem Start eines Laufs und nach
+dessen vollständigem Abschluss jeweils einen Zeitstempel. Die
+Zeitspanne dazwischen bildet die Gesamtlaufzeit
+$T_\mathrm{Sys}$ eines Systemlaufs beziehungsweise
+$T_\mathrm{Ref}$ des zugehörigen Referenzlaufs.
 
-Der Beginn der Messung liegt bei allen Systemen unmittelbar vor dem
-Startbefehl. Wie das Ende eines Laufs festgestellt wird, hängt vom
+Der Beginn der Messung liegt bei Nextflow, StreamFlow, Merlin und
+AiiDA unmittelbar vor dem Startbefehl. Bei Pegasus beginnt die
+Messung bereits vor der Planung, sodass auch die Planungszeit in
+der Gesamtlaufzeit enthalten ist. Wie das Ende eines Laufs festgestellt wird, hängt vom
 Ausführungsmodell ab. Bei Nextflow und StreamFlow kehrt der Aufruf
 erst zurück, wenn der Workflow abgeschlossen ist, das Ende der
 Messung fällt mit der Rückkehr des Aufrufs zusammen. Merlin, AiiDA
@@ -408,35 +414,19 @@ womit ein Lauf gestartet und woran sein Ende erkannt wird.
   \caption{Start der Läufe und Erkennung des Laufendes in der äußeren Messung}
   \label{tab:methodik:endeerkennung}
   \centering
-  \small
+  \footnotesize
   \renewcommand{\arraystretch}{1.3}
-  \begin{tabular}{l l p{6.4cm}}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{1.8cm}
+                  >{\raggedright\arraybackslash}p{3.4cm}
+                  >{\raggedright\arraybackslash}p{7.0cm}}
     \hline
     \textbf{System} & \textbf{Start der Messung} & \textbf{Erkennung des Laufendes} \\
     \hline
-    Nextflow
-    & vor \texttt{nextflow run}
-    & Rückkehr des blockierenden Aufrufs \\
-
-    StreamFlow
-    & vor \texttt{streamflow run}
-    & Rückkehr des blockierenden Aufrufs \\
-
-    Merlin
-    & vor \texttt{merlin run}
-    & \texttt{MERLIN\_STATUS.json} mit Status \texttt{FINISHED} und
-      \texttt{MERLIN\_FINISHED} im Workspace des terminalen Schritts
-      \texttt{postprocess}, Abfrage alle 20\,ms \\
-
-    AiiDA
-    & vor dem Einreichen der WorkChain
-    & terminaler Zustand des obersten WorkChain-Prozessknotens,
-      Abfrage alle 50\,ms \\
-
-    Pegasus
-    & vor \texttt{pegasus-plan}
-    & erfolgreicher Workflow-Zustand über
-      \texttt{pegasus-status -l}, Abfrage alle 500\,ms \\
+    Nextflow & vor \texttt{nextflow run} & Rückkehr des blockierenden Aufrufs \\
+    StreamFlow & vor \texttt{streamflow run} & Rückkehr des blockierenden Aufrufs \\
+    Merlin & vor \texttt{merlin run} & \texttt{MERLIN\_STATUS.json} mit Status \texttt{FINISHED} und \texttt{MERLIN\_FINISHED} im Workspace des terminalen Schritts \texttt{postprocess}, Abfrage alle 20\,ms \\
+    AiiDA & vor \texttt{submit()} der WorkChain & terminaler Zustand des obersten WorkChain-Prozessknotens, Abfrage alle 50\,ms \\
+    Pegasus & vor \texttt{pegasus-plan} & erfolgreicher Workflow-Zustand über \texttt{pegasus-status -l}, Abfrage alle 500\,ms \\
     \hline
   \end{tabular}
 \end{table}
@@ -455,8 +445,8 @@ Skripte ausführen, entsteht dadurch in jedem System dieselbe
 Datenquelle, unabhängig davon, welche Aufzeichnungen ein System von
 sich aus führt und in welcher Form und Auflösung es sie ablegt.
 
-Jeder Schritt nimmt unmittelbar nach dem Start und unmittelbar vor
-dem Ende einen Zeitstempel und legt anschließend eine Timing-Datei
+Jeder Schritt nimmt zu Beginn seiner Ausführung und nach Abschluss
+der eigentlichen Verarbeitung jeweils einen Zeitstempel und legt anschließend eine Timing-Datei
 in seinem Arbeitsverzeichnis ab, die den Namen des Schritts sowie
 beide Zeitpunkte enthält. Aus den Zeitpunkten aufeinanderfolgender
 Schritte ergibt sich die Übergangslatenz, aus den Startzeitpunkten
@@ -544,12 +534,13 @@ Der Median wurde dem arithmetischen Mittel vorgezogen, da bei einer
 kleinen Zahl von Wiederholungen vereinzelte ungewöhnlich lange
 Laufzeiten das Ergebnis sonst bestimmen würden.
 
-Das Auswertungsskript liest nach Abschluss aller Wiederholungen die
-Laufzeitmessungen und sämtliche Timing-Dateien einer Konfiguration
-ein. Anschließend prüft es die Vollständigkeit der erwarteten
-Schritte, ordnet die Zeitstempel den jeweiligen Workflow-Schritten
-zu, berechnet daraus die Messgrößen jeder Wiederholung und bildet
-abschließend die Mediane.
+Die Steuerskripte legen die Messwerte der einzelnen Wiederholungen
+als Rohdaten ab und erzeugen aus den Timing-Dateien die
+Koordinationswerte. Für die endgültige Auswertung werden die
+äußeren Laufzeitmessungen von einem separaten Auswertungsskript
+eingelesen und nach dem oben beschriebenen Verfahren
+zusammengefasst. Die bereits berechneten Koordinationswerte werden
+unverändert übernommen.
 
 Auf der HPC-Ebene bleiben Instrumentierung und Auswertung
 unverändert. Die Ausführungsbedingungen unterscheiden sich dort

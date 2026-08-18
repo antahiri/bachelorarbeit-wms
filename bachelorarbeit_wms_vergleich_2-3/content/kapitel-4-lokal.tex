@@ -12,12 +12,9 @@ Alle Modellierungen und die lokale Messreihe wurden auf einem MacBook
 Pro (2021) mit Apple-M1-Pro-Prozessor (arm64) und 16\,GB
 Arbeitsspeicher unter macOS~26.5.1 ausgeführt. Für jedes der
 Python-basierten Systeme wurde eine eigene Umgebung angelegt (conda
-oder venv), um wechselseitige Abhängigkeitskonflikte auszuschließen.
-Nextflow und HTCondor wurden dagegen über Homebrew installiert. Eine
-HPC-Ausführung wird damit nicht abgebildet. Der Zweck der lokalen
-Ebene ist ein anderer: Auf einem einzelnen Rechner lassen sich beide
-Workflow-Muster in allen fünf Systemen unter denselben,
-kontrollierten Bedingungen modellieren und vermessen. Wie sich die
+oder venv), um wechselseitige Abhängigkeitskonflikte auszuschließen. Eine HPC-Ausführung wird damit nicht abgebildet, die lokale Ebene
+dient der Modellierung und der Messung unter kontrollierten
+Bedingungen. Wie sich die
 Systeme auf einem Slurm-basierten HPC-System betreiben lassen,
 untersucht Kapitel~\ref{sec:mogon}, auf die Grenzen der lokalen
 Betrachtung geht Abschnitt~\ref{sec:diskussion:grenzen} ein.
@@ -25,8 +22,7 @@ Betrachtung geht Abschnitt~\ref{sec:diskussion:grenzen} ein.
 Die folgenden Absätze beschreiben die Bereitstellung je System in
 derselben Reihenfolge: eingesetzte Version und Installationsweg,
 zusätzlich benötigte Komponenten und die dafür nötigen
-Konfigurationsschritte sowie aufgetretene Fehler. Eine bewertende
-Einordnung erfolgt an dieser Stelle noch nicht.
+Konfigurationsschritte sowie aufgetretene Fehler.
 
 \paragraph{Nextflow:} Nextflow wurde in Version~25.10.4 über Homebrew
 installiert. Als Voraussetzung benötigt Nextflow eine Java-Laufzeit
@@ -49,10 +45,8 @@ Installation hinaus und Fehler traten nicht auf.
 installiert. Für die Ausführung benötigt Merlin einen
 Nachrichtenvermittler, in dessen Warteschlange Celery die Schritte
 als Aufgaben einstellt, die Worker entgegennehmen und
-abarbeiten~\cite{merlindocs-celery}. In der lokalen Einrichtung diente Redis
-als Nachrichtenvermittler und wurde über einen Docker-Container
-bereitgestellt. Vor jedem Lauf mussten daher der Redis-Container und
-die Celery-Worker gestartet werden. Bei der Einrichtung trat ein
+abarbeiten~\cite{merlindocs-celery}. In der lokalen Einrichtung diente Redis als Nachrichtenvermittler und wurde über einen Docker-Container bereitgestellt. Die Verbindungsdaten zum Nachrichtenvermittler stehen in der Datei \texttt{app.yaml} im Nutzerverzeichnis. Redis-Container und Celery-Worker müssen bei der Ausführung aktiv sein, bleiben aber über mehrere Läufe hinweg bestehen und wurden
+daher einmal je Sitzung gestartet. Bei der Einrichtung trat ein
 Fehler auf: Aktuelle Versionen von \texttt{setuptools} liefern das
 von Merlin vorausgesetzte Modul \texttt{pkg\_resources} nicht mehr
 mit, sodass das Werkzeug nach der Installation zunächst nicht
@@ -92,7 +86,7 @@ Abschnitt~\ref{sec:methodik:qualitativ}.
     \hline
     Nextflow   & 25.10.4  & keine & keine & keine \\
     StreamFlow & 0.2.0rc2 & keine & keine & keine \\
-    Merlin     & 1.13.0   & Redis & \texttt{setuptools}-Downgrade & Redis-Container und Worker starten \\
+    Merlin     & 1.13.0   & Redis & \texttt{setuptools}-Downgrade, \texttt{app.yaml} & Redis-Container und Worker starten \\
     Pegasus    & 5.1.2    & HTCondor 23.1.0 & keine & HTCondor-Prozesse aktiv, \texttt{CONDOR\_CONFIG} und \texttt{PYTHONPATH} gesetzt (je Sitzung) \\
     AiiDA      & 2.8.0    & PostgreSQL, RabbitMQ & Datenbank, Profil & Daemon starten \\
     \hline
@@ -102,27 +96,22 @@ Abschnitt~\ref{sec:methodik:qualitativ}.
 \section{Pipeline-Pattern}
 \label{sec:lokal:pipeline}
 
-Das Pipeline-Pattern wurde als strikt sequenzielle Abfolge von vier
-Schritten umgesetzt, bei der jeder Schritt die Ausgabe des vorherigen
-als Eingabe verwendet: \texttt{generate\_input}, \texttt{preprocess},
-\texttt{compute} und \texttt{postprocess}. In allen fünf Systemen
-kommen dieselben Python-Skripte zum Einsatz, die ihre Ein- und
-Ausgabepfade als Argumente entgegennehmen. Unterschiede zwischen den
-Systemen gehen deshalb nicht auf die Rechenlogik zurück, sondern
-darauf, wie der Ablauf beschrieben, wie die Dateien weitergegeben und
-wie die Ausführung gesteuert wird. Die vollständigen Workflow-Beschreibungen sind im Repositorium zu dieser Arbeit abgelegt~\cite{barepo}.
+Das in Abschnitt~\ref{sec:methodik:versuchsplan} beschriebene
+Pipeline-Pattern wurde in allen fünf Systemen mit denselben
+Benchmark-Skripten umgesetzt. Im Folgenden wird gegenübergestellt,
+wie die fünf Systeme dieses Pattern modellieren und ausführen. Die
+vollständigen Workflow-Beschreibungen sind im Repositorium zu
+dieser Arbeit abgelegt~\cite{barepo}.
 
 \subsection{Nextflow}
 \label{sec:lokal:pipeline:nextflow}
 
 Nextflow beschreibt den Workflow in einer einzigen Datei
-\texttt{benchmark.nf} in der systemeigenen Sprache DSL2. Jeder Schritt
-ist ein \texttt{process}-Block, ein abschließender
-\texttt{workflow}-Block setzt die vier Prozesse zusammen.
+\texttt{benchmark.nf} in der systemeigenen Sprache DSL2.
 
 \emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
-es nicht. Die Reihenfolge entsteht dadurch, dass der Rückgabewert
-eines Prozessaufrufs als Argument des nächsten dient, entsprechend
+es nicht. Die Reihenfolge entsteht dadurch, dass die Ausgabe eines
+Prozesses als Eingabe des nachfolgenden Prozesses dient, entsprechend
 dem Datenfluss-Modell, auf dem Nextflow
 beruht~\cite[S.~317]{ditommaso2017nextflow}.
 
@@ -148,9 +137,9 @@ ablesbar. Die beteiligten Dateien erscheinen in den
 \texttt{path}-Deklarationen der Ein- und Ausgaben und eine so
 deklarierte Ausgabe wird als Verweis im Arbeitsverzeichnis des
 nachfolgenden Prozesses bereitgestellt, sodass die Skripte sie unter
-dem angegebenen Namen öffnen. Da jeder Prozess in einem eigenen
-Verzeichnis läuft, werden die Skripte über die Variable
-\texttt{projectDir} mit absolutem Pfad aufgerufen.
+dem angegebenen Namen öffnen. Die Abhängigkeiten entstehen durch die
+Übergabe dieser Ausgaben über die Channels an die nachfolgenden
+Prozesse.
 
 \emph{Ausführung und Steuerung:} Die Ausführung steuert die
 Nextflow-Laufzeit. Ein Prozess wird gestartet, sobald sein
@@ -176,20 +165,17 @@ und~\ref{fig:nf:timeline}.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Die Abfolge der
 vier Schritte ist im \texttt{workflow}-Block kompakt sichtbar. Für das
-Verständnis der Beschreibung sind darüber hinaus das Channel-Konzept
-und die getrennten Arbeitsverzeichnisse relevant, aus denen sich der
-Aufruf über \texttt{projectDir} ergibt.
+Verständnis der Beschreibung ist darüber hinaus insbesondere das
+Channel-Konzept relevant, über das die Ausgaben eines Prozesses an
+den nachfolgenden Prozess weitergegeben werden.
 
 \subsection{StreamFlow}
 \label{sec:lokal:pipeline:streamflow}
 
-StreamFlow verteilt die Beschreibung auf drei Dateien. Die fachliche
-Logik steht in \texttt{workflow.cwl} in der Common Workflow Language,
-die Zuordnung der Schritte zu einer Ausführungsumgebung in
-\texttt{streamflow.yml} und die Pfade der Skripte in
-\texttt{config.yml}. Diese Aufteilung entspricht dem Entwurfsziel,
-die Workflow-Beschreibung von der Ausführungsumgebung zu
-lösen~\cite[S.~1723]{colonnelli2021streamflow}.
+StreamFlow verteilt die Umsetzung auf drei Dateien:
+\texttt{workflow.cwl} enthält die Workflow-Beschreibung,
+\texttt{streamflow.yml} die Zuordnung zur Ausführungsumgebung und
+\texttt{config.yml} die Eingabewerte und Pfade der Skripte.
 
 \emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
 es nicht. Jeder Schritt benennt unter \texttt{in} seine Eingaben und
@@ -206,35 +192,39 @@ den Schritten.
     out: [prepared_file, timing_file]
 \end{lstlisting}
 
-\emph{Modellierungs- und Konfigurationsaufwand:} Die Beschreibung
-verteilt sich auf drei Dateien. Den größten Teil bildet
-\texttt{workflow.cwl}, da dort für jeden Schritt Ein- und Ausgaben,
-Parameter und die Werkzeugbeschreibung festgelegt werden. Eine
-Änderung der Rechenlast betrifft allein die fünfzeilige
+\emph{Modellierungs- und Konfigurationsaufwand:} Für die
+Workflow-Beschreibung und -Konfiguration werden drei Dateien
+benötigt: \texttt{workflow.cwl}, \texttt{streamflow.yml} und
+\texttt{config.yml}. Eine Änderung der Rechenlast betrifft allein
+den Pfad des Berechnungsskripts in der fünfzeiligen
 \texttt{config.yml}, deren Fassungen sich in genau einer Zeile
 unterscheiden.
 
-\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Für jede Ein-
-und Ausgabe sind Typ und Herkunft deklariert. Die Ausgaben eines
-Schritts werden über ein Dateimuster eingesammelt und unter einem
-benannten Bezeichner weitergereicht, auf den die nachfolgenden
-Schritte zugreifen. Auch die Ergebnisse des Gesamtworkflows werden
-über \texttt{outputSource} ausdrücklich auf die Ausgaben einzelner
-Schritte zurückgeführt.
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
+weitergegebenen Dateien und die daraus entstehenden Abhängigkeiten
+sind in den Eingaben der Schritte sichtbar. Jede Eingabe verweist
+auf die Workflow-Eingabe oder die Ausgabe eines vorherigen Schritts,
+von der sie stammt. So erhält \texttt{preprocess} die Datei
+\texttt{raw\_file} über den Verweis
+\texttt{generate\_input/raw\_file}. An diesen Verweisen lässt sich
+damit sowohl ablesen, welche Dateien zwischen den Schritten
+weitergegeben werden, als auch, welche Schritte voneinander
+abhängen.
 
 \emph{Ausführung und Steuerung:} Die Ausführung übernimmt die
-StreamFlow-Laufzeit. Die Zuordnung der Schritte zur
-Ausführungsumgebung erfolgt über \texttt{streamflow.yml}, in der
-jedem Schritt ein Deployment zugewiesen wird. Für die lokale
-Untersuchung wurden alle Schritte einer lokalen Ausführungsumgebung
-zugewiesen.
+StreamFlow-Laufzeit. Ein Schritt wird ausgeführt, sobald die
+Eingaben vorliegen, auf die er unter \texttt{in} verweist. Für die
+lokale Untersuchung wurden alle Schritte einer lokalen
+Ausführungsumgebung zugewiesen.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
 Zuordnung zur Ausführungsumgebung steht vollständig in
 \texttt{streamflow.yml} und ist von der fachlichen Beschreibung
-getrennt. Ein Wechsel der Ausführungsumgebung erfordert deshalb keine
-Änderung an \texttt{workflow.cwl}, sondern nur an der Angabe des
-Deployments.
+getrennt. Diese Aufteilung entspricht dem Entwurfsziel von
+StreamFlow, die Workflow-Beschreibung von der Ausführungsumgebung
+zu lösen~\cite[S.~1723]{colonnelli2021streamflow}. Ein Wechsel der
+Ausführungsumgebung erfordert deshalb keine Änderung an
+\texttt{workflow.cwl}, sondern nur an der Angabe des Deployments.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Der Lauf lässt sich
@@ -248,12 +238,11 @@ Archiv im RO-Crate-Format erzeugen~\cite{streamflowdocs-inspect}. Der
 Zeitstrahl eines Pipeline-Laufs ist in
 Abbildung~\ref{fig:sf:timeline} dargestellt.
 
-\emph{Verständlichkeit aus Einsteigerperspektive:} Die
-Workflow-Beschreibung verteilt sich auf drei Dateien mit
-unterschiedlichen Aufgaben. Neben der Struktur des Workflows sind
-darüber hinaus die Konzepte der Common Workflow Language relevant,
-also Typdefinitionen, Ein- und Ausgaben sowie
-Werkzeugbeschreibungen.
+\emph{Verständlichkeit aus Einsteigerperspektive:} Für das
+Verständnis der Beschreibung sind die Konzepte der Common Workflow
+Language relevant, insbesondere die Typangaben der Ein- und
+Ausgaben und die Werkzeugbeschreibung, die je Schritt den Aufruf
+des Programms festlegt.
 
 \subsection{Merlin}
 \label{sec:lokal:pipeline:merlin}
@@ -273,23 +262,27 @@ auf.
       cmd: python3 $(SPECROOT)/scripts/compute_medium.py $(preprocess.workspace)/prepared_input.txt result.txt
 \end{lstlisting}
 
-\emph{Modellierungs- und Konfigurationsaufwand:} Die
-Workflow-Beschreibung ist die Spezifikation, die Vermittlerdatei
-enthält davon getrennt die Verbindungsdaten für die Ausführung. Neben der Bezeichnung der jeweiligen Variante betrifft die Änderung
-der Rechenlast allein den Aufruf des Berechnungsskripts.
+\emph{Modellierungs- und Konfigurationsaufwand:} Für die
+Workflow-Beschreibung und -Konfiguration werden zwei Dateien
+benötigt: die YAML-Spezifikation mit der Beschreibung des Workflows
+und die Datei \texttt{app.yaml} mit den Verbindungsdaten des
+Nachrichtenvermittlers. Eine Änderung der Rechenlast betrifft allein
+den Aufruf des Berechnungsskripts in der Spezifikation.
 
-\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Der Datenfluss
-steht unmittelbar im Befehl, da der Pfad in das Arbeitsverzeichnis
-des vorherigen Schritts über \texttt{\$(schritt.workspace)} direkt im
-Aufruf erscheint. Abhängigkeit und Datenweitergabe stehen damit an
-zwei Stellen desselben Schritts, einmal als \texttt{depends} und
-einmal als Pfadangabe.
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
+Abhängigkeiten werden über \texttt{depends} ausdrücklich angegeben.
+Welche Datei zwischen zwei Schritten weitergegeben wird, ist dagegen
+im jeweiligen Befehl sichtbar. So verweist \texttt{compute} mit
+\texttt{\$(preprocess.workspace)/prepared\_input.txt} auf die von
+\texttt{preprocess} erzeugte Datei. Abhängigkeit und Datenweitergabe
+stehen damit an zwei Stellen desselben Schritts.
 
-\emph{Ausführung und Steuerung:} Die Schritte werden als Aufgaben in die Warteschlange des Vermittlers eingestellt, aus der die Worker
-sie entgegennehmen und abarbeiten~\cite[S.~258]{peterson2022merlin}\cite{merlindocs-celery}. Welche Schritte ein
-Worker übernimmt, legt die Spezifikation im Abschnitt
-\texttt{resources} fest, in der lokalen Untersuchung übernahm ein
-Worker alle vier Schritte.
+\emph{Ausführung und Steuerung:} Die Schritte werden als Aufgaben in
+die Warteschlange des Vermittlers eingestellt, aus der die
+Celery-Worker sie entgegennehmen und
+abarbeiten~\cite[S.~258]{peterson2022merlin}\cite{merlindocs-celery}.
+Ein Schritt wird dabei erst zur Ausführung freigegeben, wenn seine
+unter \texttt{depends} angegebenen Vorgänger abgeschlossen sind.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
 Trennung beruht auf dem Erzeuger-Verbraucher-Modell. Die
@@ -298,8 +291,7 @@ die Worker die Aufgaben aus der Warteschlange abholen, unabhängig
 davon, wo sie laufen. Die Workflow-Beschreibung ist damit von der
 ausführenden Ressource entkoppelt~\cite[S.~261]{peterson2022merlin}. Die
 Spezifikation benennt zwar, welche Schritte ein Worker übernimmt,
-nicht aber, auf welcher Ressource dieser Worker läuft. Die
-Verbindungsdaten des Vermittlers stehen in der zweiten Datei.
+nicht aber, auf welcher Ressource dieser Worker läuft.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Jeder Schritt läuft in
@@ -321,10 +313,8 @@ und Workern relevant.
 \subsection{Pegasus}
 \label{sec:lokal:pipeline:pegasus}
 
-Der Workflow wird in \texttt{build\_workflow.py} über die Python-Schnittstelle
-aufgebaut, die daraus die abstrakte Workflow-Datei und den
-Transformationskatalog erzeugt. Hinzu kommen der Site-Katalog, eine
-Eigenschaftsdatei und der Aufruf des Planers.
+Der Workflow wird in \texttt{build\_workflow.py} über die
+Python-Schnittstelle von Pegasus aufgebaut.
 
 \emph{Ausdruck des Patterns:} Die Reihenfolge ergibt sich aus den
 Dateien. Jeder Job benennt über \texttt{add\_inputs} und
@@ -338,18 +328,22 @@ compute_job.add_inputs(prepared_file)
 compute_job.add_outputs(result_file, stage_out=False, register_replica=False)
 \end{lstlisting}
 
-\emph{Modellierungs- und Konfigurationsaufwand:} Manuell erstellt
-wurden das Erzeugungsskript, der Site-Katalog, die Eigenschaftsdatei
-und der Planungsaufruf. Die abstrakte Workflow-Datei ist für alle
-drei Rechenlasten identisch, die erzeugten Fassungen des
-Transformationskatalogs unterscheiden sich in genau einer Zeile, der
-Pfadangabe des Berechnungsskripts.
+\emph{Modellierungs- und Konfigurationsaufwand:} Für die
+Workflow-Beschreibung und -Konfiguration wurden vier Dateien
+manuell erstellt: \texttt{build\_workflow.py}, \texttt{sites.yml},
+\texttt{pegasus.properties} und \texttt{plan.sh}. Das
+Erzeugungsskript erzeugt die Workflow-Datei und den
+Transformationskatalog. Eine Änderung der Rechenlast betrifft allein
+den Pfad des Berechnungsskripts im Erzeugungsskript. Die erzeugten
+Workflow-Dateien der drei Rechenlasten sind identisch.
 
-\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Dateien
-werden einmal als eigene Objekte benannt und in den Jobs
-referenziert. Je Ausgabe wird zusätzlich festgelegt, ob die Datei am
-Ende gesichert und registriert wird, sodass auch der Umgang mit den
-Ergebnissen in der Beschreibung steht.
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
+weitergegebenen Dateien werden als eigene \texttt{File}-Objekte
+angelegt und bei den Jobs als Ein- und Ausgaben angegeben. So
+erzeugt \texttt{preprocess} die Datei
+\texttt{prepared\_input.txt}, die \texttt{compute} anschließend als
+Eingabe verwendet. Die Abhängigkeiten zwischen den Jobs entstehen
+damit aus diesen Ein- und Ausgaben.
 
 \emph{Ausführung und Steuerung:} Pegasus trennt Planung und
 Ausführung. Der Planer übersetzt die abstrakte Beschreibung in einen
@@ -382,7 +376,7 @@ Pipeline-Workflows sind in den Abbildungen~\ref{fig:pg:dag},
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Die Beschreibung
 erfolgt in Python. Für das Verständnis der Umsetzung sind darüber
-hinaus die Kataloge, die Site-Konfiguration, der vorgelagerte
+hinaus die Kataloge, der vorgelagerte
 Planungsschritt und die Rolle von HTCondor relevant.
 
 \subsection{AiiDA}
@@ -416,22 +410,26 @@ wird. Eine eigene Fassung je Rechenlast entfällt, die Rechenlast wird
 dem Submit-Skript als Argument übergeben und die WorkChain wählt
 daraus das Berechnungsskript aus.
 
-\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Weitergabe
-der Dateien ist an drei Stellen ausdrücklich beschrieben, als
-Eingabeordner des vorherigen Schritts, als Zuordnung, welche Datei
-unter welchem Namen im nächsten Arbeitsverzeichnis erscheint und als
-Liste der nach dem Lauf abzurufenden Dateien.
+\emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
+weitergegebenen Dateien werden in der WorkChain ausdrücklich den
+aufeinanderfolgenden Schritten zugeordnet. So wird die Ausgabe eines
+CalcJobs als Eingabe des nachfolgenden CalcJobs verwendet. Welche
+Dateien zwischen den Schritten weitergegeben werden, ist damit in der
+WorkChain sichtbar. Die Abhängigkeiten ergeben sich aus der
+in \texttt{spec.outline()} festgelegten Reihenfolge der Schritte.
 
 \emph{Ausführung und Steuerung:} Das Submit-Skript übergibt die
 WorkChain an den Daemon, der die Schritte der Outline abarbeitet und
-für jeden Schritt einen CalcJob einreicht. Vor jedem weiteren Schritt
-prüft die WorkChain, ob der vorherige erfolgreich abgeschlossen
-wurde und bricht andernfalls mit einem eigenen Fehlercode ab.
+für jeden Schritt einen CalcJob einreicht. Der jeweils nachfolgende
+Schritt wird erst ausgeführt, wenn der vorherige CalcJob erfolgreich
+abgeschlossen wurde.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
 Ausführungsumgebung wird als Eingabe behandelt. Rechner und Code sind
 in der Datenbank als eigene Objekte abgelegt und werden vom
-Submit-Skript geladen.
+Submit-Skript geladen. Ein Wechsel der Ausführungsumgebung erfordert
+damit keine Änderung der WorkChain, sondern die Verwendung
+entsprechend eingerichteter Rechner- und Code-Objekte.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Während des Laufs lässt
@@ -448,10 +446,10 @@ Provenance-Graph des Pipeline-Laufs ist in
 Abbildung~\ref{fig:ai:prov} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Die Beschreibung
-erfolgt in Python. Für das Verständnis der Umsetzung sind darüber
-hinaus typisierte Datenknoten, WorkChain und CalcJob, der Kontext für
-die Weitergabe von Ergebnissen sowie die Einrichtung von Rechner und
-Code relevant.
+erfolgt in Python. Für das Verständnis der Umsetzung sind darüber hinaus die
+Datenobjekte von AiiDA, das Zusammenspiel von WorkChain und CalcJob,
+der Kontext für die Weitergabe von Ergebnissen sowie die Einrichtung
+von Rechner und Code relevant.
 
 \subsection{Vergleichende Beobachtungen zum Pipeline-Pattern}
 \label{sec:lokal:pipeline:zusammenfassung}
@@ -478,7 +476,7 @@ eingerichtet werden.
     \hline
     Ausdruck des Patterns & Übergabe der Prozess\-ausgaben & Verweis auf Vorgänger\-ausgabe & Angabe unter \texttt{depends} & deklarierte Ein- und Ausgaben & Liste in \texttt{spec.outline()} \\
     Modellierung und Konfiguration & eine Datei & drei Dateien & zwei Dateien & vier Dateien & drei Dateien, dazu Rechner und Code \\
-    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben der Prozesse & typisierte Ein- und Ausgaben & Pfad im Befehl & \texttt{File}-Objekte der Jobs & Ordner und Zuordnung \\
+    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben & Pfad im Befehl & \texttt{File}-Objekte der Jobs & Zuordnung in der WorkChain \\
     Ausführung und Steuerung & eigene Laufzeit & eigene Laufzeit & Celery-Worker & HTCondor nach Planung & Daemon \\
     Trennung Logik und Umgebung & eigene Konfigu\-rationsdatei & eigene Deployment-Datei & Warteschlange trennt Schritt und Ressource & abstrakte Beschreibung, Kataloge, Planer & Rechner und Code in der Datenbank \\
     Nachvollziehbarkeit & Fortschritts\-anzeige, Trace-Datei, Zeitstrahl, Graph & Terminal\-ausgabe, Zeitstrahl, RO-Crate & Worker-Ausgaben, Status\-abfragen & Status\-abfragen, drei Graph\-abbildungen & Status\-abfragen, Provenance-Graph \\
@@ -489,32 +487,29 @@ eingerichtet werden.
 Beim Ausdruck des Patterns zeigen sich zwei Ansätze. Nextflow,
 StreamFlow und Pegasus leiten die Reihenfolge der Schritte aus den
 Datenbeziehungen ab, während Merlin und AiiDA die Abfolge
-ausdrücklich beschreiben. Diese Trennlinie fällt nicht mit der
-Beschreibungsform zusammen, denn Pegasus wird wie AiiDA
-programmatisch in Python beschrieben, gehört bei der Entstehung der
-Abhängigkeiten aber zur ersten Gruppe.
+ausdrücklich beschreiben.
 
-Hinsichtlich des Modellierungs- und Konfigurationsaufwands
-unterscheiden sich die Systeme vor allem in der Zahl der beteiligten
-Artefakte, von einer einzigen Datei bei Nextflow über die Aufteilung
-in fachliche Beschreibung und Umgebungsdateien bei StreamFlow, Merlin
-und Pegasus bis zu den drei Python-Bausteinen bei AiiDA. Auffällig
-einheitlich fällt dagegen der Wechsel der Rechenlast aus: In Nextflow, StreamFlow, Merlin und Pegasus war jeweils nur der Aufruf des Berechnungsskripts anzupassen, die Stelle dieser Anpassung unterscheidet sich jedoch, sie liegt in der Workflow-Datei, in der Eingabekonfiguration, in der Spezifikation beziehungsweise im erzeugten Transformationskatalog. AiiDA behandelt die Rechenlast stattdessen
-als Aufrufargument.
+Beim Modellierungs- und Konfigurationsaufwand reicht die Umsetzung
+von einer Datei bei Nextflow über mehrere Beschreibungs- und
+Konfigurationsdateien bei StreamFlow, Merlin und Pegasus bis zu drei
+Python-Bausteinen bei AiiDA. Eine Änderung der Rechenlast betrifft
+bei Nextflow, StreamFlow, Merlin und Pegasus jeweils nur eine Stelle,
+jedoch in unterschiedlichen Dateien. AiiDA behandelt die Rechenlast
+stattdessen als Aufrufargument.
 
-Auch die Sichtbarkeit des Datenflusses nimmt unterschiedliche Formen
-an, von den Deklarationen bei den Schritten in Nextflow und
-StreamFlow über die als eigene Objekte geführten Dateien bei Pegasus
-und den Verzeichnispfad im Befehl bei Merlin bis zur dreifach
-beschriebenen Weitergabe in AiiDA. Bei der Ausführung stehen sich
-zwei Modelle gegenüber. Nextflow und StreamFlow führen den Workflow
-in der eigenen Laufzeit aus, während Merlin, Pegasus und AiiDA die
-Ausführung an eine eigenständige Komponente übergeben, an
-Celery-Worker, an HTCondor nach vorgelagerter Planung beziehungsweise
-an den Daemon. Der Zeitpunkt, zu dem der Ablauf feststeht,
-unterscheidet sich entsprechend, bei Pegasus liegt der vollständige
-Graph vor dem ersten Schritt vor, bei Nextflow ergibt sich der Start
-eines Prozesses aus dem Datenfluss zur Laufzeit.
+Auch Datenfluss und Abhängigkeiten werden unterschiedlich sichtbar.
+Nextflow und StreamFlow deklarieren die weitergegebenen Dateien an
+den Schritten, Pegasus führt sie als eigene Objekte, bei Merlin
+stehen Abhängigkeit und Dateipfad getrennt und AiiDA ordnet die
+Ausgaben eines CalcJobs dem nachfolgenden CalcJob in der WorkChain
+zu.
+
+Bei der Ausführung steuern Nextflow und StreamFlow die Schritte über
+ihre eigene Laufzeit. Merlin übergibt Aufgaben an Celery-Worker,
+Pegasus den zuvor geplanten Workflow an HTCondor und AiiDA die
+WorkChain an den Daemon. Bei Pegasus steht der auszuführende Graph
+damit bereits vor der Ausführung fest, während bei Nextflow der Start
+eines Prozesses durch eintreffende Daten ausgelöst wird.
 
 Bei der Trennung von Logik und Umgebung greifen unterschiedliche
 Mechanismen. Nextflow und StreamFlow lagern die Umgebungsangaben in
@@ -523,54 +518,37 @@ die Aufgabenwarteschlange, Pegasus formuliert den Workflow abstrakt
 und stellt die Verbindung zur Umgebung über Kataloge und den Planer
 her und AiiDA hält Rechner und Code als Objekte in der Datenbank.
 
-Bei der Nachvollziehbarkeit unterscheidet sich weniger der Umfang
-als die Ebene, auf der ein Lauf dokumentiert wird. Während der
-Ausführung lässt sich der Fortschritt in allen fünf Systemen
-unmittelbar verfolgen, bei Nextflow über die Fortschrittsanzeige je
-Prozess, bei StreamFlow über die im Terminal ausgegebenen Schritte
-und Dateiübertragungen, bei Merlin über die Ausgaben der Worker, bei
-Pegasus über die Statusabfrage des Laufs und bei AiiDA über
-Statusabfragen an den Daemon. Nach dem Lauf hinterlassen Nextflow,
-StreamFlow, Merlin und AiiDA je Schritt ein Arbeitsverzeichnis,
-während bei Pegasus alle Jobs eines Laufs in einem gemeinsamen
-Arbeitsverzeichnis ausgeführt werden. Einen Zeitstrahl des Laufs
-erzeugen Nextflow und StreamFlow, Nextflow zusätzlich eine
-Trace-Datei, bei Pegasus liegen die Protokolle im Verzeichnis des
-Laufs. Den Aufbau des Workflows stellen Nextflow und Pegasus als
-Graph dar, während AiiDA im Provenance-Graphen zusätzlich festhält,
-aus welchem Prozess welche Daten hervorgegangen sind und welcher
-Workflow die einzelnen Berechnungen angestoßen hat.
+Bei der Nachvollziehbarkeit bieten alle fünf Systeme Möglichkeiten,
+den Fortschritt während eines Laufs zu verfolgen, unterscheiden sich
+aber in den verbleibenden Artefakten. Nextflow stellt unter anderem
+Trace-Datei, Zeitstrahl und Workflow-Graph bereit, StreamFlow einen
+Zeitstrahl und Provenance-Daten, Merlin vor allem Arbeitsverzeichnisse
+und Worker-Protokolle und Pegasus Protokolle sowie Darstellungen des
+abstrakten und geplanten Graphen. AiiDA unterscheidet sich durch den
+dauerhaft gespeicherten Provenance-Graphen, der Prozesse, Daten und
+deren Entstehungszusammenhänge festhält.
 
 Aus Einsteigerperspektive unterscheiden sich die Umsetzungen vor
 allem darin, wie viele systemeigene Konzepte vor dem ersten Lauf
-verstanden sein müssen. Bei Nextflow ist dies neben den
-Prozessdefinitionen vor allem das Channel-Modell. StreamFlow setzt
-die Konzepte der Common Workflow Language sowie die Aufteilung auf
-drei Dateien mit unterschiedlichen Aufgaben voraus. Bei Merlin kommt
-zu der ausdrücklich bezeichneten Abhängigkeit das Zusammenspiel von
-Nachrichtenvermittler und Workern hinzu. Pegasus verlangt zusätzlich
-die Kataloge, den vorgelagerten Planungsschritt und die Rolle von
-HTCondor, AiiDA typisierte Datenknoten, WorkChain und CalcJob sowie
-die Einrichtung von Rechner und Code. Diese Einordnung beruht auf der
-erstmaligen Umsetzung der beiden Muster und ersetzt keine
-Nutzerstudie. Wie sich die beschriebenen Unterschiede im
+verstanden sein müssen. Bei Nextflow ist insbesondere das Channel-Modell relevant, bei StreamFlow die Common Workflow Language, bei Merlin das
+Zusammenspiel von Nachrichtenvermittler und Workern und bei Pegasus
+Kataloge, Planung und HTCondor. AiiDA erfordert das Verständnis von
+Datenobjekten, WorkChain und CalcJob sowie der Einrichtung von
+Rechner und Code. Diese Einordnung beruht auf der erstmaligen
+Umsetzung und ersetzt keine Nutzerstudie. Wie sich die beschriebenen Unterschiede im
 Laufzeitverhalten niederschlagen, untersucht
 Abschnitt~\ref{sec:lokal:messungen}.
 
 \section{Scatter-Gather-Pattern}
 \label{sec:lokal:scattergather}
 
-Das Scatter-Gather-Pattern erweitert die Abfolge um eine parallele
-Phase. Nach \texttt{generate\_input} und \texttt{preprocess} zerlegt
-\texttt{split} die Eingabe in eine einstellbare Zahl von Teilstücken,
-\texttt{compute} verarbeitet jedes Teilstück unabhängig,
-\texttt{aggregate} führt die Teilergebnisse zusammen und
-\texttt{postprocess} bildet den Abschluss. Untersucht wurden Läufe mit
-einem, zwei und vier Teilstücken. Wie beim Pipeline-Pattern kommen in
-allen fünf Systemen dieselben Python-Skripte zum Einsatz, die
-Unterschiede liegen darin, wie die Aufteilung, die parallele
-Verarbeitung und das Zusammenführen beschrieben werden. Die vollständigen Workflow-Beschreibungen sind im Repositorium zu
-dieser Arbeit abgelegt~\cite{barepo}.
+Das in Abschnitt~\ref{sec:methodik:versuchsplan} beschriebene
+Scatter-Gather-Pattern wurde ebenfalls in allen fünf Systemen mit
+denselben Benchmark-Skripten umgesetzt. Untersucht wurden Läufe mit
+einem, zwei und vier Teilstücken. Im Folgenden wird
+gegenübergestellt, wie die fünf Systeme dieses Pattern modellieren
+und ausführen. Die vollständigen Workflow-Beschreibungen sind im
+Repositorium zu dieser Arbeit abgelegt~\cite{barepo}.
 
 \subsection{Nextflow}
 \label{sec:lokal:sg:nextflow}
