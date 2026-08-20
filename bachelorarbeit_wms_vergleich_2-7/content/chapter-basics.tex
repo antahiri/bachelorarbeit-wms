@@ -204,9 +204,13 @@ Ausführungsumgebung lokal oder an entfernte Ressourcenverwalter
 \subsection{AiiDA}
 \label{sec:basics:aiida}
 AiiDA stellt die Nachvollziehbarkeit der erzeugten Daten in den
-Mittelpunkt. Jede vom System ausgeführte Berechnung und jeder
-Workflow werden automatisch in einem Provenance-Graphen
-aufgezeichnet, um die Reproduzierbarkeit der Ergebnisse zu
+Mittelpunkt. Provenance bezeichnet dabei die Herkunft eines
+Datenelements und den Vorgang, durch den es entstanden
+ist~\cite[S.~316]{buneman2001provenance}. Jede vom System
+ausgeführte Berechnung und jeder Workflow werden automatisch in
+einem Provenance-Graphen aufgezeichnet, in dem Prozesse und Daten
+als Knoten und ihre Beziehungen als Kanten festgehalten werden, um
+die Reproduzierbarkeit der Ergebnisse zu
 ermöglichen~\cite[S.~2]{huber2020aiida}. Für die Ablage stellt
 AiiDA zwei Speicher bereit: Die Eigenschaften der Knoten liegen
 als Attribute in einer relationalen Datenbank, Dateien werden in
@@ -217,8 +221,10 @@ logischer Ablauf in einer Prozessspezifikation festgelegt
 werden~\cite[S.~4\,f.]{huber2020aiida}. Berechnungen, die externe
 Programme ausführen, etwa über einen Job-Scheduler, übernimmt die
 Klasse \texttt{CalcJob}~\cite[S.~4]{huber2020aiida}.
-Für die Ausführung von Prozessen verwendet AiiDA mehrere Runner,
-die von einem Daemon überwacht werden~\cite[S.~3]{huber2020aiida}. Die dabei
+Für die Ausführung verwendet AiiDA mehrere Runner, die die
+eingereichten Prozesse abarbeiten. Sie werden von einem Daemon
+überwacht, einem dauerhaft im Hintergrund laufenden
+Prozess~\cite[S.~3]{huber2020aiida}. Die dabei
 anfallenden Aufgaben werden über eine Aufgabenwarteschlange
 verteilt, die mit dem Nachrichtenvermittler RabbitMQ umgesetzt
 ist~\cite[S.~3]{huber2020aiida}.

@@ -4,10 +4,7 @@
 
 Wissenschaftliches Rechnen besteht häufig nicht aus einer einzelnen
 Berechnung, sondern aus mehreren aufeinander aufbauenden
-Rechenschritten. Ausgeführt werden solche Abläufe sowohl auf
-einzelnen Rechnern als auch auf HPC-Systemen. Mit zunehmender Zahl
-der Schritte wird es aufwendiger, ihre Ausführung und die dabei
-entstehenden Daten zu verwalten.
+Rechenschritten. Ausgeführt werden solche Abläufe sowohl auf einzelnen Rechnern als auch auf High-Performance-Computing-Systemen (HPC-Systemen). Mit zunehmender Zahl der Schritte wird es aufwendiger, ihre Ausführung und die dabei entstehenden Daten zu verwalten.
 
 \section{Motivation}
 \label{sec:intro:motivation}
@@ -34,7 +31,7 @@ Hier setzt die vorliegende Arbeit an. Sie vergleicht mit Nextflow,
 StreamFlow, Merlin, Pegasus und AiiDA fünf
 Workflow-Management-Systeme anhand zweier Workflow-Muster, einer
 Pipeline und eines Scatter-Gather-Musters, die in allen Systemen
-mit derselben Nutzlast umgesetzt werden. Die Systeme werden
+mit derselben Rechenlogik umgesetzt werden. Die Systeme werden
 zunächst auf einem einzelnen Rechner und anschließend auf dem
 HPC-System MOGON unter Slurm untersucht. Dabei werden sowohl
 qualitative Unterschiede zwischen den Systemen als auch ihr
@@ -52,7 +49,7 @@ Wie unterscheiden sich die betrachteten
 Workflow-Management-Systeme bei der Umsetzung eines Pipeline- und
 eines Scatter-Gather-Workflows (F1)? Die zweite Frage richtet sich
 auf das Laufzeitverhalten: Welches Laufzeitverhalten zeigen die Systeme
-bei der Ausführung dieser Workflows, gemessen an Makespan, Overhead und Koordinationsgrößen (F2)? Die Koordinationsgrößen erfassen dabei
+bei der Ausführung dieser Workflows, gemessen an Gesamtlaufzeit (Makespan), Overhead und Koordinationsgrößen (F2)? Die Koordinationsgrößen erfassen dabei
 zeitliche Abstände beim Übergang zwischen aufeinanderfolgenden
 Schritten und beim Start paralleler Verarbeitungsinstanzen. Die
 dritte Frage gilt dem Einsatz auf dem HPC-System: Wie lassen sich

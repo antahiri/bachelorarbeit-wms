@@ -59,8 +59,7 @@ Für die Datenhaltung stehen zwei Ablageorte zur Verfügung. Das gemeinsame Date
 erreichbar. Zusätzlich verfügt jeder Rechenknoten über lokalen Speicher unter
 \texttt{/localscratch}. Dieser steht während eines Rechenauftrags
 zur Verfügung, wird nach dessen Ende wieder gelöscht und ist nur
-auf dem jeweiligen Knoten sichtbar. Dieser Speicher ist nur innerhalb des jeweiligen Knotens
-sichtbar. Die Benchmark-Workflows und ihre Arbeitsverzeichnisse
+auf dem jeweiligen Knoten sichtbar. Die Benchmark-Workflows und ihre Arbeitsverzeichnisse
 lagen im gemeinsamen Dateisystem, da Workflow-Schritte auf
 unterschiedlichen Rechenknoten ausgeführt werden können und ihre
 Zwischenergebnisse deshalb über einen von allen Knoten
@@ -400,7 +399,7 @@ Einreichen bis zum Ende der Nutzlast in drei Anteile zerlegt: Die
 Wartezeit in der Warteschlange, die Zeit zwischen dem Start des
 Jobs und dem ersten Zeitstempel der Nutzlast, sowie die Laufzeit
 der Nutzlast selbst. Die ersten beiden Anteile wurden aus den
-Zeitstempeln von \texttt{sacct} bestimmt, die Laufzeit der Nutzlast
+Zeitstempeln des Slurm-Kommandos \texttt{sacct} bestimmt, die Laufzeit der Nutzlast
 aus den Zeitmessungen der Benchmark-Skripte.
 
 \begin{figure}[htbp]

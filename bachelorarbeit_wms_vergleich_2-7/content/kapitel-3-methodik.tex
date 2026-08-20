@@ -432,7 +432,7 @@ womit ein Lauf gestartet und woran sein Ende erkannt wird.
     Nextflow & vor \texttt{nextflow run} & Rückkehr des blockierenden Aufrufs \\
     StreamFlow & vor \texttt{streamflow run} & Rückkehr des blockierenden Aufrufs \\
     Merlin & vor \texttt{merlin run} & \texttt{MERLIN\_STATUS.json} mit Status \texttt{FINISHED} und \texttt{MERLIN\_FINISHED} im Workspace des terminalen Schritts \texttt{postprocess}, Abfrage alle 20\,ms \\
-    AiiDA & vor \texttt{submit()} der WorkChain & terminaler Zustand des obersten WorkChain-Prozessknotens, Abfrage alle 50\,ms \\
+    AiiDA & vor \texttt{submit()} der WorkChain & terminaler Zustand der obersten WorkChain, Abfrage alle 50\,ms \\
     Pegasus & vor \texttt{pegasus-plan} & erfolgreicher Workflow-Zustand über \texttt{pegasus-status -l}, Abfrage alle 500\,ms \\
     \hline
   \end{tabular}
