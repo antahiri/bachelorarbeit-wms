@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Erzeugt messungen/finale_Ergebnisse_v2/ mit Overhead als Median der
-paarweisen Differenzen (je Wiederholung WMS-Lauf minus Referenzlauf).
-Makespans bleiben Mediane der jeweiligen Laufreihe. Koordinationsdateien
-werden unveraendert uebernommen. Ausfuehren im Repo-Wurzelverzeichnis:
-    python3 berechne_finale_v2.py
-"""
 import csv, statistics as st, shutil
 from pathlib import Path
 
@@ -37,7 +31,7 @@ EBENEN = {
         "merlin":     "mogon/messungen-mogon-sha/merlin",
         "aiida":      "mogon/messungen-mogon-sha/aiida_psql/aiida",
     }),
-    # AiiDA-Konfigurationsstudie (Abschnitt 5.7), alle drei im geteilten Modus
+
     "aiida_konfig": ("central_results.csv", {
         "aiida_psql_fshpc":    "mogon/messungen-mogon-sha/aiida_psql/aiida",
         "aiida_sqlite_fshpc":  "mogon/messungen-mogon-sha/aiida_sqlite",
@@ -46,7 +40,6 @@ EBENEN = {
 }
 
 # Alte zentrale Dateien der Konfigurationsstudie (fuer den Alt-Neu-Vergleich,
-# lagen nie in finale_Ergebnisse, sondern in den Quellordnern)
 ALT_KONFIG = {
     "aiida_psql_fshpc":     "mogon/messungen-mogon-sha/aiida_psql/aiida/aiida_central_results.csv",
     "aiida_sqlite_fshpc":   "mogon/messungen-mogon-sha/aiida_sqlite/aiida_central_results_sha.csv",
