@@ -141,7 +141,7 @@ dem angegebenen Namen öffnen. Die Abhängigkeiten entstehen durch die
 Übergabe dieser Ausgaben über die Channels an die nachfolgenden
 Prozesse.
 
-\emph{Ausführung und Steuerung:} Die Ausführung steuert die
+\emph{Ausführung und Steuerung:} Die Ausführung übernimmt die
 Nextflow-Laufzeit. Ein Prozess wird gestartet, sobald sein
 Eingabe-Channel Daten enthält, der Startzeitpunkt jedes Prozesses ergibt sich damit erst zur Laufzeit aus dem Eintreffen der Daten.
 
@@ -154,7 +154,7 @@ Ausführungsumgebung die Workflow-Datei unberührt lässt.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Während des Laufs zeigt die
-Ausgabe im Terminal für jeden Prozess den Kennzeichner des
+Ausgabe im Terminal für jeden Prozess die Kennung des
 Arbeitsverzeichnisses sowie die Zahl der abgeschlossenen Aufgaben an.
 Je Prozess bleibt ein Arbeitsverzeichnis mit den erzeugten Dateien
 zurück. Zusätzlich lassen sich eine Trace-Datei, ein Zeitstrahl und
@@ -530,14 +530,13 @@ deren Entstehungszusammenhänge festhält.
 
 Aus Einsteigerperspektive unterscheiden sich die Umsetzungen vor
 allem darin, wie viele systemeigene Konzepte vor dem ersten Lauf
-verstanden sein müssen. Bei Nextflow ist insbesondere das Channel-Modell relevant, bei StreamFlow die Common Workflow Language, bei Merlin das
+verstanden sein müssen. Bei Nextflow ist insbesondere das Channel-Konzept relevant, bei StreamFlow die Common Workflow Language, bei Merlin das
 Zusammenspiel von Nachrichtenvermittler und Workern und bei Pegasus
 Kataloge, Planung und HTCondor. AiiDA erfordert das Verständnis von
 Datenobjekten, WorkChain und CalcJob sowie der Einrichtung von
 Rechner und Code. Diese Einordnung beruht auf der erstmaligen
-Umsetzung und ersetzt keine Nutzerstudie. Wie sich die beschriebenen Unterschiede im
-Laufzeitverhalten niederschlagen, untersucht
-Abschnitt~\ref{sec:lokal:messungen}.
+Umsetzung und ersetzt keine Nutzerstudie.
+
 
 \section{Scatter-Gather-Pattern}
 \label{sec:lokal:scattergather}
@@ -867,10 +866,10 @@ Quellordner, als Zuordnung und als Abrufliste, nun jedoch je Instanz.
 Jede Verarbeitungsinstanz erhält den Ordner des Zerlegeschritts als
 Quelle mit der Zuordnung genau ihres Teilstücks. Beim Zusammenführen
 erhält der \texttt{aggregate}-CalcJob die Ordner aller Instanzen als
-Quellen mit einer Zuordnung je Ergebnisdatei.
+Quellen mit einer Zuordnung je Ergebnisdatei. Die Abhängigkeit des anschließenden Zusammenführens von allen Verarbeitungsinstanzen ergibt sich aus dem von \texttt{ToContext} hergestellten Wartepunkt innerhalb der Outline.
 
 \emph{Ausführung und Steuerung:} Die WorkChain wird weiterhin über
-den Daemon ausgeführt. Die Ausführung übernehmen dabei mehrere parallel laufende Runner, die Aufgaben unabhängig voneinander verarbeiten. Da die
+den Daemon verwaltet. Die Ausführung übernehmen dabei mehrere parallel laufende Runner, die Aufgaben unabhängig voneinander verarbeiten.~\cite[S.~3]{huber2020aiida} Da die
 Verarbeitungsinstanzen gemeinsam eingereicht werden, können ihre
 CalcJobs gleichzeitig verarbeitet werden. Durch \texttt{ToContext}
 setzt die WorkChain erst fort, wenn alle eingereichten CalcJobs
@@ -923,120 +922,96 @@ Phase darin abbildet.
     \hline
     Ausdruck des Patterns & \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut & Parameter \texttt{CHUNK}, \texttt{compute\_*} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
     Änderung der Teilstückzahl & ein Parameter & Eingabewert und Namensliste in \texttt{config.yml} & zwei Stellen der Spezifikation & Aufruf\-argument, Workflow-Datei wird neu erzeugt & Aufruf\-argument, WorkChain bleibt unverändert \\
-    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben und Datei-/Feldtypen & \texttt{depends} und Pfade in den Befehlen & \texttt{File}-Objekte als Ein- und Ausgaben & Quellordner und Zuordnungen je Instanz \\
+    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben und Datei-/Feldtypen & \texttt{depends} und Pfade in den Befehlen & \texttt{File}-Objekte als Ein- und Ausgaben & Quellordner und Zuordnungen je Instanz, \texttt{ToContext} \\
     Ausführung und Steuerung & Nextflow-Laufzeit, eine Instanz je Teilstück & StreamFlow-Laufzeit, eine Instanz je Teilstück & Celery-Worker, eine Aufgabe je Instanz & HTCondor, ein Job je Teilstück & Daemon/Runner, ein CalcJob je Teilstück \\
-    Trennung Logik und Umgebung & Konfigurations\-datei unverändert & Deployment-Datei unverändert & Warteschlange unverändert & abstrakte Beschreibung und Kataloge unverändert & Rechner und Code unverändert \\
+    Trennung Logik und Umgebung & Konfigurations\-datei & Deployment-Datei & Warteschlange & abstrakte Beschreibung und Kataloge & Rechner und Code \\
     Nachvollziehbarkeit & Instanzen als Aufgaben desselben Prozesses & Instanzen einzeln in der Terminal\-ausgabe & Instanzen einzeln in den Worker-Ausgaben & Instanzen einzeln in der Status\-abfrage & Instanzen einzeln in Status\-abfrage und Graph \\
     \hline
   \end{tabular}
 \end{table}
 
-Beim Ausdruck des Patterns unterscheiden sich die Systeme vor allem
-darin, womit die parallele Phase entsteht. Nextflow und
-StreamFlow drücken sie in der Workflow-Beschreibung selbst aus,
-Nextflow über die Operatoren \texttt{flatten} und \texttt{collect}
-auf den Channels, StreamFlow über das \texttt{scatter}-Attribut des
-Verarbeitungsschritts. Merlin erreicht die Vervielfachung über die
-Werteliste eines Parameters, aus der beim Übergeben des Laufs die
-Verarbeitungsschritte expandiert werden. Pegasus und AiiDA verwenden
-dagegen kein Sprachmittel des Systems, sondern eine Python-Schleife,
-bei Pegasus im Erzeugungsskript, sodass die Verarbeitungsjobs
-bereits ausgeschrieben in der abstrakten Beschreibung stehen, bei AiiDA innerhalb eines Outline-Schritts, aus dem die Instanzen
-gemeinsam eingereicht werden.
+Beim Ausdruck des Patterns verwenden die Systeme unterschiedliche
+Mechanismen für die parallele Phase. Nextflow nutzt
+\texttt{flatten} und \texttt{collect}, StreamFlow das
+\texttt{scatter}-Attribut und Merlin die Parametrisierung über
+\texttt{CHUNK}. Pegasus und AiiDA erzeugen die
+Verarbeitungsinstanzen programmatisch über eine Python-Schleife,
+bei Pegasus im Erzeugungsskript und bei AiiDA innerhalb eines
+Outline-Schritts.
 
-Bei der Modellierung zeigt sich der deutlichste Unterschied darin,
-was eine andere Teilstückzahl nach sich zieht. In Nextflow ist sie
-ein Parameter, die Fassungen unterscheiden sich in einer Zeile, in
-StreamFlow ändern sich der Eingabewert und die mitwachsende Liste
-der Ergebnisnamen in der Konfigurationsdatei und in Merlin sind
-zwei Stellen der Spezifikation aufeinander abzustimmen, die
-Werteliste des Parameters und das Argument des Zerlegeschritts.
-Pegasus und AiiDA behandeln die Teilstückzahl beide als
-Aufrufargument, greifen damit aber an unterschiedlichen Stellen ein,
-bei Pegasus im Erzeugungsskript, sodass die Workflow-Datei neu
-erzeugt wird und mit der Teilstückzahl wächst, bei AiiDA im
-Submit-Skript, sodass die Beschreibung unverändert bleibt.
+Bei einer Änderung der Teilstückzahl unterscheiden sich die
+erforderlichen Anpassungen. In Nextflow wird ein einzelner Parameter
+geändert, in StreamFlow der Eingabewert und die Liste der
+Ergebnisnamen und in Merlin zwei Stellen der Spezifikation. Pegasus
+und AiiDA verwenden jeweils ein Aufrufargument. Bei Pegasus wird
+daraus jedoch eine neue, mit der Teilstückzahl wachsende
+Workflow-Datei erzeugt, während die WorkChain von AiiDA unverändert
+bleibt.
 
-Die Sichtbarkeit des Datenflusses behält in allen fünf Systemen die
-Form des Pipeline-Patterns, die Unterschiede liegen darin, wie der
-Weg der Teilstücke darin erscheint. In Nextflow ist die Ausgabe des
-Zerlegens als Dateimuster deklariert, an dem erkennbar ist, dass
-mehrere Dateien entstehen und jede Instanz erhält eines der
-Teilstücke als deklarierte Eingabe. In StreamFlow unterscheiden die
-Typangaben zwischen einer einzelnen Datei und einem Feld von
-Dateien, das Zerlegen liefert ein Feld, jede Instanz erhält daraus
-ein Element und das Zusammenführen erhält wieder das ganze Feld. In
-Merlin stehen die Wege als Pfade im Befehl, jede Instanz liest ihr
-Teilstück über den Parameterwert und das Zusammenführen sammelt die
-Ergebnisse über ein Pfadmuster aus allen Arbeitsverzeichnissen ein.
-In Pegasus erscheint dasselbe Dateiobjekt beim erzeugenden Job als
-Ausgabe und beim lesenden als Eingabe, sodass der Weg jedes
-Teilstücks über die Objekte verfolgbar ist. In AiiDA erhält jede
-Instanz den Ordner des Zerlegeschritts als Quelle mit der Zuordnung
-genau ihres Teilstücks, das Zusammenführen die Ordner aller
-Instanzen.
+Bei Datenfluss und Abhängigkeiten unterscheiden sich die Systeme
+darin, wie die Weitergabe der Teilstücke in der Beschreibung
+sichtbar wird. Nextflow und StreamFlow deklarieren die
+weitergegebenen Dateien an den Schritten, Pegasus führt sie als
+eigene Dateiobjekte, in Merlin stehen die Dateipfade in den
+Befehlen und AiiDA verwendet Quellordner mit Dateizuordnungen. Die
+Abhängigkeiten ergeben sich bei Nextflow, StreamFlow und Pegasus aus
+der Datenweitergabe. Merlin gibt sie mit \texttt{depends}
+ausdrücklich an, während in AiiDA die Outline und der durch
+\texttt{ToContext} hergestellte Wartepunkt die Abfolge bestimmen.
 
-Bei der Ausführung bleibt die ausführende Komponente gegenüber dem
-Pipeline-Pattern unverändert, neu ist, dass sie je Teilstück eine
-eigene Einheit startet, eine Prozessinstanz in Nextflow und
-StreamFlow, einen expandierten Schritt in Merlin, einen Job in
-Pegasus und einen CalcJob in AiiDA. In allen fünf Systemen liefen
-in den durchgeführten Läufen diese Einheiten nebeneinander und das Zusammenführen begann erst, wenn alle abgeschlossen waren.
+Bei der Ausführung bleiben die ausführenden Komponenten gegenüber
+dem Pipeline-Pattern unverändert. Neu ist die parallele Phase, in
+der je Teilstück eine eigene Verarbeitungsinstanz ausgeführt wird.
+Das Zusammenführen wird in allen fünf Systemen erst ausgeführt,
+nachdem alle Verarbeitungsinstanzen abgeschlossen sind.
 
 Die Trennung von Workflow-Logik und Ausführungsumgebung bleibt in
 allen fünf Systemen unverändert bestehen, die parallele Phase
-berührt sie nicht. Der Mechanismus, der die Trennung trägt, ist
-derselbe wie beim Pipeline-Pattern, die Konfigurationsdatei in
-Nextflow, die Deployment-Datei in StreamFlow, die Warteschlange in
-Merlin, die abstrakte Beschreibung mit den Katalogen in Pegasus und
-die als Eingaben behandelten Objekte für Rechner und Code in AiiDA.
+berührt sie nicht.
 
-Bei der Nachvollziehbarkeit stellt sich mit der parallelen Phase
-eine Frage, die das Pipeline-Pattern nicht kannte, nämlich ob die
-Verarbeitungsinstanzen einzeln sichtbar werden. Am einen Ende steht
-Nextflow, dessen Fortschrittsanzeige die Instanzen als Aufgaben
-desselben Prozesses zählt, ohne sie einzeln zu benennen. In
-StreamFlow, Merlin und Pegasus erscheinen die Instanzen einzeln,
-in der Terminalausgabe, in den Ausgaben des Workers beziehungsweise
-in der Statusabfrage des Laufs. In AiiDA sind sie über die Statusabfrage hinaus als eigene Prozessknoten im Provenance-Graphen der Datenbank festgehalten,
-sodass die Zuordnung der Instanzen auch nach dem Lauf abfragbar
-bleibt.
+Bei der Nachvollziehbarkeit kommt hinzu, wie die einzelnen
+Verarbeitungsinstanzen sichtbar werden. Nextflow zählt sie in der
+Fortschrittsanzeige als Aufgaben desselben Prozesses, während sie in
+StreamFlow, Merlin und Pegasus einzeln in den jeweiligen Ausgaben
+beziehungsweise Statusinformationen erscheinen. AiiDA hält die
+Instanzen zusätzlich als eigene Prozessknoten im dauerhaft
+gespeicherten Provenance-Graphen fest.
+
+Aus Einsteigerperspektive kommen gegenüber dem Pipeline-Pattern
+zusätzliche Konzepte für die parallele Phase hinzu: bei Nextflow
+\texttt{flatten} und \texttt{collect}, bei StreamFlow
+\texttt{scatter}, bei Merlin die Parametrisierung und bei AiiDA das
+Einreichen mehrerer CalcJobs mit \texttt{ToContext}. Bei Pegasus
+wird die parallele Phase dagegen im Python-Erzeugungsskript
+aufgebaut.
+
+Wie sich die beschriebenen Unterschiede im
+Laufzeitverhalten niederschlagen, untersucht
+Abschnitt~\ref{sec:lokal:messungen}.
 
 \section{Ergebnisse der lokalen Messungen}
 \label{sec:lokal:messungen}
 
-Die folgenden Ergebnisse beruhen auf fünf Wiederholungen je
-Konfiguration bei der kurzen und der mittleren Rechenlast sowie drei
-Wiederholungen bei der langen, berichtet wird jeweils der Median.
-Für jede Konfiguration wurde zusätzlich ein Referenzlauf erhoben,
-der dieselben Benchmark-Skripte in derselben Reihenfolge ohne
-Workflow-Management-System ausführt, jeder Wiederholung ist dabei
-ein eigener Referenzlauf zugeordnet. Als Overhead wird im Folgenden
-der Median der je Wiederholung gebildeten Differenzen zwischen der
-Gesamtlaufzeit des Systemlaufs und der des zugehörigen
-Referenzlaufs bezeichnet. Er beschreibt den zusätzlich
-beobachteten Zeitbedarf gegenüber der Ausführung derselben
-Rechenlogik ohne Workflow-Management-System. Neben den Gesamtlaufzeiten
-werden zwei Koordinationsgrößen betrachtet, die Übergangslatenz
-zwischen dem Ende eines Schritts und dem Beginn des nächsten sowie
-die Startspreizung der parallelen Verarbeitungsinstanzen, also der
-Abstand zwischen dem ersten und dem letzten Instanzstart.
+Die folgenden Ergebnisse werden entsprechend dem in
+Kapitel~\ref{sec:methodik} beschriebenen Mess- und
+Auswertungsverfahren als Mediane über die Wiederholungen berichtet.
+Betrachtet werden die Gesamtlaufzeit, der Overhead sowie die beiden
+Koordinationsgrößen Übergangslatenz und Startspreizung.
 
 Abbildung~\ref{fig:mess:pipe} zeigt die Gesamtlaufzeiten des
-Pipeline-Patterns je Rechenlast. Vier Systeme liegen dabei in einem
-engen Band, bei der kurzen Rechenlast zwischen 5,8 und
-9,2\,Sekunden, bei der mittleren zwischen 53,4 und 63,1\,Sekunden
-und bei der langen zwischen 238 und 280\,Sekunden, wobei die
-Reihenfolge innerhalb des Bandes zwischen den Rechenlasten wechselt.
-Pegasus liegt mit 184, 228 und 442\,Sekunden durchgängig deutlich
-darüber. Sein Abstand zum eigenen Referenzlauf beträgt bei allen
-drei Rechenlasten zwischen 171 und 180\,Sekunden und ist damit
-nahezu konstant, was dem vorgelagerten Planungsschritt und der
-Ausführung über HTCondor entspricht, die unabhängig von der
-Rechenlast anfallen. Auffällig ist zudem AiiDA bei der kurzen
-Rechenlast, dessen Laufzeit von 9,2\,Sekunden erkennbar über den
-drei übrigen Systemen liegt, während es bei der mittleren und der
-langen Rechenlast im Band bleibt.
+Pipeline-Patterns je Rechenlast. Vier Systeme liegen dabei näher
+beieinander, bei der kurzen Rechenlast zwischen 5,8 und
+9,2 Sekunden, bei der mittleren zwischen 53,4 und 63,1 Sekunden und
+bei der langen zwischen 238 und 280 Sekunden. Pegasus liegt mit 184,
+228 und 442 Sekunden durchgängig deutlich darüber. Sein Abstand zum
+eigenen Referenzlauf beträgt bei allen drei Rechenlasten zwischen
+171 und 180 Sekunden und ist damit nahezu konstant. Er geht damit
+auf Anteile zurück, die unabhängig von der Rechenlast anfallen,
+darunter der vorgelagerte Planungsschritt und die Übergänge zwischen
+den Jobs. Auffällig ist zudem AiiDA bei der kurzen Rechenlast, dessen
+Laufzeit von 9,2 Sekunden über den drei übrigen Systemen dieser
+Gruppe liegt, während sich dieser Unterschied bei der mittleren und
+langen Rechenlast nicht in gleicher Weise zeigt.
 
 \begin{figure}[H]
   \centering
@@ -1084,7 +1059,8 @@ Overhead von Pegasus durchgängig und der von AiiDA bei der kurzen
 und der mittleren Rechenlast über dem des Pipeline-Patterns mit
 vier Schritten. Bei AiiDA steht dies im Einklang mit der
 Abwicklung jedes Schritts als eigener CalcJob über Daemon und
-Datenbank, bei Pegasus mit den zusätzlichen Übergängen des Musters, an denen jeweils der Abfragezyklus anfällt.
+Datenbank, bei Pegasus mit den zusätzlichen Übergängen zwischen
+den Schritten.
 
 \begin{figure}[H]
   \centering
@@ -1099,7 +1075,16 @@ aufeinanderfolgenden Schritten. Die Systeme unterscheiden sich darin
 Übergang bei etwa 0,06\,Sekunden, in Nextflow bei 0,09, in Merlin
 bei 0,38, in AiiDA bei 1,16 und in Pegasus bei 20,1\,Sekunden.
 Innerhalb eines Systems sind die Werte über die einzelnen Übergänge
-und über beide Muster hinweg weitgehend gleich. Die Übergangslatenz zeigt sich damit im lokalen Aufbau als eine weitgehend systemspezifische Größe. Sie wird maßgeblich von der Stelle bestimmt, an der ein Schritt an den nächsten übergeben wird, in Merlin von der Warteschlange, in AiiDA vom Daemon mit der Datenbank und in Pegasus vom Abfragezyklus, der die Bereitschaft der Jobs prüft. In Nextflow und StreamFlow startet die Laufzeit die Schritte selbst, entsprechend klein bleibt der Abstand.
+und über beide Muster hinweg weitgehend gleich. Die Übergangslatenz
+zeigt sich damit im lokalen Aufbau als eine weitgehend
+systemspezifische Größe. Die Unterschiede stehen im Zusammenhang
+mit der jeweiligen Ausführungsarchitektur. In Merlin erfolgt die
+Koordination über die Warteschlange, in AiiDA über Daemon und
+Datenbank und in Pegasus über die Übergabe der einzelnen Jobs an
+HTCondor. In Nextflow und StreamFlow werden die Schritte direkter
+durch die jeweilige Laufzeit koordiniert. Bei diesen beiden Systemen
+fallen zugleich die kleinsten gemessenen Abstände an.
+
 
 \begin{figure}[H]
   \centering
@@ -1121,8 +1106,7 @@ entstehen sie ohne Zwischenstelle, in Nextflow und StreamFlow startet
 die Laufzeit sie unmittelbar nacheinander, in Pegasus liegen die
 Jobs bereits geplant vor und werden gemeinsam in die Warteschlange
 gegeben. In AiiDA und Merlin wird dagegen jede Instanz einzeln in eine
-Warteschlange eingereiht, aus der sie in AiiDA ein Daemon-Runner
-und in Merlin ein Worker entgegennimmt, und der Abstand wächst dort
+Warteschlange eingereiht, aus der sie in AiiDA die Daemon-Runner und in Merlin ein Worker entgegennehmen, und der Abstand wächst dort
 mit jeder weiteren Instanz.
 
 \begin{figure}[!htbp]
@@ -1132,41 +1116,41 @@ mit jeder weiteren Instanz.
   \label{fig:mess:spreizung}
 \end{figure}
 
-Über die einzelnen Kenngrößen hinweg fügen sich die Befunde zu
-einem stimmigen Bild. Bei Pegasus entspricht der höhere Overhead
-des Scatter-Gather-Patterns näherungsweise den zusätzlichen
-Übergangslatenzen, die Differenz der Overhead-Mediane beider Muster beträgt
-37,9\,Sekunden, während das Muster zwei Übergänge mehr enthält als
-die Pipeline und zweimal 20,1\,Sekunden gemessener Latenz
+Über die einzelnen Kenngrößen hinweg fügen sich die Befunde zu einem
+stimmigen Bild. Bei Pegasus entspricht der höhere Overhead des
+Scatter-Gather-Patterns näherungsweise den zusätzlichen
+Übergangslatenzen, die Differenz der Overhead-Mediane beider Muster
+beträgt 37,9\,Sekunden, während das Muster zwei Übergänge mehr enthält
+als die Pipeline und zweimal 20,1\,Sekunden gemessener Latenz
 40,2\,Sekunden ergeben. Zugleich zeigt Pegasus, dass die beiden
 Koordinationsgrößen verschiedene Vorgänge erfassen, seine Übergänge
 sind mit Abstand die teuersten, seine Startspreizung liegt mit 19
-und 62\,Millisekunden dagegen im unteren Feld. AiiDA und Merlin
-wiederum, die als einzige jede Instanz einzeln in eine
-Warteschlange einreihen, liegen in beiden Koordinationsgrößen über
-Nextflow und StreamFlow, deren Laufzeitumgebung die Schritte und
-Instanzen unmittelbar selbst startet. Ein unmittelbarer Schluss von
-den Koordinationsgrößen auf die Höhe des Overheads ist damit nicht
-möglich. Merlin weist höhere Übergangslatenzen auf als Nextflow und
-StreamFlow, liegt beim Overhead aber in derselben Gruppe und in
-einzelnen Konfigurationen darunter. Die Koordinationsgrößen zeigen,
-an welchen Stellen ein System zusätzliche Zeit beansprucht, sie
-bestimmen den Overhead jedoch nicht allein.
+und 62\,Millisekunden dagegen im unteren Feld. AiiDA und Merlin, die als einzige jede Instanz einzeln in eine Warteschlange einreihen, liegen in beiden Koordinationsgrößen über Nextflow und StreamFlow.
+Ein unmittelbarer Schluss von den Koordinationsgrößen auf die Höhe
+des Overheads ist damit nicht möglich. Merlin weist höhere
+Übergangslatenzen auf als Nextflow und StreamFlow, liegt beim
+Overhead aber in derselben Gruppe und in einzelnen Konfigurationen
+darunter. Die Koordinationsgrößen zeigen, an welchen Stellen ein
+System zusätzliche Zeit beansprucht, sie bestimmen den Overhead
+jedoch nicht allein.
 
 \section{Zwischenfazit}
 \label{sec:lokal:zwischenfazit}
 
 Beide Workflow-Muster ließen sich in allen fünf Systemen mit
-denselben Benchmark-Skripten umsetzen, die Unterschiede liegen in
-der Beschreibung, der Ausführung und der Art, wie ein Lauf
-nachvollziehbar wird. Bei der Modellierung trennen sich die Systeme
-darin, ob die Reihenfolge aus den Datenbeziehungen entsteht oder
-ausdrücklich benannt wird, ob eine eigene Laufzeit ausführt oder
-eine eigenständige Komponente, und wann die auszuführenden Aufgaben
-feststehen. Eine geänderte Rechenlast betrifft in allen Systemen
-nur eine Stelle, eine geänderte Teilstückzahl reicht dagegen von
-einem einzelnen Parameter bis zum erneuten Erzeugen der
-Workflow-Beschreibung.
+denselben Benchmark-Skripten umsetzen. Die qualitative
+Gegenüberstellung zeigt dabei Unterschiede darin, wie diese Muster
+in den einzelnen Systemen umgesetzt werden. Bei der Modellierung
+unterscheiden sich die Systeme unter anderem darin, ob die
+Reihenfolge aus den Datenbeziehungen entsteht oder ausdrücklich
+benannt wird und wann die auszuführenden Aufgaben feststehen. Eine
+geänderte Rechenlast betrifft in allen Systemen nur eine Stelle,
+eine geänderte Teilstückzahl reicht dagegen von einem einzelnen
+Parameter bis zum erneuten Erzeugen der Workflow-Beschreibung.
+Auch die Ausführung erfolgt unterschiedlich: Nextflow und
+StreamFlow steuern die Schritte über ihre eigene Laufzeit, während
+bei Merlin, Pegasus und AiiDA weitere Komponenten an der Ausführung
+beteiligt sind.
 
 Die Messungen zeigen drei Overhead-Gruppen, deren Reihenfolge in
 allen zwölf Konfigurationen gleich bleibt, StreamFlow, Nextflow und

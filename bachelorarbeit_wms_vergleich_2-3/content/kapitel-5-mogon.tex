@@ -55,12 +55,11 @@ Partition besitzt zwei Prozessoren des Typs AMD EPYC 7713 mit je 64
 Kernen~\cite{mogonnhr}, insgesamt 128 Rechenkerne und 248~GB
 Hauptspeicher. Als Betriebssystem kommt AlmaLinux 8.10 zum Einsatz.
 
-Für die Datenhaltung stehen zwei Ablageorte zur Verfügung. Das
-gemeinsame Dateisystem \texttt{/fshpc} ist über NFS eingebunden und von allen Knoten aus erreichbar. Zusätzlich
-verfügt jeder Rechenknoten über einen lokalen Zwischenspeicher, der
-einem Rechenauftrag für dessen Laufzeit unter
-\texttt{/localscratch} zugewiesen und nach dessen Ende verworfen
-wird. Dieser Speicher ist nur innerhalb des jeweiligen Knotens
+Für die Datenhaltung stehen zwei Ablageorte zur Verfügung. Das gemeinsame Dateisystem \texttt{/fshpc} ist von allen Knoten aus
+erreichbar. Zusätzlich verfügt jeder Rechenknoten über lokalen Speicher unter
+\texttt{/localscratch}. Dieser steht während eines Rechenauftrags
+zur Verfügung, wird nach dessen Ende wieder gelöscht und ist nur
+auf dem jeweiligen Knoten sichtbar. Dieser Speicher ist nur innerhalb des jeweiligen Knotens
 sichtbar. Die Benchmark-Workflows und ihre Arbeitsverzeichnisse
 lagen im gemeinsamen Dateisystem, da Workflow-Schritte auf
 unterschiedlichen Rechenknoten ausgeführt werden können und ihre
@@ -69,10 +68,9 @@ erreichbaren Speicher austauschen müssen.
 
 Software wird auf dem Cluster über ein Modulsystem bereitgestellt,
 über das sich vorinstallierte Pakete in die eigene Umgebung laden
-lassen~\cite{mogondocs}, darunter Python in der Version 3.12.3 und
-Apptainer in der Version 1.3.4. Welche der untersuchten Systeme
-darüber verfügbar waren und wie die übrigen eingerichtet wurden,
-beschreibt Abschnitt~\ref{sec:mogon:bereitstellung}.
+lassen~\cite{mogondocs}. Welche der untersuchten Systeme darüber
+verfügbar waren und wie die übrigen eingerichtet wurden, beschreibt
+Abschnitt~\ref{sec:mogon:bereitstellung}.
 
 
 \section{Bereitstellung und Betrieb der Systeme}
@@ -133,8 +131,8 @@ zurück. Bei Einrichtung und Betrieb traten keine Fehler auf.
 \label{sec:mogon:streamflow}
 
 StreamFlow steht auf MOGON nicht als Modul zur Verfügung und wurde
-deshalb in einer eigenen Conda-Umgebung installiert.
-Zum Einsatz kommt die Version 0.2.0rc2. Wie in der lokalen
+deshalb mit pip in einer eigenen Conda-Umgebung installiert. Zum
+Einsatz kommt dieselbe Vorabversion 0.2.0rc2. Wie in der lokalen
 Untersuchungsumgebung (Abschnitt~\ref{sec:lokal:umgebung}) benötigt
 StreamFlow auch auf MOGON keine zusätzlichen Dienste.
 
@@ -196,9 +194,9 @@ deployments:
 Eine weitere Anpassung betraf StreamFlow selbst. Um den Zustand
 eines eingereichten Jobs zu verfolgen, ruft StreamFlow die
 Slurm-Kommandos \texttt{scontrol} und \texttt{squeue} mit der
-Kennung des Jobs auf. MOGON ist als Verbund mehrerer Cluster
-eingerichtet, und beim Einreichen eines Jobs wird neben der Nummer
-auch der ausführende Cluster zurückgemeldet. StreamFlow führte
+Kennung des Jobs auf. MOGON umfasst mehrere Cluster~\cite{mogondocs-what}, und beim
+Einreichen eines Jobs wird neben der Nummer auch der ausführende
+Cluster zurückgemeldet. StreamFlow führte
 beide Angaben zu einer Kennung der Form \texttt{454783;mogonki}
 zusammen und gab diese unverändert an die Abfragen weiter, die
 daraufhin kein Ergebnis lieferten. Die Anpassung in der Datei
@@ -225,8 +223,10 @@ Redis-Server. Da auf dem Cluster kein Docker zur Verfügung steht,
 wurde Redis über einen Apptainer-Container bereitgestellt, der sich
 mit den Rechten eines gewöhnlichen Nutzerkontos ausführen lässt.
 Die Verbindungsdaten zum Redis-Server stehen in der Datei
-\texttt{app.yaml} im Nutzerverzeichnis, deren Servereintrag auf den
-Ort zeigt, an dem Redis für den jeweiligen Lauf gestartet wird.
+\texttt{app.yaml} im Nutzerverzeichnis. Redis läuft auf dem
+Login-Knoten und ist von den Rechenknoten aus erreichbar, sodass die
+Worker die Aufgaben unabhängig von ihrem Ausführungsort beziehen
+können.
 
 Die Workflow-Beschreibungen beider Muster wurden unverändert aus der
 lokalen Umsetzung übernommen. Hinzu kam für den Betrieb auf dem
@@ -243,7 +243,7 @@ Worker ausgeführt werden. Der untere Teil bereitet die Umgebung vor
 und startet den Celery-Worker.
 
 \begin{lstlisting}[language=bash,
-  caption={Jobskript zum Start der Merlin-Worker auf MOGON},
+  caption={Jobskript zum Start der Merlin-Worker im regulären Slurm-Betrieb auf MOGON},
   label={lst:mogon:merlinjob}]
 #!/bin/bash
 #SBATCH --account=ki-mawahpc
@@ -328,7 +328,7 @@ und das Arbeitsverzeichnis liegt auf dem gemeinsamen Dateisystem.
 Listing~\ref{lst:mogon:aiidacomputer} zeigt den Rechner-Eintrag, der
 für die Ausführung über Slurm angelegt wurde. Die Angaben zu
 Partition, Konto und Zeitlimit stehen nicht in diesem Eintrag,
-sondern in den WorkChains, bei dem jeweiligen Prozess. Der Transport
+sondern in den WorkChains, bei den jeweiligen CalcJobs. Der Transport
 \texttt{core.local} legt fest, dass die Kommandos auf dem
 Login-Knoten ausgeführt werden, der Scheduler \texttt{core.slurm}
 bestimmt, dass AiiDA für jede Aufgabe ein Jobskript erzeugt und
@@ -348,7 +348,11 @@ Default #procs/machine       1
 "queue_name": "ki-smallcpu",
 "account": "ki-mawahpc",
 "max_wallclock_seconds": 600,
-"resources": {"num_machines": 1, "num_mpiprocs_per_machine": 1},
+"max_memory_kb": 1048576,
+"resources": {
+    "num_machines": 1,
+    "num_mpiprocs_per_machine": 1,
+},
 \end{lstlisting}
 
 Ein Lauf wird über ein kurzes Python-Skript eingereicht, das die
@@ -385,7 +389,7 @@ Job einzureichen, wird ein einziger Job gestartet, dessen
 Allokation für die gesamte Dauer des Laufs bestehen bleibt. In dieser Allokation laufen die Worker, die sich die Aufgaben aus der Warteschlange
 holen und abarbeiten. Warteschlange und Prolog fallen dadurch
 einmal je Lauf an statt einmal je Schritt und aufeinanderfolgende Schritte starten ohne erneuten Weg über den
-Ressourcenverwalter. Dieses Modell nutzt das Prinzip eines Pilot-Jobs: Ein Platzhalter-Job belegt die Ressourcen, und mehrere Aufgaben werden innerhalb seiner Laufzeit ausgeführt, wodurch die je Job anfallenden Scheduling-Anteile entfallen~\cite{chen2011overhead}.
+Ressourcenverwalter. Dieses Modell nutzt das Prinzip eines Pilot-Jobs: Ein Platzhalter-Job belegt die Ressourcen, und mehrere Aufgaben werden innerhalb seiner Laufzeit ausgeführt, wodurch die je Job anfallenden Scheduling-Anteile entfallen~\cite[S.~18]{chen2011overhead}.
 
 Aus diesen Ausführungsmodellen ergibt sich die Frage, wie sich die
 Laufzeit eines Workflows im regulären Clusterbetrieb
@@ -397,8 +401,7 @@ Wartezeit in der Warteschlange, die Zeit zwischen dem Start des
 Jobs und dem ersten Zeitstempel der Nutzlast, sowie die Laufzeit
 der Nutzlast selbst. Die ersten beiden Anteile wurden aus den
 Zeitstempeln von \texttt{sacct} bestimmt, die Laufzeit der Nutzlast
-aus den Zeitmessungen der Benchmark-Skripte. Die getrennte Betrachtung verschiedener Zeitanteile folgt dem in Abschnitt~\ref{sec:methodik:messgroessen} beschriebenen Vorgehen
-von Chen und Deelman~\cite{chen2011overhead}.
+aus den Zeitmessungen der Benchmark-Skripte.
 
 \begin{figure}[htbp]
   \centering
@@ -438,15 +441,12 @@ bevor die Nutzlast beginnt. Aus der Zerlegung allein ist nicht
 ersichtlich, wie sich der Anteil auf den Cluster und das Workflow-Management-System verteilt.
 \FloatBarrier
 
-Um diese Aufteilung näher zu untersuchen, wurde der zuvor bestimmte mittlere Zeitanteil anschließend für alle vier Systeme gesondert untersucht. Dazu wurde je System analysiert, welche Schritte nach der Übergabe des Slurm-Jobs an das erzeugte Jobskript und vor dem ersten Zeitstempel der Nutzlast
-ausgeführt werden. Da sich Aufbau und Ablauf der Jobskripte
+Um diese Aufteilung näher zu untersuchen, wurde der zuvor bestimmte mittlere Zeitanteil anschließend für alle vier Systeme gesondert untersucht. Dazu wurde je System analysiert, welche Schritte nach dem Start des Slurm-Jobs und vor dem ersten Zeitstempel der Nutzlast ausgeführt werden. Da sich Aufbau und Ablauf der Jobskripte
 zwischen den Systemen unterscheiden, erfolgte diese Untersuchung
 systemspezifisch.
 
 Der so bestimmte Anteil liegt bei den drei Systemen, die Jobs je
-Schritt einreichen, im Bereich von 55 bis 104 Millisekunden. Damit liegt der systemeigene Anteil um mehrere Größenordnungen unter dem zuvor beobachteten mittleren Zeitanteil von über 40 Sekunden je Job. Bei
-Merlin entsteht ein vergleichbarer Aufwand nicht je
-Workflow-Schritt, sondern einmal beim Start der Worker-Allokation.
+Schritt einreichen, im Bereich von 55 bis 104 Millisekunden. Damit liegt der systemeigene Anteil um mehrere Größenordnungen unter dem zuvor beobachteten mittleren Zeitanteil von über 40 Sekunden je Job. Bei Merlin fällt die Vorbereitung innerhalb des Slurm-Jobs nicht für jeden Workflow-Schritt einzeln an, sondern beim Start der Worker-Allokation.
 
 
 Die Zerlegung zeigt damit, dass der systemeigene Anteil im
@@ -455,9 +455,7 @@ verursachten Zeitanteilen vernachlässigbar klein ist. Seine
 Bestimmung erfordert zudem systemspezifische Untersuchungen der
 jeweiligen Jobabläufe und stellt daher keine einheitliche
 Vergleichsgröße dar. Aus diesem Grund wurde der Einfluss des
-Clusterbetriebs nicht rechnerisch entfernt, sondern in der
-folgenden Messreihe durch eine dedizierte Ausführung experimentell
-ausgeschlossen.
+Clusterbetriebs in der folgenden Messreihe durch eine dedizierte Ausführung experimentell ausgeschlossen.
 
 
 
@@ -473,7 +471,7 @@ Kapitel~\ref{sec:lokal}. Warteschlange und Prolog fallen nur beim
 Start der jeweiligen Allokation an und liegen vollständig außerhalb
 der eigentlichen Messung. Die Ausführung von Benchmark-Messungen
 auf dedizierten Rechenknoten entspricht dem Vorgehen vergleichbarer
-Untersuchungen~\cite{wfbench2022}.
+Untersuchungen~\cite[S.~103]{wfbench2022}.
 
 Dieser Aufbau folgt unmittelbar aus dem Befund des vorangegangenen
 Abschnitts. Im regulären Clusterbetrieb entsteht der überwiegende
@@ -528,41 +526,6 @@ Startspreizung. Pegasus ist aus den in
 Abschnitt~\ref{sec:mogon:pegasus} genannten Gründen nicht
 enthalten, sodass die folgenden Ergebnisse vier Systeme mit jeweils zwölf Konfigurationen umfassen.
 
-Abbildung~\ref{fig:mogon:overhead} stellt den Overhead aller zwölf
-Konfigurationen gegenüber. Es bilden sich zwei Gruppen. StreamFlow,
-Nextflow und Merlin liegen in zehn der zwölf Konfigurationen
-zwischen 1,6 und 4,1 Sekunden und wechseln untereinander die
-Reihenfolge. Höhere Werte treten bei den Scatter-Gather-Läufen der
-langen Rechenlast mit einem und zwei Teilstücken auf, dort liegen
-StreamFlow bei 5,4 und 4,6 Sekunden und Nextflow bei 5,0 und 6,9
-Sekunden. AiiDA liegt mit 7,0 bis 14,9 Sekunden in allen zwölf
-Konfigurationen über den drei übrigen Systemen.
-
-Ein systemübergreifend einheitlicher Zusammenhang zwischen
-Rechenlast und Overhead ist nicht erkennbar, obwohl sich die
-Laufzeit der Rechenschritte zwischen der kurzen und der langen
-Rechenlast um mehr als das Fünfzigfache unterscheidet. Bei
-StreamFlow nimmt der Overhead im Scatter-Gather-Muster zwar mit der
-Rechenlast zu, bei den übrigen Systemen zeigt sich diese
-Entwicklung jedoch nicht durchgängig.
-
-Bei AiiDA zeigt sich ein Zusammenhang mit dem Umfang
-des Workflows. Bei gleicher Rechenlast liegt der Overhead im
-Scatter-Gather-Muster durchgängig über dem des Pipeline-Musters.
-Zudem steigt er mit der Zahl der Teilstücke. Bei der kurzen
-Rechenlast nimmt er von 12,6 Sekunden bei einem Teilstück auf 14,9
-Sekunden bei vier Teilstücken zu. Diese Tendenz war bereits auf der lokalen Ebene zu
-beobachten, dort stieg der Overhead in derselben Konfiguration von
-7,4 auf 9,4 Sekunden.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{content/figs/mogon_graphen/01_overhead_alle_mogon.png}
-  \caption{Overhead gegenüber dem Referenzlauf für alle zwölf
-    Konfigurationen auf dem HPC-System}
-  \label{fig:mogon:overhead}
-\end{figure}
-
 Abbildung~\ref{fig:mogon:makespan-pipe} zeigt die Gesamtlaufzeiten
 des Pipeline-Musters je Rechenlast. StreamFlow, Nextflow und Merlin
 liegen dabei in einem engen Band, bei der kurzen Rechenlast
@@ -602,20 +565,56 @@ Teilstückzahlen nahezu unverändert.
   \label{fig:mogon:makespan-sg}
 \end{figure}
 
+
+Abbildung~\ref{fig:mogon:overhead} stellt den Overhead aller zwölf
+Konfigurationen gegenüber. Es bilden sich zwei Gruppen. StreamFlow,
+Nextflow und Merlin liegen in zehn der zwölf Konfigurationen
+zwischen 1,6 und 4,1 Sekunden und wechseln untereinander die
+Reihenfolge. Höhere Werte treten bei den Scatter-Gather-Läufen der
+langen Rechenlast mit einem und zwei Teilstücken auf, dort liegen
+StreamFlow bei 5,4 und 4,6 Sekunden und Nextflow bei 5,0 und 6,9
+Sekunden. AiiDA liegt mit 7,0 bis 14,9 Sekunden in allen zwölf
+Konfigurationen über den drei übrigen Systemen.
+
+Ein systemübergreifend einheitlicher Zusammenhang zwischen
+Rechenlast und Overhead ist nicht erkennbar, obwohl sich die
+Laufzeit der Rechenschritte zwischen der kurzen und der langen
+Rechenlast um mehr als das Fünfzigfache unterscheidet. Bei
+StreamFlow nimmt der Overhead im Scatter-Gather-Muster zwar mit der
+Rechenlast zu, bei den übrigen Systemen zeigt sich diese
+Entwicklung jedoch nicht durchgängig.
+
+Bei AiiDA zeigt sich ein Zusammenhang mit dem Umfang
+des Workflows. Bei gleicher Rechenlast liegt der Overhead im
+Scatter-Gather-Muster durchgängig über dem des Pipeline-Musters.
+Zudem steigt er mit der Zahl der Teilstücke. Bei der kurzen
+Rechenlast nimmt er von 12,6 Sekunden bei einem Teilstück auf 14,9
+Sekunden bei vier Teilstücken zu. Diese Tendenz war bereits auf der lokalen Ebene zu
+beobachten, dort stieg der Overhead in derselben Konfiguration von
+7,4 auf 9,4 Sekunden.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{content/figs/mogon_graphen/01_overhead_alle_mogon.png}
+  \caption{Overhead gegenüber dem Referenzlauf für alle zwölf
+    Konfigurationen auf dem HPC-System}
+  \label{fig:mogon:overhead}
+\end{figure}
+
 Abbildung~\ref{fig:mogon:latenz} zeigt die Übergangslatenzen
 zwischen aufeinanderfolgenden Schritten. Der Median je Übergang
 liegt in StreamFlow bei 0,06 Sekunden, in Nextflow bei 0,11, in
 Merlin bei 0,14 und in AiiDA bei 1,95 Sekunden, AiiDA liegt damit
 etwa um den Faktor 35 über StreamFlow. Innerhalb eines Systems sind
-die Werte über die einzelnen Übergänge weitgehend gleich. Erhöht
-ist in allen vier Systemen der Übergang vom Verarbeiten zum
-Zusammenführen, in StreamFlow 0,14 gegenüber sonst rund 0,06
-Sekunden und in AiiDA 2,18 gegenüber rund 1,95 Sekunden. Es ist der
-einzige Übergang, an dem die Ergebnisse mehrerer paralleler
-Instanzen zusammengeführt werden. Die Übergangslatenz zeigt sich
-damit auch auf dem HPC-System als eine weitgehend systemspezifische
-Größe, bestimmt von der Stelle, an der ein Schritt an den nächsten
-übergeben wird.
+die Werte über die einzelnen Übergänge weitgehend gleich. Höhere
+Werte treten insbesondere an den Übergängen in die und aus der
+parallelen Verarbeitungsphase auf, am deutlichsten beim Übergang
+vom Verarbeiten zum Zusammenführen. Dieser liegt in StreamFlow bei
+0,14 gegenüber sonst rund 0,06 Sekunden und in AiiDA bei 2,18
+gegenüber rund 1,95 Sekunden. An diesen Übergängen werden mehrere
+parallele Instanzen gestartet beziehungsweise ihre Ergebnisse
+zusammengeführt. Die Übergangslatenz zeigt sich damit auch auf dem
+HPC-System als eine weitgehend systemspezifische Größe.
 
 \begin{figure}[H]
   \centering
@@ -633,9 +632,7 @@ je nach Rechenlast zwischen 3 und 4 Millisekunden in StreamFlow,
 zwischen 6 und 7 in Nextflow, zwischen 47 und 50 in Merlin und
 zwischen 24 und 32 Millisekunden in AiiDA. Bei vier Teilstücken
 liegen die entsprechenden Bereiche bei 18 bis 19, 21 bis 23, 99
-bis 114 und 961 bis 1011 Millisekunden. Die Rechenlast beeinflusst
-die Startspreizung damit kaum, die Zahl der Teilstücke dagegen
-deutlich. In allen vier Systemen wächst sie mit der Zahl der
+bis 114 und 961 bis 1011 Millisekunden. Die Startspreizung unterscheidet sich zwischen den Rechenlasten damit nur geringfügig, zwischen den Teilstückzahlen dagegen deutlich. In allen vier Systemen wächst sie mit der Zahl der
 Teilstücke, am stärksten in AiiDA, wo sie sich von zwei auf vier
 Teilstücke mehr als verdreißigfacht.
 
@@ -728,9 +725,8 @@ werden. Der Aufwand für Bereitstellung und Betrieb unterschied sich dabei.
 Nextflow stand als Modul zur Verfügung und benötigte keine
 zusätzlichen Dienste. Bei StreamFlow, Merlin und AiiDA waren
 dagegen eigene Installationen und weitere systemspezifische
-Einrichtungsschritte erforderlich. Die Workflow-Beschreibungen 
-konnten aus der lokalen Umsetzung weitgehend übernommen werden, 
-angepasst wurden vor allem die Angaben zur Ausführungsumgebung. 
+Einrichtungsschritte erforderlich. Die Workflow-Beschreibungen von Nextflow, StreamFlow und Merlin konnten unverändert übernommen werden, angepasst wurden dort nur die getrennten Angaben zur Ausführungsumgebung. Bei AiiDA wurden
+die Ressourcenangaben in den WorkChains ergänzt.
 Unterschiede zeigten sich zudem in der Einbindung von Slurm: Nextflow, StreamFlow und AiiDA reichen die Workflow-Schritte einzeln ein, während Merlin die Schritte innerhalb einer gemeinsamen Worker-Allokation ausführt.
 
 Die Untersuchung des regulären Slurm-Betriebs zeigte, dass die

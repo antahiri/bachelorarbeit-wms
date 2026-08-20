@@ -24,7 +24,7 @@ hervor. Neben den Abhängigkeiten müssen dort die Aufteilung in
 parallele Verarbeitungsinstanzen und deren anschließende
 Zusammenführung ausgedrückt werden. Auch eine Variation der
 Teilstückzahl erfordert je nach System unterschiedliche Änderungen
-an der Workflow-Beschreibung. Die Modellierungsuntersuchung zeigt
+an der Workflow-Beschreibung. Die Umsetzung beider Muster zeigt
 damit, dass sich die betrachteten Systeme bei diesen beiden Mustern
 weniger durch ihre Ausdrucksfähigkeit als durch die Art der
 Workflow-Beschreibung und den Aufwand bei Änderungen unterscheiden.
@@ -45,11 +45,10 @@ Teilstücke beim Scatter-Gather-Muster erst ab der mittleren
 Rechenlast spürbare Gewinne bringt, während bei der kurzen
 Rechenlast der Overhead einen größeren Teil der Gesamtlaufzeit ausmacht.
 
-Die beiden Koordinationsgrößen zeigen, an welchen Stellen ein
-wesentlicher Teil dieser Unterschiede entsteht. Besonders deutlich ist dies bei Pegasus und AiiDA. Bei Pegasus fällt die mediane Übergangslatenz von rund 20 Sekunden mit dem höchsten gemessenen Overhead zusammen. Bei AiiDA fallen die Übergangslatenzen mit ein bis zwei Sekunden geringer aus, liegen aber auf beiden Ebenen deutlich über denen der drei übrigen Systeme und erklären bereits im Pipeline-Muster einen wesentlichen Teil des Overheads. Die Ergebnisse sprechen damit dafür, dass die höheren Overhead-Werte von Pegasus und AiiDA zu einem erheblichen Teil mit der Koordination und Übergabe
+Die beiden Koordinationsgrößen machen sichtbar, an welchen Stellen zusätzliche Zeit anfällt. Besonders deutlich zeigt sich dies bei Pegasus und AiiDA. Bei Pegasus fällt die mediane Übergangslatenz von rund 20 Sekunden mit dem höchsten gemessenen Overhead zusammen. Bei AiiDA fallen die Übergangslatenzen mit ein bis zwei Sekunden geringer aus, liegen aber auf beiden Ebenen deutlich über denen der drei übrigen Systeme und erklären bereits im Pipeline-Muster einen wesentlichen Teil des Overheads. Die Ergebnisse sprechen damit dafür, dass die höheren Overhead-Werte von Pegasus und AiiDA zu einem erheblichen Teil mit der Koordination und Übergabe
 zwischen aufeinanderfolgenden Workflow-Schritten zusammenhängen.
 
-Die Startspreizung ist davon getrennt zu betrachten. Sie beschreibt, wie gut das System Parallelität koordinieren kann. Merlin zeigt das deutlich: Lokal liegt seine
+Die Startspreizung ist davon getrennt zu betrachten. Sie beschreibt, wie schnell ein System die parallelen Instanzen startet. Merlin zeigt das deutlich: Lokal liegt seine
 Startspreizung bei vier Teilstücken mit rund 0,73 Sekunden in
 derselben Größenordnung wie bei AiiDA, während sein Overhead
 deutlich niedriger bleibt. Eine größere Startspreizung führt damit
@@ -84,10 +83,7 @@ vor Beginn der eigentlichen Nutzlast durchgehend mehr als
 zeigte dagegen, dass der innerhalb dieses Zeitraums
 identifizierbare Anteil der Workflow-Management-Systeme bei den
 Systemen mit einzelnen Slurm-Jobs lediglich zwischen 55 und
-104 Millisekunden lag. Eine Ende-zu-Ende-Messung im regulären
-Clusterbetrieb würde damit überwiegend die zum Messzeitpunkt
-vorliegenden Clusterbedingungen abbilden und die Unterschiede
-zwischen den Systemen überlagern. Für den eigentlichen Systemvergleich wurde deshalb eine bereits bestehende Slurm-Allokation verwendet, innerhalb derer
+104 Millisekunden lag. Eine Messung im regulären Clusterbetrieb würde damit überwiegend Wartezeit und die Zeit vor Beginn der Nutzlast erfassen und die Unterschiede zwischen den Systemen überlagern. Für den eigentlichen Systemvergleich wurde deshalb eine bereits bestehende Slurm-Allokation verwendet, innerhalb derer
 Warteschlange und Jobstart nicht erneut für jeden Workflow-Schritt
 anfielen.
 
@@ -141,9 +137,8 @@ Scatter-Gather-Muster für die parallelen Verarbeitungsinstanzen
 nutzen. Auf MOGON wurden die Workflow-Schritte innerhalb einer
 gemeinsamen Worker-Allokation ausgeführt. Dadurch fielen die
 Warte- und Startzeiten des Ressourcenverwalters nicht für jeden
-Schritt erneut an. Merlin bietet sich damit insbesondere an, wenn
-mehrere Rechenaufgaben innerhalb bereits bereitgestellter
-HPC-Ressourcen abgearbeitet werden sollen. Die von Merlin
+Schritt erneut an. Merlin bietet sich damit insbesondere an, wenn viele Rechenaufgaben innerhalb einer einmal angeforderten Allokation abgearbeitet werden
+sollen, ohne dass jede Aufgabe erneut die Warteschlange durchläuft. Die von Merlin
 angestrebte Skalierung auf sehr große Aufgabenzahlen wurde in
 dieser Arbeit jedoch nicht untersucht, da das
 Scatter-Gather-Muster höchstens vier parallele
@@ -163,34 +158,32 @@ Untersuchung beobachtete zusätzliche Koordinations- und
 Betriebsaufwand, wobei die absolute Höhe der
 gemessenen Zeiten von der Konfiguration der Datenhaltung abhängt.
 
-Pegasus trennt die abstrakte Beschreibung eines Workflows von
-dessen Abbildung auf die konkrete
-Ausführungsumgebung~\cite[S.~18--20]{deelman2015pegasus}. Damit
-steht bei Pegasus insbesondere die Trennung zwischen der
-Workflow-Beschreibung und ihrer konkreten Ausführung im
-Vordergrund. In der lokalen Untersuchung wies Pegasus allerdings
-den mit Abstand höchsten Overhead auf, der bei kurzen
-Rechenschritten besonders stark ins Gewicht fiel. Die
-Dokumentation beschreibt den Aufwand beim Einplanen kurzer Jobs
-selbst als Problemfall und sieht dafür das Bündeln mehrerer
-Aufgaben vor~\cite{pegasusdocs-optimizing}. Pegasus erscheint
-damit für die hier untersuchten feingranularen Workflows weniger
-günstig, wenn ein geringer Laufzeit-Overhead im Vordergrund steht.
-Die Eignung für das untersuchte HPC-System konnte nicht bewertet
-werden, da sich Pegasus dort nicht bereitstellen ließ.
+Pegasus richtet sich auf großskalige, mehrstufige Simulations- und
+Analyse-Abläufe auf verteilten
+Rechenressourcen~\cite[S.~17]{deelman2015pegasus} und übersetzt eine
+abstrakte Workflow-Beschreibung in einen ausführbaren
+Workflow~\cite[S.~18]{deelman2015pegasus}. In der lokalen
+Untersuchung wies Pegasus allerdings den mit Abstand höchsten
+Overhead auf, der bei kurzen Rechenschritten besonders stark ins
+Gewicht fiel. Die Dokumentation beschreibt den Aufwand beim
+Einplanen kurzer Jobs selbst als Problemfall und sieht dafür das
+Bündeln mehrerer Aufgaben vor~\cite{pegasusdocs-optimizing}.
+Pegasus erscheint damit für die hier untersuchten feingranularen
+Workflows weniger günstig, wenn ein geringer Laufzeit-Overhead im
+Vordergrund steht. Die Eignung für das untersuchte HPC-System
+konnte nicht bewertet werden, da sich Pegasus dort nicht
+bereitstellen ließ.
 
 Systemübergreifend zeigt sich, dass die Bedeutung des
 Laufzeit-Overheads von der Größe der einzelnen Rechenaufgaben
 abhängt. Bei kurzen Rechenschritten kann die zusätzlich durch das
 Workflow-Management-System beanspruchte Zeit einen erheblichen
 Anteil der Gesamtlaufzeit ausmachen. Mit zunehmender Rechenlast
-verliert dieser Anteil dagegen an Gewicht. Für die Systemwahl
-können dann andere Eigenschaften stärker in den Vordergrund
-rücken, etwa die Art der Workflow-Beschreibung, das Betriebsmodell
-oder die Nachvollziehbarkeit von Prozessen und Daten.
-Auf einem HPC-System kommt hinzu, wie das jeweilige System den
-Ressourcenverwalter einbindet. Im regulären Slurm-Betrieb fielen
-bei einzeln eingereichten Jobs Warte- und Startzeiten für jeden
+verliert dieser Anteil dagegen an Gewicht. Für die Systemwahl können dann andere Eigenschaften stärker in den Vordergrund rücken, etwa die Art der Workflow-Beschreibung oder die
+Nachvollziehbarkeit von Prozessen und Daten. Auf einem HPC-System
+kommt hinzu, wie das jeweilige System den Ressourcenverwalter
+einbindet. Im regulären Slurm-Betrieb fielen bei einzeln
+eingereichten Jobs Warte- und Startzeiten für jeden
 Workflow-Schritt erneut an, während Merlin die Schritte innerhalb
 einer gemeinsamen Worker-Allokation ausführte. Welche dieser
 Eigenschaften für die Eignung eines Systems entscheidend sind,
@@ -210,9 +203,7 @@ Muster.
 
 Die Rechenschritte selbst bestehen aus bewusst einfach gehaltenen
 Python-Skripten, damit alle Systeme dieselbe kontrollierte
-Rechenlogik ausführen. Dadurch konnten Unterschiede zwischen den
-Workflow-Management-Systemen unter kontrollierten Bedingungen
-untersucht werden. Die verwendeten Rechenaufgaben bilden jedoch
+Rechenlogik ausführen. Die verwendeten Rechenaufgaben bilden jedoch
 keine reale wissenschaftliche Anwendung mit großen Datenmengen oder
 intensiven Dateizugriffen ab. Inwieweit sich die beobachteten
 Unterschiede unter solchen Anwendungslasten verändern, wurde daher
@@ -247,7 +238,10 @@ grenzen einzelne Anteile davon näher ein, erfassen jedoch nicht sämtliche inte
 
 Jede Konfiguration wurde bei kurzer und mittlerer Rechenlast
 fünfmal, bei langer Rechenlast dreimal ausgeführt und über den
-Median ausgewertet. Die Verwendung des Medians reduziert den Einfluss einzelner abweichender Läufe, eine größere Zahl an Wiederholungen hätte jedoch eine genauere Beurteilung der Schwankungen zwischen den einzelnen Läufen ermöglicht.
+Median ausgewertet. Die Verwendung des Medians reduziert den
+Einfluss einzelner abweichender Läufe. Mit mehr Wiederholungen
+ließe sich zusätzlich angeben, wie stark die Werte zwischen den
+Läufen einer Konfiguration streuen.
 
 Pegasus konnte auf MOGON nicht ausgeführt werden, da es sich
 nicht bereitstellen ließ. Für dieses System liegen daher keine
