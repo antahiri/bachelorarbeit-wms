@@ -1,12 +1,3 @@
-"""Uebergangslatenzen zwischen aufeinanderfolgenden Schritten, MOGON
-im exklusiven Betrieb. Linkes Panel Pipeline, rechtes Panel
-Scatter-Gather mit 1, 2 und 4 Teilstuecken (aufsteigende Saettigung).
-Balkenhoehe ist der Median ueber die drei Rechenlasten,
-logarithmische Achse.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/mogon/06_uebergangslatenzen.py
-"""
 import sys
 import statistics
 from pathlib import Path

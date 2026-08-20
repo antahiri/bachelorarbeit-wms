@@ -1,12 +1,3 @@
-"""Gesamtlaufzeit des Scatter-Gather-Musters ueber die Teilstueckzahl,
-lokale Ebene. Je Rechenlast ein Panel, logarithmische
-Achse. Alle drei Panels ueberdecken denselben Faktor auf der y-Achse,
-damit die Steigungen vergleichbar sind. Oben und rechts offen, damit
-sich der weitere Verlauf gedanklich fortsetzen laesst.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/lokal/03_makespan_scatter_gather.py
-"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

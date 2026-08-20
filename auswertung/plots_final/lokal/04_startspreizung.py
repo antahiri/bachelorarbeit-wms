@@ -1,10 +1,3 @@
-"""Startspreizung der parallelen Verarbeitungsinstanzen, lokale Ebene. Je System zwei Balken (2 und 4 Teilstuecke),
-Hoehe ist der Median ueber die drei Rechenlasten. Logarithmische
-Achse, Beschriftung in Millisekunden.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/lokal/04_startspreizung.py
-"""
 import sys
 import statistics
 from pathlib import Path

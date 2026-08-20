@@ -1,9 +1,3 @@
-"""Gesamtlaufzeit des Pipeline-Musters je Rechenlast, lokale Ebene. Gruppierte Balken je Rechenlast, Hoehe ist der
-Median der Wiederholungen aus v2.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/lokal/02_makespan_pipeline.py
-"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

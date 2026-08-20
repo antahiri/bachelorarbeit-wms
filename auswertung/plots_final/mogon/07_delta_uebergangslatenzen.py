@@ -1,12 +1,3 @@
-"""Boxplot der Uebergangslatenz-Differenzen zwischen exklusivem und
-geteiltem Knoten. Je Konfiguration zuerst der Median ueber deren
-Uebergaenge, daraus die Differenz exklusiv minus geteilt. Zwoelf
-Punkte je System, gleiche Konstruktion wie beim Laufzeit-Delta.
-AiiDA stammt in beiden Modi aus der PostgreSQL-Messung.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/mogon/07_delta_uebergangslatenzen.py
-"""
 import sys
 import statistics
 from pathlib import Path

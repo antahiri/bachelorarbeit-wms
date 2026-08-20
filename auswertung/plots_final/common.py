@@ -1,10 +1,3 @@
-"""Gemeinsame Grundlagen aller finalen Plots.
-
-Liest ausschliesslich messungen/finale_Ergebnisse_v2 und schreibt die
-PNGs direkt in die LaTeX-Abbildungsordner unter content/figs/, mit den
-bisherigen Dateinamen. Regeln aus dem Betreuer-Feedback: keine Titel im
-Bild, einheitliche Schriftgroessen, log-Achsen mit Basisangabe.
-"""
 import csv
 from pathlib import Path
 import matplotlib

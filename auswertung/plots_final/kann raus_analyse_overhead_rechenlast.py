@@ -1,15 +1,3 @@
-"""Analyse: Haengt der Overhead von der Rechenlast ab?
-
-Drei Panels (lokal, MOGON exklusiv, MOGON geteilt). Je System und
-Rechenlast alle Einzelwerte aus den Rohdaten (paarweise Differenz
-WMS-Lauf minus Referenzlauf je Wiederholung, alle Konfigurationen der
-jeweiligen Last zusammengefasst) sowie der Median als Linie. Nur die
-Quellen der finalen Auswertung (StreamFlow local, AiiDA PostgreSQL).
-Logarithmische Achse, damit lokal auch Pegasus darstellbar ist.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/analyse_overhead_rechenlast.py
-"""
 import csv
 import statistics
 import sys

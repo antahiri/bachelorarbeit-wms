@@ -1,11 +1,3 @@
-"""Startspreizung der parallelen Verarbeitungsinstanzen, MOGON im
-exklusiven Betrieb. Je System zwei Balken (2 und 4 Teilstuecke),
-Hoehe ist der Median ueber die drei Rechenlasten. Logarithmische
-Achse, Beschriftung in Millisekunden.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/mogon/04_startspreizung.py
-"""
 import sys
 import statistics
 from pathlib import Path

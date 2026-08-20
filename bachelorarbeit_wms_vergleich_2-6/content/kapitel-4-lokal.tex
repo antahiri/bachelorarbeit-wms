@@ -111,7 +111,7 @@ Nextflow beschreibt den Workflow in einer einzigen Datei
 
 \emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
 es nicht. Die Reihenfolge entsteht dadurch, dass die Ausgabe eines
-Prozesses als Eingabe des nachfolgenden Prozesses dient, entsprechend
+Prozesses als Eingabe des nachfolgenden Prozesses dient (Listing~\ref{lst:pipe:nf}), entsprechend
 dem Datenfluss-Modell, auf dem Nextflow
 beruht~\cite[S.~317]{ditommaso2017nextflow}.
 
@@ -181,7 +181,7 @@ StreamFlow verteilt die Umsetzung auf drei Dateien:
 es nicht. Jeder Schritt benennt unter \texttt{in} seine Eingaben und
 eine dieser Eingaben verweist auf die Ausgabe des vorherigen
 Schritts. Die Reihenfolge entsteht damit aus den Verweisen zwischen
-den Schritten.
+den Schritten (Listing~\ref{lst:pipe:sf}).
 
 \begin{lstlisting}[caption={Verweis auf die Ausgabe des Vorgängers in workflow.cwl (StreamFlow, Pipeline)},label={lst:pipe:sf}]
   preprocess:
@@ -253,7 +253,7 @@ enthält die Verbindungsdaten des Nachrichtenvermittlers.
 
 \emph{Ausdruck des Patterns:} Die Reihenfolge wird ausdrücklich
 benannt. Jeder Schritt führt unter \texttt{depends} seine Vorgänger
-auf.
+auf (Listing~\ref{lst:pipe:me}).
 
 \begin{lstlisting}[caption={Abhängigkeit und Datenweitergabe eines Schritts (Merlin, Pipeline)},label={lst:pipe:me}]
   - name: compute_1
@@ -319,7 +319,7 @@ Python-Schnittstelle von Pegasus aufgebaut.
 \emph{Ausdruck des Patterns:} Die Reihenfolge ergibt sich aus den
 Dateien. Jeder Job benennt über \texttt{add\_inputs} und
 \texttt{add\_outputs}, welche Dateien er liest und schreibt und
-Pegasus leitet daraus die Kanten des Graphen ab.
+Pegasus leitet daraus die Kanten des Graphen ab (Listing~\ref{lst:pipe:pg}).
 
 \begin{lstlisting}[language=Python,caption={Ein- und Ausgaben eines Jobs (Pegasus, Pipeline)},label={lst:pipe:pg}]
 compute_job = Job("compute")
@@ -388,7 +388,7 @@ führt je Schritt eines der Benchmark-Skripte aus, ein Submit-Skript
 übergibt den Lauf an den Daemon.
 
 \emph{Ausdruck des Patterns:} Die Reihenfolge wird ausdrücklich als
-Liste von Methoden in \texttt{spec.outline()} festgelegt. Die
+Liste von Methoden in \texttt{spec.outline()} festgelegt (Listing~\ref{lst:pipe:ai}). Die
 abschließende Methode \texttt{results} reicht keinen weiteren
 CalcJob ein, sie veröffentlicht die Ausgaben der vier fachlichen
 Schritte als Ausgaben der WorkChain.
@@ -558,7 +558,7 @@ Parameter am Dateianfang.
 
 \emph{Ausdruck des Patterns:} Die parallele Phase wird über die
 Operatoren \texttt{flatten} und \texttt{collect} auf den Channels
-ausgedrückt. \texttt{SPLIT} erzeugt die Teilstücke als gemeinsame
+ausgedrückt (Listing~\ref{lst:sg:nf}). \texttt{SPLIT} erzeugt die Teilstücke als gemeinsame
 Ausgabe, \texttt{flatten} gibt sie als einzelne Elemente weiter,
 sodass \texttt{COMPUTE} für jedes Element gestartet wird.
 \texttt{collect} sammelt anschließend die Teilergebnisse zu einer
@@ -623,7 +623,7 @@ Pipeline-Pattern \texttt{workflow.cwl}, \texttt{streamflow.yml}
 und \texttt{config.yml}.
 
 \emph{Ausdruck des Patterns:} Die Aufteilung wird über das
-\texttt{scatter}-Attribut des \texttt{compute}-Schritts ausgedrückt.
+\texttt{scatter}-Attribut des \texttt{compute}-Schritts ausgedrückt (Listing~\ref{lst:sg:sf}).
 Der Schritt erhält das von \texttt{split} erzeugte Feld der
 Teilstücke und wird für jedes Element einzeln ausgeführt.
 Für die Zusammenführung verweist \texttt{aggregate} mit
@@ -694,7 +694,7 @@ Eintrag je Teilstück enthält. Der einmal beschriebene
 \texttt{compute}-Schritt wird dadurch für jeden Parameterwert
 instanziiert. Jede Instanz hängt von \texttt{split} ab. Für den
 anschließenden Fan-in verweist \texttt{aggregate} unter
-\texttt{depends} mit \texttt{compute\_*} auf alle hervorgegangenen Compute-Instanzen.
+\texttt{depends} mit \texttt{compute\_*} auf alle hervorgegangenen Compute-Instanzen (Listing~\ref{lst:sg:me}).
 
 \begin{lstlisting}[caption={Parametrisierter Verarbeitungsschritt und Fan-in (Merlin, Scatter-Gather)},label={lst:sg:me}]
   - name: compute
@@ -763,7 +763,7 @@ Erzeugungsskript \texttt{build\_workflow.py} aufgebaut.
 \emph{Ausdruck des Patterns:} Die parallele Phase entsteht im
 Erzeugungsskript. Eine Schleife legt je Teilstück einen eigenen
 \texttt{compute}-Job an, der sein Teilstück als Eingabe und die
-zugehörige Ergebnisdatei als Ausgabe deklariert, die Kanten leitet
+zugehörige Ergebnisdatei als Ausgabe deklariert (Listing~\ref{lst:sg:pg}), die Kanten leitet
 Pegasus wie beim Pipeline-Pattern aus den Dateien ab. Für die
 Zusammenführung deklariert der \texttt{aggregate}-Job die
 Ergebnisdateien aller Teilstücke als Eingaben. In der erzeugten
@@ -835,7 +835,7 @@ Teilstückzahl und Rechenlast sind Eingaben der WorkChain.
 
 \emph{Ausdruck des Patterns:} Die parallele Phase entsteht in einem
 einzigen Outline-Schritt. Eine Schleife reicht je Teilstück einen
-eigenen CalcJob ein, der sein Teilstück verarbeitet und
+eigenen CalcJob ein, der sein Teilstück verarbeitet (Listing~\ref{lst:sg:ai}) und
 \texttt{ToContext} lässt die WorkChain auf den Abschluss aller
 eingereichten CalcJobs warten, bevor der nächste Outline-Schritt
 beginnt. Dort sammelt \texttt{submit\_aggregate} die Ergebnisordner
@@ -869,7 +869,7 @@ erhält der \texttt{aggregate}-CalcJob die Ordner aller Instanzen als
 Quellen mit einer Zuordnung je Ergebnisdatei. Die Abhängigkeit des anschließenden Zusammenführens von allen Verarbeitungsinstanzen ergibt sich aus dem von \texttt{ToContext} hergestellten Wartepunkt innerhalb der Outline.
 
 \emph{Ausführung und Steuerung:} Die WorkChain wird weiterhin über
-den Daemon verwaltet. Die Ausführung übernehmen dabei mehrere parallel laufende Runner, die Aufgaben unabhängig voneinander verarbeiten.~\cite[S.~3]{huber2020aiida} Da die
+den Daemon verwaltet. Die Ausführung übernehmen dabei mehrere parallel laufende Runner, die Aufgaben unabhängig voneinander verarbeiten~\cite[S.~3]{huber2020aiida}. Da die
 Verarbeitungsinstanzen gemeinsam eingereicht werden, können ihre
 CalcJobs gleichzeitig verarbeitet werden. Durch \texttt{ToContext}
 setzt die WorkChain erst fort, wenn alle eingereichten CalcJobs

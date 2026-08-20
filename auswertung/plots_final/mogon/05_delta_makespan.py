@@ -1,13 +1,3 @@
-"""Boxplot der Gesamtlaufzeit-Differenzen zwischen exklusivem und
-geteiltem Knoten. Je System zwoelf Punkte, einer je Konfiguration,
-jeweils Differenz der beiden Kampagnen-Mediane (exklusiv minus
-geteilt). Werte nahe null bedeuten, dass die exklusive Reservierung
-das Ergebnis nicht wesentlich veraendert. Whisker: 1,5-facher
-Interquartilsabstand.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/mogon/05_delta_makespan.py
-"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

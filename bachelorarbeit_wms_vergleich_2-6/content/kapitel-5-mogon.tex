@@ -492,20 +492,29 @@ Referenzmessung ohne Workflow-Management-System wurde unverändert
 Die Allokation wurde zusätzlich exklusiv angefordert, sodass
 während der Messung keine Aufträge anderer Nutzender auf demselben
 Knoten liefen. Um den Einfluss dieser Einstellung zu prüfen, wurde
-dieselbe Messreihe auch ohne exklusive Reservierung ausgeführt. Die
-Unterschiede zwischen beiden Läufen sind gering und nicht
-einheitlich gerichtet, bei einzelnen Systemen fielen die Werte auf
-dem geteilten Knoten sogar niedriger aus. Die exklusive Messreihe bildet daher die Grundlage der folgenden Auswertung. Die Messung auf dem geteilten Knoten dient ausschließlich dazu, den Einfluss einer geteilten Knotennutzung zu untersuchen.
+dieselbe Messreihe auch ohne exklusive Reservierung ausgeführt.
+Abbildung~\ref{fig:mogon:exklusivgeteilt} stellt die Differenzen
+beider Messreihen gegenüber. Die Boxen fassen die zwölf
+Konfigurationen je System zusammen, die eingezeichneten Punkte
+zeigen die einzelnen Konfigurationen. Die Unterschiede zwischen
+beiden Messreihen sind gering und nicht einheitlich gerichtet, bei
+einzelnen Systemen fielen die Werte auf dem geteilten Knoten sogar
+niedriger aus. Die exklusive Messreihe bildet daher die Grundlage
+der folgenden Auswertung. Die Messung auf dem geteilten Knoten
+dient ausschließlich dazu, den Einfluss einer geteilten
+Knotennutzung zu untersuchen.
 
 \begin{figure}[htbp]
   \centering
   \begin{subfigure}{0.49\textwidth}
+    \centering
     \includegraphics[width=\textwidth]{content/figs/mogon_graphen/05_delta_exklusiv_geteilt_mogon.png}
     \caption{Gesamtlaufzeit}
     \label{fig:mogon:delta-makespan}
   \end{subfigure}
   \hfill
   \begin{subfigure}{0.49\textwidth}
+    \centering
     \includegraphics[width=\textwidth]{content/figs/mogon_graphen/07_delta_uebergangslatenzen_mogon.png}
     \caption{Übergangslatenzen}
     \label{fig:mogon:delta-latenz}

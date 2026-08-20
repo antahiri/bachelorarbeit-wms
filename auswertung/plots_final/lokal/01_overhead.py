@@ -1,10 +1,3 @@
-"""Overhead gegenueber der Referenz, alle zwoelf Konfigurationen,
-lokale Ebene. Gruppierte Balken je Konfiguration,
-Hoehe ist der Median der paarweisen Differenzen aus v2.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/lokal/01_overhead.py
-"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

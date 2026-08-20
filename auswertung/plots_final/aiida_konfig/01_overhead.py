@@ -1,10 +1,3 @@
-"""Overhead von AiiDA nach Datenbank und Ablageort der Datenhaltung,
-MOGON im geteilten Betrieb. Drei Konfigurationen je Konfiguration des
-Workflows, Hoehe ist der Median der paarweisen Differenzen aus v2.
-
-Aufruf aus dem Repo-Wurzelverzeichnis:
-    python3 auswertung/plots_final/aiida_konfig/01_overhead.py
-"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
