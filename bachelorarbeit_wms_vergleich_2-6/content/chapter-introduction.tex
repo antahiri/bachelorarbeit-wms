@@ -2,6 +2,13 @@
 \chapter{Einleitung}
 \label{sec:intro}
 
+Wissenschaftliches Rechnen besteht häufig nicht aus einer einzelnen
+Berechnung, sondern aus mehreren aufeinander aufbauenden
+Rechenschritten. Ausgeführt werden solche Abläufe sowohl auf
+einzelnen Rechnern als auch auf HPC-Systemen. Mit zunehmender Zahl
+der Schritte wird es aufwendiger, ihre Ausführung und die dabei
+entstehenden Daten zu verwalten.
+
 \section{Motivation}
 \label{sec:intro:motivation}
 Wissenschaftliche Workflows bestehen aus mehreren miteinander
@@ -19,9 +26,9 @@ eines Systems wird dabei unter anderem durch die Anforderungen der
 jeweiligen Fachgemeinschaft, die Verbreitung einzelner Systeme
 oder historische Gründe beeinflusst~\cite[S.~28]{badia2017workflows}. Eine einzelne, für alle wissenschaftlichen Prozesse und Ausführungsumgebungen geeignete Lösung gibt es nicht~\cite[S.~2]{suter2026terminology}. Wer ein System auswählen will, steht damit vor der Frage, wie sich die Systeme in der
 Beschreibung von Workflows, im Laufzeitverhalten und im Betrieb
-unterscheiden. Für den Einsatz auf einem HPC-System kommt
-zusätzlich die Frage hinzu, wie sich die Systeme dort
-bereitstellen und mit dem Ressourcenverwalter betreiben lassen.
+unterscheiden. Für den Einsatz auf einem HPC-System kommt zusätzlich die Frage hinzu, wie sich die Systeme dort bereitstellen und mit dem
+Ressourcenverwalter betreiben lassen, der die verfügbaren
+Rechenressourcen auf die auszuführenden Aufgaben verteilt.
 
 Hier setzt die vorliegende Arbeit an. Sie vergleicht mit Nextflow,
 StreamFlow, Merlin, Pegasus und AiiDA fünf
@@ -45,7 +52,9 @@ Wie unterscheiden sich die betrachteten
 Workflow-Management-Systeme bei der Umsetzung eines Pipeline- und
 eines Scatter-Gather-Workflows (F1)? Die zweite Frage richtet sich
 auf das Laufzeitverhalten: Welches Laufzeitverhalten zeigen die Systeme
-bei der Ausführung dieser Workflows, gemessen an Makespan, Overhead und Koordinationsgrößen (F2)? Die
+bei der Ausführung dieser Workflows, gemessen an Makespan, Overhead und Koordinationsgrößen (F2)? Die Koordinationsgrößen erfassen dabei
+zeitliche Abstände beim Übergang zwischen aufeinanderfolgenden
+Schritten und beim Start paralleler Verarbeitungsinstanzen. Die
 dritte Frage gilt dem Einsatz auf dem HPC-System: Wie lassen sich
 die Systeme auf einem Slurm-basierten HPC-System betreiben, und
 wie setzen sich die Laufzeiten unter Clusterbedingungen zusammen
