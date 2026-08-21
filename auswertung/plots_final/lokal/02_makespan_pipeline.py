@@ -26,7 +26,7 @@ ax.set_xlabel("Rechenlast")
 ax.set_yscale("log")
 ax.set_ylabel("Gesamtlaufzeit in s (log$_{10}$)")
 ax.margins(y=0.18)
-ax.legend(ncol=len(SYS), loc="upper left", frameon=True)
+ax.legend(ncol=len(SYS), loc="upper left", frameon=True, fontsize=9)
 dezimal(ax)
 
 speichere(fig, "lokal", "02_makespan_pipeline.png")

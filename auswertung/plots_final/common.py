@@ -44,8 +44,8 @@ UEBERGAENGE = {
 def stil():
     """Einheitliche Darstellung fuer alle Plots (keine Titel im Bild)."""
     plt.rcParams.update({
-        "font.size": 10, "axes.labelsize": 10,
-        "xtick.labelsize": 9, "ytick.labelsize": 9, "legend.fontsize": 9,
+        "font.size": 12, "axes.labelsize": 12,
+        "xtick.labelsize": 11, "ytick.labelsize": 11, "legend.fontsize": 11,
         "axes.grid": True, "grid.alpha": 0.25, "axes.axisbelow": True,
         "figure.dpi": 300, "savefig.bbox": "tight",
     })

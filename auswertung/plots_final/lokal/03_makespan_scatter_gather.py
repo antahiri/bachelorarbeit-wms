@@ -10,16 +10,15 @@ stil()
 zentral = lade_central("lokal_mac")
 SYS = ["streamflow", "nextflow", "merlin", "aiida", "pegasus"]
 CHUNKS = [1, 2, 4]
+RECHENLAST_ADJ = {"short": "kurze", "medium": "mittlere", "long": "lange"}
 
-# Je Panel eigene Spanne: Pegasus erzwingt lokal grosse Bereiche,
-# ein gemeinsamer Faktor wuerde die uebrigen Panels leeren
 minmax = {}
 for w in WORKLOADS:
     werte = [zentral[(s, "scatter_gather", w, c)]["wms_makespan_s"]
              for s in SYS for c in CHUNKS]
     minmax[w] = (min(werte), max(werte))
 
-fig, achsen = plt.subplots(1, 3, figsize=(11.0, 3.6))
+fig, achsen = plt.subplots(1, 3, figsize=(11.0, 3.6), gridspec_kw={"wspace": 0.16})
 for ax, w in zip(achsen, WORKLOADS):
     for s in SYS:
         werte = [zentral[(s, "scatter_gather", w, c)]["wms_makespan_s"]
@@ -34,7 +33,7 @@ for ax, w in zip(achsen, WORKLOADS):
     ax.yaxis.set_major_locator(LogLocator(subs=(1.0, 2.0, 5.0)))
     ax.yaxis.set_major_formatter(FuncFormatter(komma))
     ax.yaxis.set_minor_formatter(NullFormatter())
-    ax.set_xlabel(f"Teilstücke ({WORKLOAD_NAME[w]}e Rechenlast)")
+    ax.set_xlabel(f"Teilstücke ({RECHENLAST_ADJ[w]} Rechenlast)")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 achsen[0].set_ylabel("Gesamtlaufzeit in s (log$_{10}$)")

@@ -61,7 +61,7 @@ handles += [plt.Rectangle((0, 0), 1, 1, color=to_rgba("#4B5563", ALPHA[c]))
             for c in (1, 2, 4)]
 namen = [NAME[s] for s in SYS] + ["1 Teilstück", "2 Teilstücke", "4 Teilstücke"]
 fig.legend(handles, namen, ncol=7, loc="lower center",
-           bbox_to_anchor=(0.5, -0.04), frameon=True, fontsize=8.5)
+           bbox_to_anchor=(0.5, -0.04), frameon=True, fontsize=10)
 fig.subplots_adjust(bottom=0.24)
 
 speichere(fig, "mogon", "06_uebergangslatenzen_mogon.png")

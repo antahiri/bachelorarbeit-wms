@@ -10,6 +10,7 @@ stil()
 zentral = lade_central("mogon_exc")
 SYS = ["streamflow", "nextflow", "merlin", "aiida"]
 CHUNKS = [1, 2, 4]
+RECHENLAST_ADJ = {"short": "kurze", "medium": "mittlere", "long": "lange"}
 
 # Gemeinsamer Faktor der y-Spannen, damit log-Steigungen vergleichbar sind
 minmax = {}
@@ -20,7 +21,7 @@ for w in WORKLOADS:
     minmax[w] = (min(werte), max(werte))
     faktor = max(faktor, (max(werte) * 1.15) / (min(werte) / 1.15))
 
-fig, achsen = plt.subplots(1, 3, figsize=(11.0, 3.6))
+fig, achsen = plt.subplots(1, 3, figsize=(11.0, 3.6), gridspec_kw={"wspace": 0.16})
 for ax, w in zip(achsen, WORKLOADS):
     for s in SYS:
         werte = [zentral[(s, "scatter_gather", w, c)]["wms_makespan_s"]
@@ -36,7 +37,7 @@ for ax, w in zip(achsen, WORKLOADS):
     ax.yaxis.set_major_formatter(FuncFormatter(komma))
     ax.yaxis.set_minor_formatter(FuncFormatter(komma))
     ax.tick_params(axis="y", which="minor", labelsize=7)
-    ax.set_xlabel(f"Teilstücke ({WORKLOAD_NAME[w]}e Rechenlast)")
+    ax.set_xlabel(f"Teilstücke ({RECHENLAST_ADJ[w]} Rechenlast)")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 achsen[0].set_ylabel("Gesamtlaufzeit in s (log$_{10}$)")

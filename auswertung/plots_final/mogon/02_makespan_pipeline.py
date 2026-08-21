@@ -25,7 +25,7 @@ ax.set_xlabel("Rechenlast")
 ax.set_ylabel("Gesamtlaufzeit in s")
 ax.set_ylim(0, max(zentral[(s, "pipeline", "long", 1)]["wms_makespan_s"]
                    for s in SYS) * 1.12)
-ax.legend(ncol=len(SYS), loc="upper left", frameon=True)
+ax.legend(ncol=len(SYS), loc="upper left", frameon=True, fontsize=9)
 dezimal(ax)
 
 speichere(fig, "mogon", "02_makespan_pipeline_mogon.png")
