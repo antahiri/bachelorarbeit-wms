@@ -3,7 +3,13 @@
 \chapter{Grundlagen und verwandte Arbeiten}
 \label{sec:basics}
 
-
+Dieses Kapitel führt die Begriffe ein, auf denen die Arbeit
+aufbaut. Es beschreibt zunächst wissenschaftliche Workflows und
+Workflow-Management-Systeme, anschließend die Strukturen, aus denen
+Workflows zusammengesetzt sind, sowie den Aufbau von HPC-Systemen
+und die Ressourcenverwaltung mit Slurm. Danach werden die fünf untersuchten Workflow-Management-Systeme
+vorgestellt und die Arbeit gegenüber verwandten Arbeiten
+eingeordnet.
 
 \section{Wissenschaftliche Workflows und Workflow-Management-Systeme}
 \label{sec:basics:wms}
@@ -13,12 +19,11 @@ verbundenen Rechenschritten bestehen. Ein solcher Workflow verfolgt
 ein bestimmtes Forschungs- oder Analyseziel und beschreibt, wie die
 einzelnen Schritte innerhalb des Ablaufs zusammenhängen. Dazu
 gehören insbesondere ihre Reihenfolge sowie die zwischen ihnen
-bestehenden Daten- und
-Kontrollabhängigkeiten~\cite[S.~2]{suter2026terminology}.
+bestehenden Abhängigkeiten~\cite[S.~2]{suter2026terminology}.
 Anschaulich lässt sich diese Struktur als Graph darstellen. Die
 Knoten stehen dabei für die einzelnen Rechenschritte, in der
-Literatur meist als Tasks bezeichnet, während die Kanten die Daten-
-oder Kontrollabhängigkeiten zwischen ihnen
+Literatur meist als Tasks bezeichnet, während die Kanten die
+Abhängigkeiten zwischen ihnen
 darstellen~\cite[S.~28\,f.]{badia2017workflows}. Eine verbreitete
 Form eines Rechenschritts ist ein eigenständiges ausführbares
 Programm, das Eingabedaten verarbeitet und daraus Ausgaben
@@ -39,9 +44,9 @@ Koordination der Ausführung, die Übertragung von Daten sowie die
 
 \section{Workflow-Struktur und Ausführung}
 \label{sec:basics:struktur}
-Zwischen den Schritten eines Workflows bestehen Abhängigkeiten, die
-bestimmen, wann ein Schritt ausgeführt werden kann. Badia et al.
-unterscheiden dabei Datenabhängigkeiten von
+Die Abhängigkeiten zwischen den Schritten bestimmen, wann ein
+Schritt ausgeführt werden kann. Badia et al. unterscheiden dabei
+Datenabhängigkeiten von
 Kontrollabhängigkeiten~\cite[S.~28]{badia2017workflows}. Eine
 Datenabhängigkeit besteht, wenn ein Schritt Daten benötigt, die
 von einem anderen Schritt erzeugt werden. Eine
@@ -125,7 +130,58 @@ geteilt mit anderen Jobs erfolgen. Bei einer exklusiven Allokation
 teilt der Job die zugeteilten Knoten nicht mit anderen laufenden
 Jobs~\cite{slurmdocs-sbatch}. Nach erteilter Allokation führt Slurm
 das Jobskript auf dem ersten der zugeteilten Knoten
-aus~\cite{slurmdocs-sbatch}.
+aus~\cite{slurmdocs-sbatch}. Abbildung~\ref{fig:basics:slurm-ablauf} fasst diesen Ablauf
+zusammen.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      node distance=11mm,
+      box/.style={
+        draw=ctcolorgraylight,
+        fill=ctcolorgraylighter!45,
+        rounded corners=2pt,
+        minimum width=62mm,
+        minimum height=12mm,
+        align=center,
+        font=\small
+      },
+      slurm/.style={
+        box,
+        draw=ctcolormain!70,
+        fill=ctcolormain!8
+      },
+      lbl/.style={
+        font=\scriptsize\itshape,
+        text=ctcolorgray,
+        fill=white,
+        inner sep=1.5pt
+      },
+      arr/.style={
+        -stealth,
+        semithick,
+        draw=ctcolorgray,
+        shorten <=0.5pt,
+        shorten >=0.5pt
+      }]
+    \node[box] (login)
+      {\textbf{Login-Knoten}\\
+       Rechenauftrag vorbereiten und einreichen};
+    \node[slurm, below=of login] (slurm)
+      {\textbf{Slurm}\\
+       Warteschlange und Ressourcenzuteilung};
+    \node[box, below=of slurm] (compute)
+      {\textbf{Rechenknoten}\\
+       Job ausführen};
+    \draw[arr] (login) --
+      node[lbl, right] {Job einreichen} (slurm);
+    \draw[arr] (slurm) --
+      node[lbl, right] {Allokation zuteilen} (compute);
+  \end{tikzpicture}
+  \caption{Ablauf von der Einreichung eines Rechenauftrags bis zu
+    seiner Ausführung auf einem Slurm-verwalteten HPC-System.}
+  \label{fig:basics:slurm-ablauf}
+\end{figure}
 
 Vor der eigentlichen Ausführung eines Jobs können auf den
 zugeteilten Rechenknoten systemseitige Vorbereitungen stattfinden.
@@ -185,7 +241,11 @@ werden~\cite[S.~261]{peterson2022merlin}.
 
 \subsection{Pegasus}
 \label{sec:basics:pegasus}
-Pegasus beruht auf der Trennung zwischen der Beschreibung eines
+Pegasus richtet sich auf großskalige, mehrstufige Simulations- und
+Analyse-Abläufe, deren Rechen- und Datenumfang ein System
+erfordert, das Datentransfer und Aufgabenausführung auf verteilten
+Rechenressourcen koordiniert und
+automatisiert~\cite[S.~17]{deelman2015pegasus}. Das System beruht auf der Trennung zwischen der Beschreibung eines
 Workflows und seiner konkreten Ausführung. Nutzende erstellen
 einen abstrakten Workflow, den Pegasus in einen ausführbaren
 Workflow überführt~\cite[S.~18]{deelman2015pegasus}. Der abstrakte
