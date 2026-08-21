@@ -3,6 +3,10 @@
 \chapter{Diskussion}
 \label{sec:diskussion}
 
+Dieses Kapitel ordnet die Ergebnisse beider Untersuchungsebenen
+ein. Zunächst werden die vier Forschungsfragen beantwortet,
+anschließend werden die Grenzen der Untersuchung dargelegt.
+
 \section{Beantwortung der Forschungsfragen}
 \label{sec:diskussion:fragen}
 
@@ -52,10 +56,7 @@ Die Startspreizung ist davon getrennt zu betrachten. Sie beschreibt, wie schnell
 Startspreizung bei vier Teilstücken mit rund 0,73 Sekunden in
 derselben Größenordnung wie bei AiiDA, während sein Overhead
 deutlich niedriger bleibt. Eine größere Startspreizung führt damit
-nicht zwangsläufig zu einem höheren Overhead. Beide
-Koordinationsgrößen ergänzen die Messung der Gesamtlaufzeit, indem
-sie unterschiedliche Stellen sichtbar machen, an denen ein
-Workflow-Management-System zusätzliche Zeit beansprucht.
+nicht zwangsläufig zu einem höheren Overhead.
 
 \paragraph{F3: Betrieb auf dem HPC-System.}
 Vier der fünf untersuchten Systeme ließen sich auf MOGON unter den
@@ -121,14 +122,14 @@ Konfiguration der
 Ausführungsumgebung~\cite{colonnelli2021streamflow}. Diese Trennung
 zeigte sich beim Wechsel auf MOGON: Die in CWL formulierte
 Workflow-Beschreibung blieb unverändert, während die
-Ausführungskonfiguration angepasst wurde. Zusammen mit den
-niedrigen gemessenen Koordinationszeiten bietet sich StreamFlow
+Ausführungskonfiguration angepasst wurde. dem geringen Overhead und den niedrigen gemessenen Koordinationszeiten bietet sich StreamFlow
 damit insbesondere an, wenn eine standardisierte
 Workflow-Beschreibung und die Trennung von Workflow und
 Ausführungsumgebung im Vordergrund stehen. Einschränkend war die
 Bereitstellung der untersuchten Vorabversion aufwendiger und
 erforderte Anpassungen für die Slurm-Ausführung.
 
+\begin{sloppypar}
 Merlin ist für große Ensembles von Rechenaufgaben auf HPC-Systemen
 ausgelegt und verteilt Aufgaben über ein
 Erzeuger-Verbraucher-Modell an
@@ -143,6 +144,7 @@ angestrebte Skalierung auf sehr große Aufgabenzahlen wurde in
 dieser Arbeit jedoch nicht untersucht, da das
 Scatter-Gather-Muster höchstens vier parallele
 Verarbeitungsinstanzen umfasste.
+\end{sloppypar}
 
 AiiDA stellt die dauerhafte Nachvollziehbarkeit wissenschaftlicher
 Abläufe in den Mittelpunkt und hält Prozesse und Daten während der
@@ -154,8 +156,8 @@ StreamFlow und Merlin einher. Zudem zeigte die Konfigurationsstudie
 einen deutlichen Einfluss des Ablageorts der Datenhaltung auf die
 gemessenen Zeiten. Damit stellt AiiDA insbesondere dann eine relevante Option dar, wenn die dauerhafte Nachvollziehbarkeit von Prozessen und Daten
 für den Anwendungsfall stärker gewichtet wird als der in dieser
-Untersuchung beobachtete zusätzliche Koordinations- und
-Betriebsaufwand, wobei die absolute Höhe der
+Untersuchung beobachtete höhere Overhead und der
+zusätzliche Koordinations- und Betriebsaufwand, wobei die absolute Höhe der
 gemessenen Zeiten von der Konfiguration der Datenhaltung abhängt.
 
 Pegasus richtet sich auf großskalige, mehrstufige Simulations- und

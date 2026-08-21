@@ -27,6 +27,7 @@ stammen. Aus dieser Betrachtung ergibt sich der Aufbau der
 anschließenden Messung, deren Ergebnisse den letzten Teil des
 Kapitels bilden.
 
+\begin{sloppypar}
 Workflows, Benchmark-Skripte, Instrumentierung und Messgrößen sind
 dieselben wie in Kapitel~\ref{sec:methodik} beschrieben, ebenso die
 Referenzmessung ohne Workflow-Management-System und die fünf
@@ -35,6 +36,7 @@ Messwerte zusammengefasst werden. Da sich die
 Ausführungsbedingungen beider Ebenen unterscheiden, werden die
 Ergebnisse getrennt betrachtet und nicht unmittelbar
 gegeneinander gestellt.
+\end{sloppypar}
 
 
 \section{Versuchsumgebung}
@@ -458,9 +460,10 @@ Clusterbetriebs in der folgenden Messreihe durch eine dedizierte Ausführung exp
 
 
 
-\section{Messaufbau der dedizierten Messung}
+\section{Aufbau der dedizierten Messung}
 \label{sec:mogon:dediziert}
 
+\begin{sloppypar}
 Die Messreihen wurden jeweils vollständig innerhalb einer einzelnen
 Slurm-Allokation ausgeführt. Dazu wurde ein Rechenknoten der
 Partition \texttt{ki-smallcpu} angefordert, auf dem die Systeme
@@ -471,6 +474,7 @@ Start der jeweiligen Allokation an und liegen vollständig außerhalb
 der eigentlichen Messung. Die Ausführung von Benchmark-Messungen
 auf dedizierten Rechenknoten entspricht dem Vorgehen vergleichbarer
 Untersuchungen~\cite[S.~103]{wfbench2022}.
+\end{sloppypar}
 
 Dieser Aufbau folgt unmittelbar aus dem Befund des vorangegangenen
 Abschnitts. Im regulären Clusterbetrieb entsteht der überwiegende
@@ -483,10 +487,12 @@ einzelnen Workflow-Schritte, sodass Unterschiede zwischen den
 Systemen nicht mehr durch die je Schritt anfallenden
 Warteschlangen- und Prologzeiten überlagert werden.
 
+\begin{sloppypar}
 Workflows, Benchmark-Skripte, Instrumentierung und Messgrößen sind
 dieselben wie in Kapitel~\ref{sec:methodik} beschrieben. Auch die
 Referenzmessung ohne Workflow-Management-System wurde unverändert
 übernommen.
+\end{sloppypar}
 
 Die Allokation wurde zusätzlich exklusiv angefordert, sodass
 während der Messung keine Aufträge anderer Nutzender auf demselben

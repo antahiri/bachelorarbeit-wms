@@ -5,7 +5,13 @@
 \chapter{Modellierung und lokale Evaluation}
 \label{sec:lokal}
 
-\section{Lokale Untersuchungsumgebung und Systembereitstellung}
+Dieses Kapitel beschreibt die Umsetzung der beiden Workflow-Muster
+in den fünf Systemen und die Ergebnisse der lokalen Messreihe.
+Zunächst wird die Untersuchungsumgebung dargestellt, anschließend
+werden die Umsetzungen beider Muster entlang der Vergleichsaspekte
+gegenübergestellt. Den Abschluss bilden die gemessenen Laufzeiten.
+
+\section{Versuchsumgebung und Systembereitstellung}
 \label{sec:lokal:umgebung}
 
 Alle Modellierungen und die lokale Messreihe wurden auf einem MacBook
@@ -51,6 +57,7 @@ mit, sodass das Werkzeug nach der Installation zunächst nicht
 startete. Erst nach einem Downgrade von \texttt{setuptools} auf eine
 Version kleiner als~81 lief Merlin an.
 
+\begin{sloppypar}
 \paragraph{Pegasus:} Pegasus wurde in Version~5.1.2 installiert und
 benötigt HTCondor~\cite{pegasusdocs-install}, das in Version~23.1.0 über
 Homebrew bezogen wurde. Die HTCondor-Prozesse wurden einmal über
@@ -61,6 +68,7 @@ Terminal-Sitzung gelten: \texttt{CONDOR\_CONFIG} für die
 HTCondor-Konfiguration und \texttt{PYTHONPATH} für die
 Pegasus-Python-Bibliothek. Ohne die zweite Variable brach das
 Erzeugungsskript mit einem \texttt{ModuleNotFoundError} ab.
+\end{sloppypar}
 
 \paragraph{AiiDA:} AiiDA wurde in Version~2.8.0 installiert. Für den in der Dokumentation empfohlenen Betrieb setzt AiiDA zwei Dienste voraus, PostgreSQL als Datenbank-Backend für die Ablage aller Daten- und Prozessknoten und RabbitMQ für die Kommunikation mit dem Daemon~\cite{aiidadocs-install}. Beide Dienste wurden lokal installiert. Über die Installation hinaus waren eine Datenbank und ein Profil anzulegen, vor jedem Lauf muss zusätzlich der Daemon aktiv sein, der die Workflows im Hintergrund ausführt.
 
@@ -72,6 +80,7 @@ unterscheiden. Die Einordnung aus Einsteigerperspektive folgt in den
 nachfolgenden Abschnitten anhand der Vergleichsaspekte aus
 Abschnitt~\ref{sec:methodik:qualitativ}.
 
+  \setlength{\tabcolsep}{4pt}
 \begin{table}[ht]
   \caption{Lokale Bereitstellung je System: zusätzliche Komponenten, einmalige Konfiguration und vor der Ausführung erforderliche Schritte}
   \label{tab:lokal:dienste}
@@ -91,11 +100,14 @@ Abschnitt~\ref{sec:methodik:qualitativ}.
   \end{tabular}
 \end{table}
 
-\section{Pipeline-Pattern}
+
+\section{Pipeline-Muster}
 \label{sec:lokal:pipeline}
 
+\begin{sloppypar}
 Das in Abschnitt~\ref{sec:methodik:versuchsplan} beschriebene
-Pipeline-Pattern wurde in allen fünf Workflow-Management-Systemen mit denselben Benchmark-Skripten umgesetzt. Im Folgenden wird gegenübergestellt, wie die fünf Systeme dieses Pattern modellieren und ausführen. Die vollständigen Workflow-Beschreibungen sind im Repositorium zu dieser Arbeit abgelegt~\cite{barepo}.
+Pipeline-Muster wurde in allen fünf Workflow-Management-Systemen mit denselben Benchmark-Skripten umgesetzt. Im Folgenden wird gegenübergestellt, wie die fünf Systeme dieses Muster modellieren und ausführen. Die vollständigen Workflow-Beschreibungen sind im Repositorium zu dieser Arbeit abgelegt~\cite{barepo}.
+\end{sloppypar}
 
 \subsection{Nextflow}
 \label{sec:lokal:pipeline:nextflow}
@@ -103,7 +115,7 @@ Pipeline-Pattern wurde in allen fünf Workflow-Management-Systemen mit denselben
 Nextflow beschreibt den Workflow in einer einzigen Datei
 \texttt{benchmark.nf} in der systemeigenen Sprache DSL2.
 
-\emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
+\emph{Ausdruck des Musters:} Eine separate Abhängigkeitsangabe gibt
 es nicht. Die Reihenfolge entsteht dadurch, dass die Ausgabe eines
 Prozesses als Eingabe des nachfolgenden Prozesses dient (Listing~\ref{lst:pipe:nf}), entsprechend
 dem Datenfluss-Modell, auf dem Nextflow
@@ -139,12 +151,14 @@ Prozesse.
 Nextflow-Laufzeit. Ein Prozess wird gestartet, sobald sein
 Eingabe-Channel Daten enthält, der Startzeitpunkt jedes Prozesses ergibt sich damit erst zur Laufzeit aus dem Eintreffen der Daten.
 
+\begin{sloppypar}
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:}
 Workflow-Beschreibung und Ausführungsparameter liegen getrennt vor.
 Angaben zur Ausführungsumgebung, die Nextflow über sogenannte
 Executor konfiguriert, sowie zu den benötigten Ressourcen stehen in
 einer eigenen Konfigurationsdatei, sodass ein Wechsel der
 Ausführungsumgebung die Workflow-Datei unberührt lässt.
+\end{sloppypar}
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Während des Laufs zeigt die
@@ -171,7 +185,7 @@ StreamFlow verteilt die Umsetzung auf drei Dateien:
 \texttt{streamflow.yml} die Zuordnung zur Ausführungsumgebung und
 \texttt{config.yml} die Eingabewerte und Pfade der Skripte.
 
-\emph{Ausdruck des Patterns:} Eine separate Abhängigkeitsangabe gibt
+\emph{Ausdruck des Musters:} Eine separate Abhängigkeitsangabe gibt
 es nicht. Jeder Schritt benennt unter \texttt{in} seine Eingaben und
 eine dieser Eingaben verweist auf die Ausgabe des vorherigen
 Schritts. Die Reihenfolge entsteht damit aus den Verweisen zwischen
@@ -186,6 +200,7 @@ den Schritten (Listing~\ref{lst:pipe:sf}).
     out: [prepared_file, timing_file]
 \end{lstlisting}
 
+\begin{sloppypar}
 \emph{Modellierungs- und Konfigurationsaufwand:} Für die
 Workflow-Beschreibung und -Konfiguration werden drei Dateien
 benötigt: \texttt{workflow.cwl}, \texttt{streamflow.yml} und
@@ -193,6 +208,7 @@ benötigt: \texttt{workflow.cwl}, \texttt{streamflow.yml} und
 den Pfad des Berechnungsskripts in der fünfzeiligen
 \texttt{config.yml}, deren Fassungen sich in genau einer Zeile
 unterscheiden.
+\end{sloppypar}
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
 weitergegebenen Dateien und die daraus entstehenden Abhängigkeiten
@@ -205,11 +221,13 @@ damit sowohl ablesen, welche Dateien zwischen den Schritten
 weitergegeben werden, als auch, welche Schritte voneinander
 abhängen.
 
+\begin{sloppypar}
 \emph{Ausführung und Steuerung:} Die Ausführung übernimmt die
 StreamFlow-Laufzeit. Ein Schritt wird ausgeführt, sobald die
 Eingaben vorliegen, auf die er unter \texttt{in} verweist. Für die
 lokale Untersuchung wurden alle Schritte einer lokalen
 Ausführungsumgebung zugewiesen.
+\end{sloppypar}
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
 Zuordnung zur Ausführungsumgebung steht vollständig in
@@ -246,7 +264,7 @@ Merlin beschreibt den Workflow in einer YAML-Spezifikation, deren
 Abschnitt \texttt{study} die vier Schritte enthält. Eine zweite Datei
 enthält die Verbindungsdaten des Nachrichtenvermittlers.
 
-\emph{Ausdruck des Patterns:} Die Reihenfolge wird ausdrücklich
+\emph{Ausdruck des Musters:} Die Reihenfolge wird ausdrücklich
 benannt. Jeder Schritt führt unter \texttt{depends} seine Vorgänger
 auf (Listing~\ref{lst:pipe:me}).
 
@@ -311,7 +329,7 @@ und Workern relevant.
 Der Workflow wird in \texttt{build\_workflow.py} über die
 Python-Schnittstelle von Pegasus aufgebaut.
 
-\emph{Ausdruck des Patterns:} Die Reihenfolge ergibt sich aus den
+\emph{Ausdruck des Musters:} Die Reihenfolge ergibt sich aus den
 Dateien. Jeder Job benennt über \texttt{add\_inputs} und
 \texttt{add\_outputs}, welche Dateien er liest und schreibt und
 Pegasus leitet daraus die Kanten des Graphen ab (Listing~\ref{lst:pipe:pg}).
@@ -323,6 +341,7 @@ compute_job.add_inputs(prepared_file)
 compute_job.add_outputs(result_file, stage_out=False, register_replica=False)
 \end{lstlisting}
 
+\begin{sloppypar}
 \emph{Modellierungs- und Konfigurationsaufwand:} Für die
 Workflow-Beschreibung und -Konfiguration wurden vier Dateien
 manuell erstellt: \texttt{build\_workflow.py}, \texttt{sites.yml},
@@ -331,6 +350,7 @@ Erzeugungsskript erzeugt die Workflow-Datei und den
 Transformationskatalog. Eine Änderung der Rechenlast betrifft allein
 den Pfad des Berechnungsskripts im Erzeugungsskript. Die erzeugten
 Workflow-Dateien der drei Rechenlasten sind identisch.
+\end{sloppypar}
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
 weitergegebenen Dateien werden als eigene \texttt{File}-Objekte
@@ -382,7 +402,7 @@ WorkChain legt den Ablauf fest, ein allgemein gehaltener CalcJob
 führt je Schritt eines der Benchmark-Skripte aus, ein Submit-Skript
 übergibt den Lauf an den Daemon.
 
-\emph{Ausdruck des Patterns:} Die Reihenfolge wird ausdrücklich als
+\emph{Ausdruck des Musters:} Die Reihenfolge wird ausdrücklich als
 Liste von Methoden in \texttt{spec.outline()} festgelegt (Listing~\ref{lst:pipe:ai}). Die
 abschließende Methode \texttt{results} reicht keinen weiteren
 CalcJob ein, sie veröffentlicht die Ausgaben der vier fachlichen
@@ -446,7 +466,7 @@ Datenobjekte von AiiDA, das Zusammenspiel von WorkChain und CalcJob,
 der Kontext für die Weitergabe von Ergebnissen sowie die Einrichtung
 von Rechner und Code relevant.
 
-\subsection{Vergleichende Beobachtungen zum Pipeline-Pattern}
+\subsection{Vergleichende Beobachtungen}
 \label{sec:lokal:pipeline:zusammenfassung}
 
 Tabelle~\ref{tab:pipe:vergleich} stellt die Beobachtungen aus den
@@ -459,7 +479,7 @@ Rechner und Code hinzu, die einmalig als Objekte in der Datenbank
 eingerichtet werden.
 
 \begin{table}[H]
-  \caption{Umsetzung des Pipeline-Patterns im Überblick}
+  \caption{Umsetzung des Pipeline-Musters im Überblick}
   \label{tab:pipe:vergleich}
   \centering
   \scriptsize
@@ -469,7 +489,7 @@ eingerichtet werden.
     \hline
      & \textbf{Nextflow} & \textbf{Stream\-Flow} & \textbf{Merlin} & \textbf{Pegasus} & \textbf{AiiDA} \\
     \hline
-    Ausdruck des Patterns & Übergabe der Prozess\-ausgaben & Verweis auf Vorgänger\-ausgabe & Angabe unter \texttt{depends} & deklarierte Ein- und Ausgaben & Liste in \texttt{spec.outline()} \\
+    Ausdruck des Musters & Übergabe der Prozess\-ausgaben & Verweis auf Vorgänger\-ausgabe & Angabe unter \texttt{depends} & deklarierte Ein- und Ausgaben & Liste in \texttt{spec.\allowbreak outline()} \\
     Modellierung und Konfiguration & eine Datei & drei Dateien & zwei Dateien & vier Dateien & drei Dateien, dazu Rechner und Code \\
     Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben & Pfad im Befehl & \texttt{File}-Objekte der Jobs & Zuordnung in der WorkChain \\
     Ausführung und Steuerung & eigene Laufzeit & eigene Laufzeit & Celery-Worker & HTCondor nach Planung & Daemon \\
@@ -479,7 +499,7 @@ eingerichtet werden.
   \end{tabular}
 \end{table}
 
-Beim Ausdruck des Patterns zeigen sich zwei Ansätze. Nextflow,
+Beim Ausdruck des Musters zeigen sich zwei Ansätze. Nextflow,
 StreamFlow und Pegasus leiten die Reihenfolge der Schritte aus den
 Datenbeziehungen ab, während Merlin und AiiDA die Abfolge
 ausdrücklich beschreiben.
@@ -533,14 +553,14 @@ Rechner und Code. Diese Einordnung beruht auf der erstmaligen
 Umsetzung und ersetzt keine Nutzerstudie.
 
 
-\section{Scatter-Gather-Pattern}
+\section{Scatter-Gather-Muster}
 \label{sec:lokal:scattergather}
 
 Das in Abschnitt~\ref{sec:methodik:versuchsplan} beschriebene
-Scatter-Gather-Pattern wurde ebenfalls in allen fünf Systemen mit
+Scatter-Gather-Muster wurde ebenfalls in allen fünf Systemen mit
 denselben Benchmark-Skripten umgesetzt. Untersucht wurden Läufe mit
 einem, zwei und vier Teilstücken. Im Folgenden wird
-gegenübergestellt, wie die fünf Systeme dieses Pattern modellieren
+gegenübergestellt, wie die fünf Systeme dieses Muster modellieren
 und ausführen. Die vollständigen Workflow-Beschreibungen sind im
 Repositorium zu dieser Arbeit abgelegt~\cite{barepo}.
 
@@ -551,7 +571,7 @@ Die Beschreibung folgt dem Aufbau des Pipeline-Workflows und liegt
 wieder vollständig in einer Datei, die Zahl der Teilstücke steht als
 Parameter am Dateianfang.
 
-\emph{Ausdruck des Patterns:} Die parallele Phase wird über die
+\emph{Ausdruck des Musters:} Die parallele Phase wird über die
 Operatoren \texttt{flatten} und \texttt{collect} auf den Channels
 ausgedrückt (Listing~\ref{lst:sg:nf}). \texttt{SPLIT} erzeugt die Teilstücke als gemeinsame
 Ausgabe, \texttt{flatten} gibt sie als einzelne Elemente weiter,
@@ -570,7 +590,7 @@ gemeinsamen Eingabe für \texttt{AGGREGATE}.
 \emph{Modellierungs- und Konfigurationsaufwand:} Die Zahl der
 Teilstücke ist ein Parameter, die Fassungen für einen, zwei und vier
 Teilstücke unterscheiden sich in genau einer Zeile. Der Wechsel der
-Rechenlast betrifft wie beim Pipeline-Pattern allein den Aufruf des
+Rechenlast betrifft wie beim Pipeline-Muster allein den Aufruf des
 Berechnungsskripts, ebenfalls eine Zeile.
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Der Weg der
@@ -580,7 +600,7 @@ sichtbar ist, dass mehrere Dateien entstehen. Nach
 \texttt{flatten} erhält jede Instanz von \texttt{COMPUTE} genau ein
 Teilstück als Eingabe, während \texttt{AGGREGATE} nach
 \texttt{collect} die Ergebnisdateien aller Instanzen erhält. Die
-Abhängigkeiten entstehen wie beim Pipeline-Pattern durch die
+Abhängigkeiten entstehen wie beim Pipeline-Muster durch die
 Übergabe dieser Ausgaben über die Channels an die nachfolgenden
 Prozesse.
 
@@ -591,7 +611,7 @@ von \texttt{COMPUTE}, die Instanzen laufen nebeneinander.
 Ergebnisse aller Instanzen zusammengeführt hat.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
-Pipeline-Pattern steht die Ausführungsumgebung in der eigenen
+Pipeline-Muster steht die Ausführungsumgebung in der eigenen
 Konfigurationsdatei, die Workflow-Datei bleibt bei einem Wechsel
 unverändert.
 
@@ -599,7 +619,7 @@ unverändert.
 \emph{Nachvollziehbarkeit der Ausführung:} Die Fortschrittsanzeige
 zählt die parallelen Instanzen von \texttt{COMPUTE} als Aufgaben
 desselben Prozesses. Workflow-Graph und Zeitstrahl stehen wie beim
-Pipeline-Pattern zur Verfügung, der Graph des
+Pipeline-Muster zur Verfügung, der Graph des
 Scatter-Gather-Workflows und der Zeitstrahl eines Laufs mit vier
 Teilstücken sind in den Abbildungen~\ref{fig:nf:dag:sg}
 und~\ref{fig:nf:timeline:sg} dargestellt.
@@ -613,17 +633,19 @@ Eingabe sammeln.
 \subsection{StreamFlow}
 \label{sec:lokal:sg:streamflow}
 
-Die Umsetzung des Scatter-Gather-Patterns verwendet wie beim
-Pipeline-Pattern \texttt{workflow.cwl}, \texttt{streamflow.yml}
+Die Umsetzung des Scatter-Gather-Musters verwendet wie beim
+Pipeline-Muster \texttt{workflow.cwl}, \texttt{streamflow.yml}
 und \texttt{config.yml}.
 
-\emph{Ausdruck des Patterns:} Die Aufteilung wird über das
+\begin{sloppypar}
+\emph{Ausdruck des Musters:} Die Aufteilung wird über das
 \texttt{scatter}-Attribut des \texttt{compute}-Schritts ausgedrückt (Listing~\ref{lst:sg:sf}).
 Der Schritt erhält das von \texttt{split} erzeugte Feld der
 Teilstücke und wird für jedes Element einzeln ausgeführt.
 Für die Zusammenführung verweist \texttt{aggregate} mit
 \texttt{result\_files: compute/result\_file} auf die Ausgaben aller
 Instanzen und erhält sie als eine Liste.
+\end{sloppypar}
 
 \begin{lstlisting}[caption={Fan-out über scatter am compute-Schritt (StreamFlow, Scatter-Gather)},label={lst:sg:sf}]
   compute:
@@ -634,8 +656,9 @@ Instanzen und erhält sie als eine Liste.
     scatterMethod: dotproduct
 \end{lstlisting}
 
+\begin{sloppypar}
 \emph{Modellierungs- und Konfigurationsaufwand:} Wie beim
-Pipeline-Pattern werden drei Dateien für Beschreibung und
+Pipeline-Muster werden drei Dateien für Beschreibung und
 Konfiguration verwendet. Die \texttt{workflow.cwl} bleibt über alle
 Varianten unverändert. Eine Änderung der Teilstückzahl betrifft allein
 die \texttt{config.yml}. Dort ändern sich der Eingabewert und die
@@ -643,9 +666,10 @@ Liste der Ergebnisnamen, die einen Eintrag je Teilstück enthält. Der
 Wechsel der Rechenlast betrifft ebenfalls nur die
 \texttt{config.yml}, dort ändert sich der Pfad des
 Berechnungsskripts.
+\end{sloppypar}
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
-Pipeline-Pattern sind die weitergegebenen Dateien und ihre Herkunft
+Pipeline-Muster sind die weitergegebenen Dateien und ihre Herkunft
 in den Eingaben der Schritte sichtbar. Zusätzlich zeigen die
 Typangaben, ob eine einzelne Datei oder ein Feld von Dateien
 weitergegeben wird. \texttt{split} erzeugt ein Feld von Teilstücken,
@@ -653,7 +677,7 @@ aus dem jede Ausführung von \texttt{compute} ein Teilstück erhält.
 \texttt{aggregate} verweist anschließend auf die Ausgaben von
 \texttt{compute} und erhält das Feld aller Ergebnisdateien. Die
 Abhängigkeiten zwischen den Schritten ergeben sich damit wie beim
-Pipeline-Pattern aus diesen Verweisen auf die jeweiligen Ausgaben.
+Pipeline-Muster aus diesen Verweisen auf die jeweiligen Ausgaben.
 
 \emph{Ausführung und Steuerung:} Die Laufzeit startet für jedes
 Element eine eigene Instanz des \texttt{compute}-Schritts, die
@@ -661,29 +685,32 @@ Instanzen laufen parallel in der zugewiesenen Umgebung.
 \texttt{aggregate} startet erst, wenn die Ergebnisse aller Instanzen
 vorliegen.
 
+
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Wie beim
-Pipeline-Pattern steht die Zuordnung zur Ausführungsumgebung in
+Pipeline-Muster steht die Zuordnung zur Ausführungsumgebung in
 \texttt{streamflow.yml}.
 
 
+
 \emph{Nachvollziehbarkeit der Ausführung:} Der Lauf lässt sich wie
-beim Pipeline-Pattern an der Terminalausgabe verfolgen, Zeitstrahl
+beim Pipeline-Muster an der Terminalausgabe verfolgen, Zeitstrahl
 und RO-Crate-Archiv stehen ebenfalls zur Verfügung. Der Zeitstrahl
 eines Scatter-Gather-Laufs ist in
 Abbildung~\ref{fig:sf:timeline:sg} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
-Konzepten des Pipeline-Patterns ist das \texttt{scatter}-Attribut zu
+Konzepten des Pipeline-Musters ist das \texttt{scatter}-Attribut zu
 verstehen sowie die Unterscheidung, ob eine Ein- oder Ausgabe eine
 einzelne Datei oder eine Sammlung von Dateien bezeichnet.
 
 \subsection{Merlin}
 \label{sec:lokal:sg:merlin}
 
-Merlin beschreibt auch das Scatter-Gather-Pattern in einer
+Merlin beschreibt auch das Scatter-Gather-Muster in einer
 YAML-Spezifikation.
 
-\emph{Ausdruck des Patterns:} Die parallele Verarbeitung wird über
+
+\emph{Ausdruck des Musters:} Die parallele Verarbeitung wird über
 den Parameter \texttt{CHUNK} ausgedrückt, dessen Werteliste einen
 Eintrag je Teilstück enthält. Der einmal beschriebene
 \texttt{compute}-Schritt wird dadurch für jeden Parameterwert
@@ -705,11 +732,12 @@ anschließenden Fan-in verweist \texttt{aggregate} unter
 \emph{Modellierungs- und Konfigurationsaufwand:} Die Zahl der
 Teilstücke steht an zwei Stellen der Spezifikation, in der
 Werteliste des Parameters und im Argument des Zerlegeschritts. Der
-Wechsel der Rechenlast betrifft wie beim Pipeline-Pattern allein den
+Wechsel der Rechenlast betrifft wie beim Pipeline-Muster allein den
 Aufruf des Berechnungsskripts.
 
+\begin{sloppypar}
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
-Abhängigkeiten werden wie beim Pipeline-Pattern über
+Abhängigkeiten werden wie beim Pipeline-Muster über
 \texttt{depends} ausdrücklich angegeben. Welche Dateien
 weitergegeben werden, ist in den Befehlen sichtbar. Jede
 \texttt{compute}-Instanz liest über den jeweiligen Wert von
@@ -717,11 +745,12 @@ weitergegeben werden, ist in den Befehlen sichtbar. Jede
 \texttt{split} und erzeugt die entsprechende Ergebnisdatei.
 \texttt{aggregate} verweist anschließend auf die Ergebnisdateien
 aller Compute-Instanzen. Abhängigkeiten und Datenweitergabe stehen
-damit auch im Scatter-Gather-Pattern an getrennten Stellen der
+damit auch im Scatter-Gather-Muster an getrennten Stellen der
 Beschreibung.
+\end{sloppypar}
 
 \emph{Ausführung und Steuerung:} Die aus der Parametrisierung
-hervorgegangenen Compute-Instanzen werden wie beim Pipeline-Pattern
+hervorgegangenen Compute-Instanzen werden wie beim Pipeline-Muster
 als Aufgaben in die Warteschlange eingestellt und von den
 Celery-Workern ausgeführt. Eine Compute-Instanz wird nach Abschluss
 von \texttt{split} zur Ausführung freigegeben. \texttt{aggregate}
@@ -731,7 +760,7 @@ abgeschlossen sind. In der lokalen Untersuchung konnte der Worker
 laut Spezifikation bis zu vier Aufgaben gleichzeitig bearbeiten.
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
-Trennung entspricht dem Pipeline-Pattern. Die Compute-Instanzen
+Trennung entspricht dem Pipeline-Muster. Die Compute-Instanzen
 werden als Aufgaben über die Warteschlange an die Worker übergeben,
 ohne dass ihre ausführende Ressource in den einzelnen
 Workflow-Schritten festgelegt wird. Die Anzahl gleichzeitig
@@ -742,24 +771,24 @@ bearbeitbarer Aufgaben wird für den Worker im Abschnitt
 Compute-Instanzen erscheinen in den Ausgaben des Workers mit eigenem
 Namen, Arbeitsverzeichnis und Abschlussmeldung und hinterlassen
 jeweils ein eigenes Arbeitsverzeichnis. Statusabfragen über die
-Kommandozeile stehen wie beim Pipeline-Pattern zur Verfügung, eine
+Kommandozeile stehen wie beim Pipeline-Muster zur Verfügung, eine
 Graphausgabe weiterhin nicht.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
-Konzepten des Pipeline-Patterns ist das Parameter-Konzept zu
+Konzepten des Pipeline-Musters ist das Parameter-Konzept zu
 verstehen. Zu beachten ist außerdem, dass die Werteliste und die im Zerlegeschritt angegebene Zahl der Teilstücke zueinander passen müssen.
 
 \subsection{Pegasus}
 \label{sec:lokal:sg:pegasus}
 
-Beim Scatter-Gather-Pattern wird der Workflow ebenfalls über das
+Beim Scatter-Gather-Muster wird der Workflow ebenfalls über das
 Erzeugungsskript \texttt{build\_workflow.py} aufgebaut.
 
-\emph{Ausdruck des Patterns:} Die parallele Phase entsteht im
+\emph{Ausdruck des Musters:} Die parallele Phase entsteht im
 Erzeugungsskript. Eine Schleife legt je Teilstück einen eigenen
 \texttt{compute}-Job an, der sein Teilstück als Eingabe und die
 zugehörige Ergebnisdatei als Ausgabe deklariert (Listing~\ref{lst:sg:pg}), die Kanten leitet
-Pegasus wie beim Pipeline-Pattern aus den Dateien ab. Für die
+Pegasus wie beim Pipeline-Muster aus den Dateien ab. Für die
 Zusammenführung deklariert der \texttt{aggregate}-Job die
 Ergebnisdateien aller Teilstücke als Eingaben. In der erzeugten
 Workflow-Datei stehen die Verarbeitungsjobs einzeln, der Umfang der
@@ -776,17 +805,17 @@ for index, (chunk_file, result_file) in enumerate(zip(chunk_files, result_files)
 \end{lstlisting}
 
 \emph{Modellierungs- und Konfigurationsaufwand:} Die vier für das
-Pipeline-Pattern benötigten Dateien bleiben bestehen. Das
+Pipeline-Muster benötigten Dateien bleiben bestehen. Das
 Erzeugungsskript ist für alle Teilstückzahlen einer Rechenlast
 dasselbe, die Teilstückzahl wird ihm als Aufrufargument übergeben.
 Die erzeugte Workflow-Datei wächst mit der Teilstückzahl, da je
 Teilstück ein Verarbeitungsjob und die zugehörigen Dateiobjekte
 hinzukommen. Eine Änderung der Rechenlast betrifft wie beim
-Pipeline-Pattern allein den Pfad des Berechnungsskripts im
+Pipeline-Muster allein den Pfad des Berechnungsskripts im
 Erzeugungsskript.
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Wie beim
-Pipeline-Pattern werden die weitergegebenen Dateien als eigene
+Pipeline-Muster werden die weitergegebenen Dateien als eigene
 \texttt{File}-Objekte angelegt und bei den Jobs als Ein- und
 Ausgaben angegeben. Die parallele Phase ist daran ablesbar, dass
 \texttt{split} alle Teilstücke als Ausgaben deklariert, jeder
@@ -801,12 +830,12 @@ neun fachliche Jobs. Der Planer übersetzt sie in den ausführbaren Graphen, den
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
 Trennung über die abstrakte Beschreibung und die Kataloge bleibt wie
-beim Pipeline-Pattern bestehen, ebenso die Einschränkung, dass das
+beim Pipeline-Muster bestehen, ebenso die Einschränkung, dass das
 Erzeugungsskript die Zielsite benennt.
 
 
 \emph{Nachvollziehbarkeit der Ausführung:} Die drei Abbildungen des
-Workflow-Graphen entstehen wie beim Pipeline-Pattern bei jedem Lauf.
+Workflow-Graphen entstehen wie beim Pipeline-Muster bei jedem Lauf.
 In der abstrakten Darstellung sind die Verarbeitungsjobs einzeln
 sichtbar, im geplanten Graphen kommen die vom Planer ergänzten Jobs
 hinzu. Die drei Darstellungen des Scatter-Gather-Workflows sind in
@@ -814,7 +843,7 @@ den Abbildungen~\ref{fig:pg:dag:sg}, \ref{fig:pg:dag:sg:files}
 und~\ref{fig:pg:dag:sg:concrete} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
-Konzepten des Pipeline-Patterns ist zu verstehen, dass die parallele
+Konzepten des Pipeline-Musters ist zu verstehen, dass die parallele
 Phase nicht über ein Sprachmittel des Systems ausgedrückt, sondern
 im Erzeugungsskript ausgeschrieben wird. In der erzeugten
 Beschreibung ist sie nur daran erkennbar, dass die
@@ -828,7 +857,7 @@ Die Outline wächst um das Zerlegen und das Zusammenführen, die
 parallele Verarbeitung bleibt darin ein einzelner Eintrag.
 Teilstückzahl und Rechenlast sind Eingaben der WorkChain.
 
-\emph{Ausdruck des Patterns:} Die parallele Phase entsteht in einem
+\emph{Ausdruck des Musters:} Die parallele Phase entsteht in einem
 einzigen Outline-Schritt. Eine Schleife reicht je Teilstück einen
 eigenen CalcJob ein, der sein Teilstück verarbeitet (Listing~\ref{lst:sg:ai}) und
 \texttt{ToContext} lässt die WorkChain auf den Abschluss aller
@@ -852,11 +881,11 @@ Zusammenführen ein.
 \emph{Modellierungs- und Konfigurationsaufwand:} Eine eigene Fassung
 je Teilstückzahl oder Rechenlast entfällt. Beide werden dem
 Submit-Skript als Argumente übergeben und gehen als Eingaben in die
-WorkChain ein. Die Rechenlast wählt wie beim Pipeline-Pattern das
+WorkChain ein. Die Rechenlast wählt wie beim Pipeline-Muster das
 Berechnungsskript aus.
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die Weitergabe
-ist wie beim Pipeline-Pattern an drei Stellen beschrieben, als
+ist wie beim Pipeline-Muster an drei Stellen beschrieben, als
 Quellordner, als Zuordnung und als Abrufliste, nun jedoch je Instanz.
 Jede Verarbeitungsinstanz erhält den Ordner des Zerlegeschritts als
 Quelle mit der Zuordnung genau ihres Teilstücks. Beim Zusammenführen
@@ -872,7 +901,7 @@ beendet sind.
 
 
 \emph{Trennung von Workflow-Logik und Ausführungsumgebung:} Die
-Trennung entspricht dem Pipeline-Pattern: Rechner und Code sind in
+Trennung entspricht dem Pipeline-Muster: Rechner und Code sind in
 der AiiDA-Datenbank abgelegt und werden der WorkChain als Eingaben
 übergeben.
 
@@ -886,26 +915,26 @@ Provenance-Graph eines Scatter-Gather-Laufs ist in
 Abbildung~\ref{fig:ai:prov:sg} dargestellt.
 
 \emph{Verständlichkeit aus Einsteigerperspektive:} Zusätzlich zu den
-Konzepten des Pipeline-Patterns ist zu verstehen, dass ein
+Konzepten des Pipeline-Musters ist zu verstehen, dass ein
 Outline-Schritt mehrere CalcJobs einreichen kann und
 \texttt{ToContext} die WorkChain anschließend auf deren Abschluss
 warten lässt, bevor der nächste Outline-Schritt beginnt.
 
-\subsection{Vergleichende Beobachtungen zum Scatter-Gather-Pattern}
+\subsection{Vergleichende Beobachtungen}
 \label{sec:lokal:sg:zusammenfassung}
 
 Tabelle~\ref{tab:sg:vergleich} stellt die Beobachtungen aus den fünf
 Systemabschnitten entlang der Vergleichsaspekte gegenüber. Da die
-beteiligten Dateien und Bausteine gegenüber dem Pipeline-Pattern
+beteiligten Dateien und Bausteine gegenüber dem Pipeline-Muster
 unverändert bleiben, tritt bei der Modellierung an die Stelle der
 Artefaktzahl die Frage, welche Stellen eine Änderung der
 Teilstückzahl betrifft. Auch die Trennung von Logik und Umgebung
 sowie die verfügbaren Mittel der Nachvollziehbarkeit entsprechen dem
-Pipeline-Pattern, aufgeführt ist deshalb nur, wie sich die parallele
+Pipeline-Muster, aufgeführt ist deshalb nur, wie sich die parallele
 Phase darin abbildet.
 
 \begin{table}[H]
-  \caption{Umsetzung des Scatter-Gather-Patterns im Überblick}
+  \caption{Umsetzung des Scatter-Gather-Musters im Überblick}
   \label{tab:sg:vergleich}
   \centering
   \scriptsize
@@ -915,7 +944,7 @@ Phase darin abbildet.
     \hline
      & \textbf{Nextflow} & \textbf{Stream\-Flow} & \textbf{Merlin} & \textbf{Pegasus} & \textbf{AiiDA} \\
     \hline
-    Ausdruck des Patterns & \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut & Parameter \texttt{CHUNK}, \texttt{compute\_*} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
+    Ausdruck des Musters & \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut & Parameter \texttt{CHUNK}, \texttt{compute\_*} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
     Änderung der Teilstückzahl & ein Parameter & Eingabewert und Namensliste in \texttt{config.yml} & zwei Stellen der Spezifikation & Aufruf\-argument, Workflow-Datei wird neu erzeugt & Aufruf\-argument, WorkChain bleibt unverändert \\
     Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben und Datei-/Feldtypen & \texttt{depends} und Pfade in den Befehlen & \texttt{File}-Objekte als Ein- und Ausgaben & Quellordner und Zuordnungen je Instanz, \texttt{ToContext} \\
     Ausführung und Steuerung & Nextflow-Laufzeit, eine Instanz je Teilstück & StreamFlow-Laufzeit, eine Instanz je Teilstück & Celery-Worker, eine Aufgabe je Instanz & HTCondor, ein Job je Teilstück & Daemon/Runner, ein CalcJob je Teilstück \\
@@ -925,7 +954,7 @@ Phase darin abbildet.
   \end{tabular}
 \end{table}
 
-Beim Ausdruck des Patterns verwenden die Systeme unterschiedliche
+Beim Ausdruck des Musters verwenden die Systeme unterschiedliche
 Mechanismen für die parallele Phase. Nextflow nutzt
 \texttt{flatten} und \texttt{collect}, StreamFlow das
 \texttt{scatter}-Attribut und Merlin die Parametrisierung über
@@ -955,7 +984,7 @@ ausdrücklich an, während in AiiDA die Outline und der durch
 \texttt{ToContext} hergestellte Wartepunkt die Abfolge bestimmen.
 
 Bei der Ausführung bleiben die ausführenden Komponenten gegenüber
-dem Pipeline-Pattern unverändert. Neu ist die parallele Phase, in
+dem Pipeline-Muster unverändert. Neu ist die parallele Phase, in
 der je Teilstück eine eigene Verarbeitungsinstanz ausgeführt wird.
 Das Zusammenführen wird in allen fünf Systemen erst ausgeführt,
 nachdem alle Verarbeitungsinstanzen abgeschlossen sind.
@@ -972,7 +1001,7 @@ beziehungsweise Statusinformationen erscheinen. AiiDA hält die
 Instanzen zusätzlich als eigene Prozessknoten im dauerhaft
 gespeicherten Provenance-Graphen fest.
 
-Aus Einsteigerperspektive kommen gegenüber dem Pipeline-Pattern
+Aus Einsteigerperspektive kommen gegenüber dem Pipeline-Muster
 zusätzliche Konzepte für die parallele Phase hinzu: bei Nextflow
 \texttt{flatten} und \texttt{collect}, bei StreamFlow
 \texttt{scatter}, bei Merlin die Parametrisierung und bei AiiDA das
@@ -994,7 +1023,7 @@ Betrachtet werden die Gesamtlaufzeit, der Overhead sowie die beiden
 Koordinationsgrößen Übergangslatenz und Startspreizung.
 
 Abbildung~\ref{fig:mess:pipe} zeigt die Gesamtlaufzeiten des
-Pipeline-Patterns je Rechenlast. Vier Systeme liegen dabei näher
+Pipeline-Musters je Rechenlast. Vier Systeme liegen dabei näher
 beieinander, bei der kurzen Rechenlast zwischen 5,8 und
 9,2 Sekunden, bei der mittleren zwischen 53,4 und 63,1 Sekunden und
 bei der langen zwischen 238 und 280 Sekunden. Pegasus liegt mit 184,
@@ -1011,12 +1040,12 @@ langen Rechenlast nicht in gleicher Weise zeigt.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/02_makespan_pipeline}
-  \caption{Median der Gesamtlaufzeit des Pipeline-Patterns je Rechenlast auf der lokalen Ebene, logarithmische Skala}
+  \caption{Median der Gesamtlaufzeit des Pipeline-Musters je Rechenlast auf der lokalen Ebene, logarithmische Skala}
   \label{fig:mess:pipe}
 \end{figure}
 
 Abbildung~\ref{fig:mess:sg} zeigt die Gesamtlaufzeiten des
-Scatter-Gather-Patterns über die Zahl der Teilstücke. Bei der
+Scatter-Gather-Musters über die Zahl der Teilstücke. Bei der
 mittleren und der langen Rechenlast sinken die Laufzeiten der vier
 Systeme im engen Band mit jeder Verdopplung der Teilstückzahl
 deutlich, bei der langen Rechenlast etwa von 248 auf 66\,Sekunden in
@@ -1036,7 +1065,7 @@ Pegasus zwischen 216 und 221\,Sekunden.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{content/figs/lokal_mac_graphen/03_makespan_scatter_gather}
-  \caption{Median der Gesamtlaufzeit des Scatter-Gather-Patterns über die Zahl der Teilstücke je Rechenlast auf der lokalen Ebene, logarithmische Skala}
+  \caption{Median der Gesamtlaufzeit des Scatter-Gather-Musters über die Zahl der Teilstücke je Rechenlast auf der lokalen Ebene, logarithmische Skala}
   \label{fig:mess:sg}
 \end{figure}
 
@@ -1049,9 +1078,9 @@ Pegasus zwischen 171 und 221\,Sekunden. Ein proportionaler
 Zusammenhang zwischen Rechenlast und Overhead ist in keiner der
 Gruppen erkennbar. Ein Zusammenhang mit dem Umfang des Workflows
 zeigt sich dagegen bei einzelnen Systemen. Beim
-Scatter-Gather-Pattern mit seinen sechs Schritten liegt der
+Scatter-Gather-Muster mit seinen sechs Schritten liegt der
 Overhead von Pegasus durchgängig und der von AiiDA bei der kurzen
-und der mittleren Rechenlast über dem des Pipeline-Patterns mit
+und der mittleren Rechenlast über dem des Pipeline-Musters mit
 vier Schritten. Bei AiiDA steht dies im Einklang mit der
 Abwicklung jedes Schritts als eigener CalcJob über Daemon und
 Datenbank, bei Pegasus mit den zusätzlichen Übergängen zwischen
@@ -1113,7 +1142,7 @@ mit jeder weiteren Instanz.
 
 Über die einzelnen Kenngrößen hinweg fügen sich die Befunde zu einem
 stimmigen Bild. Bei Pegasus entspricht der höhere Overhead des
-Scatter-Gather-Patterns näherungsweise den zusätzlichen
+Scatter-Gather-Musters näherungsweise den zusätzlichen
 Übergangslatenzen, die Differenz der Overhead-Mediane beider Muster
 beträgt 37,9\,Sekunden, während das Muster zwei Übergänge mehr enthält
 als die Pipeline und zweimal 20,1\,Sekunden gemessener Latenz

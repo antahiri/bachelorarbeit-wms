@@ -40,6 +40,7 @@ nicht auf unterschiedliche fachliche Rechenoperationen zurück.
 \label{sec:methodik:auswahl}
 Untersucht werden Nextflow, StreamFlow, Merlin, Pegasus und AiiDA. Alle fünf sind für wissenschaftliche Workflows entwickelt, unterscheiden sich aber in ihrem Entstehungskontext. Nextflow stammt aus dem Umfeld der Bioinformatik und zielt auf die reproduzierbare Ausführung von Analysen großer biologischer Datensätze über unterschiedliche Rechenumgebungen hinweg~\cite[S.~316]{ditommaso2017nextflow}. StreamFlow zielt darauf, denselben Workflow in verschiedenen Ausführungsumgebungen auszuführen~\cite[S.~1723]{colonnelli2021streamflow}. Merlin ist für große Ensembles wissenschaftlicher Simulationen ausgelegt, deren Ergebnisse für maschinelles Lernen aufbereitet werden~\cite[S.~255]{peterson2022merlin}. Pegasus richtet sich auf großskalige, mehrstufige Simulations- und Analyse-Abläufe, deren Rechen- und Datenumfang ein System erfordert, das Datentransfer und Aufgabenausführung auf verteilten Rechenressourcen zuverlässig koordiniert und automatisiert~\cite[S.~17]{deelman2015pegasus}. AiiDA verbindet die Ausführung mit einer durchgängigen Aufzeichnung der Datenherkunft in einer Datenbank~\cite[S.~1]{huber2020aiida}. Eine Kurzvorstellung der Systeme gibt Kapitel~\ref{sec:basics}.
 
+\begin{sloppypar}
 Die Auswahl zielte darauf, unterschiedliche Ansätze
 wissenschaftlicher Workflow-Management-Systeme abzudecken, Grundlage
 waren die Veröffentlichungen und Dokumentationen der Systeme.
@@ -56,6 +57,7 @@ führen Workflows in einer eigenen Laufzeit aus, andere übergeben die
 Ausführung an eigenständige Komponenten. Wie sich diese Merkmale in den
 einzelnen Systemen zeigen, zeigt die Modellierung in
 Kapitel~\ref{sec:lokal}.
+\end{sloppypar}
 
 Hinzu kamen praktische Erwägungen. Nextflow steht auf dem
 betrachteten HPC-System bereits als Modul zur Verfügung, StreamFlow
@@ -76,7 +78,7 @@ begründete Stichprobe unterschiedlicher Ansätze.
 \section{Qualitative Vergleichsaspekte}
 \label{sec:methodik:qualitativ}
 Der qualitative Vergleich betrachtet die Umsetzungen entlang von
-sieben Aspekten: dem Ausdruck des Patterns, dem Modellierungs- und
+sieben Aspekten: dem Ausdruck des Musters, dem Modellierungs- und
 Konfigurationsaufwand, der Sichtbarkeit von Datenfluss und Abhängigkeiten, der
 Ausführung und Steuerung, der Trennung von Workflow-Logik und
 Ausführungsumgebung, der Nachvollziehbarkeit der Ausführung 
@@ -85,7 +87,7 @@ Weg eines Workflows von der Beschreibung über die Ausführung bis
 zur Nachvollziehbarkeit ab. Die folgenden Absätze
 begründen die Wahl der einzelnen Aspekte.
 
-\emph{Ausdruck des Patterns:} Dieser Aspekt betrachtet, mit welchen Mitteln eines Systems die Struktur der beiden Workflow-Muster beschrieben wird, insbesondere die Abfolge der Schritte und die parallele Verarbeitung der Teilstücke. Er bildet die Grundlage des Vergleichs, da die Workflow-Muster in allen fünf Systemen dieselben sind, ihre Umsetzung jedoch unterschiedlich erfolgt. Untersucht wird der Aspekt anhand der Workflow-Beschreibungen beider Muster in allen fünf Systemen.
+\emph{Ausdruck des Musters:} Dieser Aspekt betrachtet, mit welchen Mitteln eines Systems die Struktur der beiden Workflow-Muster beschrieben wird, insbesondere die Abfolge der Schritte und die parallele Verarbeitung der Teilstücke. Er bildet die Grundlage des Vergleichs, da die Workflow-Muster in allen fünf Systemen dieselben sind, ihre Umsetzung jedoch unterschiedlich erfolgt. Untersucht wird der Aspekt anhand der Workflow-Beschreibungen beider Muster in allen fünf Systemen.
 
 \emph{Modellierungs- und Konfigurationsaufwand:} Dieser Aspekt betrachtet, welcher Beschreibungs- und Konfigurationsaufwand nötig ist, um ein Workflow-Muster in einem System umzusetzen und anzupassen. Da sich der Aufwand nicht unmittelbar messen lässt, wird er über zwei nachvollziehbare Größen erfasst: die Zahl der manuell erstellten Artefakte zur Beschreibung und Konfiguration des
 Workflows sowie die Frage, welche Stellen bei einer Änderung der Rechenlast oder der Teilstückzahl angepasst werden müssen. Beide Größen sind unmittelbar an den Workflow-Beschreibungen und Konfigurationsdateien der Umsetzungen ablesbar.
@@ -118,12 +120,14 @@ praktischer Bedeutung.  Untersucht wird der Aspekt anhand der Konzepte, die für
 Der quantitative Vergleich stützt sich auf vier Messgrößen: die Gesamtlaufzeit (Makespan), den Overhead gegenüber einem Referenzlauf sowie die beiden Koordinationsgrößen Übergangslatenz und Startspreizung. Die folgenden Absätze definieren die vier
 Größen.
 
+\begin{sloppypar}
 \emph{Gesamtlaufzeit:} Als Gesamtlaufzeit wird die Zeitspanne vom
 Aufruf des Workflow-Management-Systems bis zu dessen Beendigung
 bezeichnet. Sie umfasst damit alle Vorgänge eines Laufs, die
 Ausführung der Rechenschritte ebenso wie die Vorbereitung und die
 Übergaben zwischen den Schritten, und entspricht der Zeit, die
 Nutzende bei der Ausführung eines Workflows beobachten.
+\end{sloppypar}
 
 \emph{Overhead:} Der Overhead bezeichnet die zusätzliche Zeit, die durch den Einsatz eines Workflow-Management-Systems gegenüber der Ausführung der reinen Rechenlogik entsteht. Er wird als Differenz zwischen der Gesamtlaufzeit eines Laufs und der Laufzeit eines Referenzlaufs bestimmt, der dieselben Rechenschritte in derselben Reihenfolge ohne Workflow-Management-System ausführt. Berichtet wird der Median der je Wiederholung gebildeten
 Differenzen zwischen System- und Referenzlauf.
@@ -197,7 +201,7 @@ Workflows.
       wfload/.style={wfstep, draw=ctcolormain!70, fill=ctcolormain!8},
       wfinst/.style={wfload, minimum width=18mm},
       lbl/.style={font=\scriptsize\itshape, text=ctcolorgray, anchor=west,
-        xshift=1.5mm},
+        xshift=1.5mm, align=left},
       head/.style={font=\small\bfseries, text=ctcolorgray},
       arr/.style={-stealth, semithick, draw=ctcolorgray,
         shorten <=0.5pt, shorten >=0.5pt}]
@@ -224,7 +228,7 @@ Workflows.
     \node[text=ctcolorgray] at ($(ca.east)!0.5!(cb.west)$) {$\dots$};
     \node[wfstep, below=23mm of s2] (a2) {aggregate};
     \node[wfstep, below=of a2] (o2) {postprocess};
-    \node[lbl] at (s2.east) {Zerlegung in $n$ Teilstücke};
+    \node[lbl] at (s2.east) {Zerlegung in\\$n$ Teilstücke};
     \node[lbl] at (a2.east) {Zusammenführung};
     \draw[arr] (g2) -- (p2);
     \draw[arr] (p2) -- (s2);
@@ -246,6 +250,7 @@ Zusammenführung~\cite[S.~3]{bharathi2008characterization}.
 Die konkrete Ausgestaltung der einzelnen Schritte stellt eine
 vereinfachte Benchmark-Implementierung dieser Grundstrukturen dar.
 
+\begin{sloppypar}
 Alle Schritte sind Python-Skripte, die ihre Ein- und Ausgabepfade
 als Argumente entgegennehmen und ihre Ergebnisse als Dateien
 ablegen. \texttt{generate\_input} erzeugt einhundert ganzzahlige
@@ -258,6 +263,7 @@ abgeleitet werden, und zu einer Prüfsumme zusammengefasst. Die
 übrigen Schritte beschränken sich auf das Erzeugen, Filtern,
 Zerlegen und Zusammenführen der Textdateien und tragen keine
 nennenswerte Rechenlast.
+\end{sloppypar}
 
 Für die Erzeugung von Workflow-Benchmarks existieren auch Werkzeuge
 wie WfBench, das realitätsnahe Rechenlasten und Workflow-Strukturen
@@ -487,12 +493,14 @@ Schritte dieselbe Zeitbasis verwenden. Die gewählte Zeitquelle
 ermöglicht dadurch den direkten Vergleich der Zeitstempel aller
 Benchmark-Schritte.
 
+\begin{sloppypar}
 Da Referenzlauf und Systemlauf dieselben Benchmark-Skripte
 verwenden, entstehen in beiden Fällen Timing-Dateien mit
 identischem Aufbau. Die Instrumentierung ist dadurch unabhängig
 vom verwendeten Workflow-Management-System und liefert für alle
 fünf Systeme dieselbe Grundlage zur Berechnung der
 Koordinationsgrößen.
+\end{sloppypar}
 
 \subsection{Auswertung}
 \label{sec:methodik:auswertung}
@@ -555,11 +563,13 @@ werden. Kapitel~\ref{sec:mogon} geht darauf ein.
 \subsection{Grenzen des Messverfahrens}
 \label{sec:methodik:grenzen}
 
+\begin{sloppypar}
 Das Messverfahren ist darauf ausgerichtet, die
 Workflow-Management-Systeme unter vergleichbaren Bedingungen und
 mit derselben Rechenlogik zu vermessen. Einige Eigenschaften des
 Versuchsaufbaus sind bei der Einordnung der Ergebnisse zu
 berücksichtigen.
+\end{sloppypar}
 
 Die Zahl der Wiederholungen beträgt für die kurze und die mittlere
 Rechenlast fünf, für die lange Rechenlast aufgrund des deutlich
