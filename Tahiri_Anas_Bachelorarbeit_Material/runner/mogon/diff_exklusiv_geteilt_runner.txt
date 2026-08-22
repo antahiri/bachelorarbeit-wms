@@ -1,0 +1,36 @@
+=== run_aiida_mogon.py gegen run_aiida_shared.py ===
+29c29
+< RESULTS_DIR = BASE_DIR / "results" / "aiida"
+---
+> RESULTS_DIR = BASE_DIR / "results_shared" / "aiida"
+31c31
+< SMOKE_RESULTS_DIR = BASE_DIR / "results" / "aiida_smoke"
+---
+> SMOKE_RESULTS_DIR = BASE_DIR / "results_shared" / "aiida_smoke"
+
+=== run_merlin_mogon.py gegen run_merlin_shared.py ===
+25c25
+< RUN_DATA_ROOT = BASE_DIR / "run_data" / "merlin"
+---
+> RUN_DATA_ROOT = BASE_DIR / "run_data_shared" / "merlin"
+27c27
+< RESULTS_ROOT = BASE_DIR / "results" / "merlin"
+---
+> RESULTS_ROOT = BASE_DIR / "results_shared" / "merlin"
+
+=== run_nextflow_mogon.py gegen run_nextflow_shared.py ===
+18,19c18,19
+< RESULT_ROOT = BASE_DIR / "results" / "nextflow"
+< RUN_ROOT = BASE_DIR / "run_data" / "nextflow"
+---
+> RESULT_ROOT = BASE_DIR / "results_shared" / "nextflow"
+> RUN_ROOT = BASE_DIR / "run_data_shared" / "nextflow"
+
+=== run_streamflow_mogon.py gegen run_streamflow_shared.py ===
+18,19c18,19
+< RESULT_ROOT = BASE_DIR / "results" / "streamflow"
+< RUN_ROOT = BASE_DIR / "run_data" / "streamflow"
+---
+> RESULT_ROOT = BASE_DIR / "results_shared" / "streamflow"
+> RUN_ROOT = BASE_DIR / "run_data_shared" / "streamflow"
+

@@ -1,0 +1,13 @@
+insgesamt 28
+drwxr-xr-x. 2 antahiri stud_08 4096 2026-07-19 13:10:46.318563631 +0200 .
+drwxr-xr-x. 3 antahiri stud_08 4096 2026-07-19 13:10:01.366710538 +0200 ..
+-rw-r--r--. 1 antahiri stud_08    0 2026-07-19 13:10:46.248565443 +0200 .command.begin
+-rw-r--r--. 1 antahiri stud_08    0 2026-07-19 13:10:46.257565177 +0200 .command.err
+-rw-r--r--. 1 antahiri stud_08    0 2026-07-19 13:10:46.221566094 +0200 .command.log
+-rw-r--r--. 1 antahiri stud_08    0 2026-07-19 13:10:46.258565144 +0200 .command.out
+-rw-r--r--. 1 antahiri stud_08 3688 2026-07-19 13:10:01.374710343 +0200 .command.run
+-rw-r--r--. 1 antahiri stud_08  135 2026-07-19 13:10:01.376710282 +0200 .command.sh
+-rw-r--r--. 1 antahiri stud_08    1 2026-07-19 13:10:46.319563664 +0200 .exitcode
+-rw-r--r--. 1 antahiri stud_08  213 2026-07-19 13:10:46.306563867 +0200 prepared_input.txt
+lrwxrwxrwx. 1 antahiri stud_08   98 2026-07-19 13:10:46.254565209 +0200 raw_input.txt -> /fshpc/antahiri/slurm_modus/nextflow/pipeline/work/6d/2da6399188346923ef1a7f67ed0f06/raw_input.txt
+-rw-r--r--. 1 antahiri stud_08   87 2026-07-19 13:10:46.308563846 +0200 timing_preprocess.txt

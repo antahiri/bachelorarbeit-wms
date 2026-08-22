@@ -1,0 +1,5 @@
+system,pattern,workload,chunks,ref_makespan_s,wms_makespan_s,overhead_s,overhead_pct,ratio,ref_compute_phase_s,wms_compute_phase_s
+aiida,pipeline,long,1,235.465157,243.484338,8.019181,3.405676,1.034057,,
+aiida,scatter_gather,long,1,245.528439,252.303648,6.775209,2.759440,1.027594,245.283095,246.310270
+aiida,scatter_gather,long,2,124.425586,131.049146,6.623560,5.323310,1.053233,124.164259,125.091692
+aiida,scatter_gather,long,4,62.349260,70.752271,8.403011,13.477323,1.134773,62.085269,64.620904

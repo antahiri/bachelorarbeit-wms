@@ -1,0 +1,17 @@
+version: v1.0
+
+workflows:
+  local-task-timing-benchmark:
+    type: cwl
+    config:
+      file: workflow.cwl
+      settings: config.yml
+    bindings:
+      - step: /
+        target:
+          deployment: local-python
+
+deployments:
+  local-python:
+    type: local
+    config: {}

@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+
+import sys
+from pathlib import Path
+from Pegasus.api import *
+
+chunks = int(sys.argv[1])
+
+base = Path(".").resolve()
+scripts = base / "benchmark_scripts"
+
+tc = TransformationCatalog()
+
+generate_t = Transformation(
+    "generate",
+    site="condorpool",
+    pfn=(scripts / "generate_input.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX,
+)
+
+preprocess_t = Transformation(
+    "preprocess",
+    site="condorpool",
+    pfn=(scripts / "preprocess.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX,
+)
+
+split_t = Transformation(
+    "split",
+    site="condorpool",
+    pfn=(scripts / "split.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX,
+)
+
+compute_t = Transformation(
+    "compute",
+    site="condorpool",
+    pfn=(scripts / "compute.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX,
+)
+
+aggregate_t = Transformation(
+    "aggregate",
+    site="condorpool",
+    pfn=(scripts / "aggregate.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX,
+)
+
+postprocess_t = Transformation(
+    "postprocess",
+    site="condorpool",
+    pfn=(scripts / "postprocess.py").resolve().as_uri(),
+    is_stageable=False,
+    arch=Arch.X86_64,
+    os_type=OS.MACOSX,
+)
+
+tc.add_transformations(
+    generate_t,
+    preprocess_t,
+    split_t,
+    compute_t,
+    aggregate_t,
+    postprocess_t,
+)
+
+tc.write("transformations.yml")
+
+wf = Workflow("scatter-gather-benchmark")
+
+raw_file = File("raw_input.txt")
+prepared_file = File("prepared_input.txt")
+chunk_files = [File(f"chunk_{index}.txt") for index in range(1, chunks + 1)]
+result_files = [File(f"result_{index}.txt") for index in range(1, chunks + 1)]
+aggregated_file = File("aggregated_result.txt")
+summary_file = File("summary.txt")
+
+generate_job = Job("generate")
+generate_job.add_args("raw_input.txt")
+generate_job.add_outputs(
+    raw_file,
+    stage_out=False,
+    register_replica=False,
+)
+
+preprocess_job = Job("preprocess")
+preprocess_job.add_args("raw_input.txt", "prepared_input.txt")
+preprocess_job.add_inputs(raw_file)
+preprocess_job.add_outputs(
+    prepared_file,
+    stage_out=False,
+    register_replica=False,
+)
+
+split_job = Job("split")
+split_job.add_args("prepared_input.txt", str(chunks))
+split_job.add_inputs(prepared_file)
+split_job.add_outputs(
+    *chunk_files,
+    stage_out=False,
+    register_replica=False,
+)
+
+compute_jobs = []
+
+for index, (chunk_file, result_file) in enumerate(
+    zip(chunk_files, result_files),
+    start=1,
+):
+    compute_job = Job("compute")
+    compute_job.add_args(
+        f"chunk_{index}.txt",
+        f"result_{index}.txt",
+    )
+    compute_job.add_inputs(chunk_file)
+    compute_job.add_outputs(
+        result_file,
+        stage_out=False,
+        register_replica=False,
+    )
+    compute_jobs.append(compute_job)
+
+aggregate_job = Job("aggregate")
+aggregate_job.add_args(
+    *[f"result_{index}.txt" for index in range(1, chunks + 1)],
+    "aggregated_result.txt",
+)
+aggregate_job.add_inputs(*result_files)
+aggregate_job.add_outputs(
+    aggregated_file,
+    stage_out=False,
+    register_replica=False,
+)
+
+postprocess_job = Job("postprocess")
+postprocess_job.add_args("aggregated_result.txt", "summary.txt")
+postprocess_job.add_inputs(aggregated_file)
+postprocess_job.add_outputs(
+    summary_file,
+    stage_out=True,
+    register_replica=True,
+)
+
+wf.add_jobs(
+    generate_job,
+    preprocess_job,
+    split_job,
+    *compute_jobs,
+    aggregate_job,
+    postprocess_job,
+)
+
+wf.write("workflow.yml")

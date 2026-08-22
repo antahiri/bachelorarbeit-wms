@@ -1,0 +1,48 @@
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+  createdOn: 06-30-26T06:05:38Z
+pegasus: 5.0.4
+transformations:
+- name: generate
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/bachelorarbeit/workflow_erstellung/pegasus/scatter_gather/benchmark_scripts/generate_input.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: preprocess
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/bachelorarbeit/workflow_erstellung/pegasus/scatter_gather/benchmark_scripts/preprocess.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: split
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/bachelorarbeit/workflow_erstellung/pegasus/scatter_gather/benchmark_scripts/split.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: compute
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/bachelorarbeit/workflow_erstellung/pegasus/scatter_gather/benchmark_scripts/compute.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: aggregate
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/bachelorarbeit/workflow_erstellung/pegasus/scatter_gather/benchmark_scripts/aggregate.py
+    type: installed
+    arch: x86_64
+    os.type: macosx
+- name: postprocess
+  sites:
+  - name: condorpool
+    pfn: file:///Users/Hp/bachelorarbeit/workflow_erstellung/pegasus/scatter_gather/benchmark_scripts/postprocess.py
+    type: installed
+    arch: x86_64
+    os.type: macosx

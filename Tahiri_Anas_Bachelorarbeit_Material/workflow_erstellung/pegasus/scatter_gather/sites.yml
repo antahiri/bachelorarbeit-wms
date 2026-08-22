@@ -1,0 +1,41 @@
+x-pegasus:
+  apiLang: python
+  createdBy: Hp
+pegasus: 5.0.4
+
+sites:
+- name: local
+  directories:
+  - type: sharedScratch
+    path: /Users/Hp/pegasus_scatter_gather_benchmark/scratch
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_scatter_gather_benchmark/scratch
+      operation: all
+  - type: localStorage
+    path: /Users/Hp/pegasus_scatter_gather_benchmark/output
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_scatter_gather_benchmark/output
+      operation: all
+
+- name: condorpool
+  arch: x86_64
+  os.type: macosx
+  directories:
+  - type: sharedScratch
+    path: /Users/Hp/pegasus_scatter_gather_benchmark/scratch
+    sharedFileSystem: true
+    fileServers:
+    - url: file:///Users/Hp/pegasus_scatter_gather_benchmark/scratch
+      operation: all
+  profiles:
+    condor:
+      universe: vanilla
+      periodic_remove: (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 10)
+    pegasus:
+      style: condor
+      data.configuration: sharedfs
+      gridstart: Kickstart
+    env:
+      PEGASUS_HOME: /opt/homebrew

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+cd /fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir/bc56e5b6-08c6-4ee8-a9cf-4d5100441b5f && export HOME="/fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir/bc56e5b6-08c6-4ee8-a9cf-4d5100441b5f" && export TMPDIR="/fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir/cee55589-782a-49b5-b32a-03d3faf177af" && python3 /fshpc/antahiri/slurm_modus/streamflow/pipeline/workdir/f047d2ab-78e7-43ec-9641-9e3b11d3dace/af3480d3-0b7b-41d9-873a-4d46bfcf944f/generate_input.py raw_input.txt 2>&1
