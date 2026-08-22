@@ -49,7 +49,8 @@ Teilstücke beim Scatter-Gather-Muster erst ab der mittleren
 Rechenlast spürbare Gewinne bringt, während bei der kurzen
 Rechenlast der Overhead einen größeren Teil der Gesamtlaufzeit ausmacht.
 
-Die beiden Koordinationsgrößen machen sichtbar, an welchen Stellen zusätzliche Zeit anfällt. Besonders deutlich zeigt sich dies bei Pegasus und AiiDA. Bei Pegasus fällt die mediane Übergangslatenz von rund 20 Sekunden mit dem höchsten gemessenen Overhead zusammen. Bei AiiDA fallen die Übergangslatenzen mit ein bis zwei Sekunden geringer aus, liegen aber auf beiden Ebenen deutlich über denen der drei übrigen Systeme und erklären bereits im Pipeline-Muster einen wesentlichen Teil des Overheads. Die Ergebnisse sprechen damit dafür, dass die höheren Overhead-Werte von Pegasus und AiiDA zu einem erheblichen Teil mit der Koordination und Übergabe
+Die beiden Koordinationsgrößen machen sichtbar, an welchen Stellen zusätzliche Zeit anfällt. Besonders deutlich zeigt sich dies bei Pegasus und AiiDA. Bei Pegasus fällt die mediane Übergangslatenz von rund 20 Sekunden mit dem höchsten gemessenen Overhead zusammen. Bei AiiDA fallen die Übergangslatenzen mit ein bis zwei Sekunden geringer aus, liegen aber auf beiden Ebenen deutlich über denen der drei übrigen Systeme und machen bereits im Pipeline-Muster einen wesentlichen Teil
+des gemessenen Overheads aus. Die Ergebnisse sprechen damit dafür, dass die höheren Overhead-Werte von Pegasus und AiiDA zu einem erheblichen Teil mit der Koordination und Übergabe
 zwischen aufeinanderfolgenden Workflow-Schritten zusammenhängen.
 
 Die Startspreizung ist davon getrennt zu betrachten. Sie beschreibt, wie schnell ein System die parallelen Instanzen startet. Merlin zeigt das deutlich: Lokal liegt seine
