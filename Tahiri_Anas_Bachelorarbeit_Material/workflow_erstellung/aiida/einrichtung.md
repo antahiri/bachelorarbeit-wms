@@ -1,6 +1,6 @@
 # AiiDA-Einrichtung
 
-Bei AiiDA liegt ein großer Teil der Konfiguration nicht in Dateien, sondern
+Die Konfiguration liegt bei AiiDA nicht in Dateien, sondern
 als Zustand im Profil und in der Datenbank. Dieses Dokument enthält die
 Einrichtung der verwendeten Konfigurationen.
 
@@ -54,7 +54,6 @@ Filepath executable         /Users/Hp/miniforge3/envs/aiida/bin/python3.12
 
 ## MOGON, dedizierte Messung mit PostgreSQL (Hauptkonfiguration)
 
-
 ```
  ✔ version:     AiiDA v2.8.0
  ✔ config:      /home/antahiri/.aiida
@@ -94,7 +93,7 @@ Filepath executable         /home/antahiri/.conda/envs/aiida/bin/python3
 ```
 
 
-## MOGON, dedizierte Messung mit SQLite (Vergleichskonfiguration)
+## MOGON, dedizierte Messung mit SQLite
 
 Profil `aiida_mogon`, SQLite-Speicher auf `/fshpc`.
 
