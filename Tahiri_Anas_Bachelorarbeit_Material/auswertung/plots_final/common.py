@@ -29,8 +29,8 @@ FARBE = {"streamflow": "#3B82F6", "nextflow": "#F59E0B",
 WORKLOADS = ["short", "medium", "long"]
 WORKLOAD_NAME = {"short": "kurz", "medium": "mittel", "long": "lang"}
 
-GROESSE_VOLL = (7.0, 3.9)   # Abbildung ueber die volle Textbreite
-GROESSE_HALB = (4.7, 3.5)   # Subfigure mit 0,49 Textbreite
+GROESSE_VOLL = (7.0, 3.9)
+GROESSE_HALB = (4.7, 3.5)
 GROESSE_DELTA = (5.6, 3.5)  # beide Delta-Boxplots, identische Groesse
 
 # Uebergaenge je Muster in den Koordinationsdateien

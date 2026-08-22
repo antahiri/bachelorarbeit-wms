@@ -156,7 +156,7 @@ ax.xaxis.grid(
 
 ax.set_axisbelow(True)
 
-# Überschrift
+
 ax.set_title(
     "Pipeline (short)",
     loc="left",
@@ -165,7 +165,6 @@ ax.set_title(
     pad=40,
 )
 
-# Untertitel mit etwas größerem Abstand zur Überschrift
 ax.text(
     0,
     1.025,

@@ -24,7 +24,7 @@ fig, (ap, asg) = plt.subplots(
     1, 2, figsize=(11.5, 3.9), sharey=True,
     gridspec_kw={"width_ratios": [3, 5]})
 
-# Pipeline: je Uebergang vier Systembalken (nur 1 Teilstueck)
+# Pipeline: je Uebergang vier balken
 breite = 0.17
 felder = UEBERGAENGE["pipeline"]
 for j, s in enumerate(SYS):

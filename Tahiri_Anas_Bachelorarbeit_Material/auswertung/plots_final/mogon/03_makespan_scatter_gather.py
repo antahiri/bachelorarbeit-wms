@@ -12,7 +12,6 @@ SYS = ["streamflow", "nextflow", "merlin", "aiida"]
 CHUNKS = [1, 2, 4]
 RECHENLAST_ADJ = {"short": "kurze", "medium": "mittlere", "long": "lange"}
 
-# Gemeinsamer Faktor der y-Spannen, damit log-Steigungen vergleichbar sind
 minmax = {}
 faktor = 0
 for w in WORKLOADS:
