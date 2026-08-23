@@ -39,7 +39,7 @@ EBENEN = {
     }),
 }
 
-# Alte zentrale Dateien der Konfigurationsstudie (fuer den Alt-Neu-Vergleich,
+# Alte zentrale Dateien der Konfigurationsstudie (fuer den Alt-Neu-Vergleich)
 ALT_KONFIG = {
     "aiida_psql_fshpc":     "mogon/messungen-mogon-sha/aiida_psql/aiida/aiida_central_results.csv",
     "aiida_sqlite_fshpc":   "mogon/messungen-mogon-sha/aiida_sqlite/aiida_central_results_sha.csv",

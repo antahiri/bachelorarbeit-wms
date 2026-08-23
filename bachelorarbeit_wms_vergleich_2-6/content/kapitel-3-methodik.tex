@@ -38,7 +38,7 @@ nicht auf unterschiedliche fachliche Rechenoperationen zurück.
 
 \section{Auswahl der Systeme}
 \label{sec:methodik:auswahl}
-Untersucht werden Nextflow, StreamFlow, Merlin, Pegasus und AiiDA. Alle fünf sind für wissenschaftliche Workflows entwickelt, unterscheiden sich aber in ihrem Entstehungskontext. Nextflow stammt aus dem Umfeld der Bioinformatik und zielt auf die reproduzierbare Ausführung von Analysen großer biologischer Datensätze über unterschiedliche Rechenumgebungen hinweg~\cite[S.~316]{ditommaso2017nextflow}. StreamFlow zielt darauf, denselben Workflow in verschiedenen Ausführungsumgebungen auszuführen~\cite[S.~1723]{colonnelli2021streamflow}. Merlin ist für große Ensembles wissenschaftlicher Simulationen ausgelegt, deren Ergebnisse für maschinelles Lernen aufbereitet werden~\cite[S.~255]{peterson2022merlin}. Pegasus richtet sich auf großskalige, mehrstufige Simulations- und Analyse-Abläufe, deren Rechen- und Datenumfang ein System erfordert, das Datentransfer und Aufgabenausführung auf verteilten Rechenressourcen zuverlässig koordiniert und automatisiert~\cite[S.~17]{deelman2015pegasus}. AiiDA verbindet die Ausführung mit einer durchgängigen Aufzeichnung der Datenherkunft in einer Datenbank~\cite[S.~1]{huber2020aiida}. Eine Kurzvorstellung der Systeme gibt Kapitel~\ref{sec:basics}.
+Untersucht werden Nextflow, StreamFlow, Merlin, Pegasus und AiiDA. Alle fünf sind für wissenschaftliche Workflows entwickelt, unterscheiden sich aber in ihrem Entstehungskontext. Nextflow stammt aus dem Umfeld der Bioinformatik und zielt auf die reproduzierbare Ausführung von Analysen großer biologischer Datensätze über unterschiedliche Rechenumgebungen hinweg~\cite[S.~316]{ditommaso2017nextflow}. StreamFlow zielt darauf, denselben Workflow in verschiedenen, auch hybride Ausführungsumgebungen auszuführen~\cite[S.~1723]{colonnelli2021streamflow}. Merlin ist für große Ensembles wissenschaftlicher Simulationen ausgelegt, deren Ergebnisse für maschinelles Lernen aufbereitet werden~\cite[S.~255]{peterson2022merlin}. Pegasus richtet sich auf großskalige, mehrstufige Simulations- und Analyse-Abläufe, deren Rechen- und Datenumfang ein System erfordert, das Datentransfer und Aufgabenausführung auf verteilten Rechenressourcen zuverlässig koordiniert und automatisiert~\cite[S.~17]{deelman2015pegasus}. AiiDA verbindet die Ausführung mit einer durchgängigen Aufzeichnung der Datenherkunft in einer Datenbank~\cite[S.~1]{huber2020aiida}. Eine Kurzvorstellung der Systeme gibt Kapitel~\ref{sec:basics}.
 
 \begin{sloppypar}
 Die Auswahl zielte darauf, unterschiedliche Ansätze
@@ -288,7 +288,7 @@ Phase umfasst damit bis zu vier gleichzeitig laufende
 Verarbeitungsinstanzen.
 
 Aus den Mustern, Rechenlasten und Teilstückzahlen ergibt sich der
-Versuchsplan: zwölf Konfigurationen je System, drei für das Pipeline-Muster und neun für das Scatter-Gather-Muster. Jede Konfiguration wurde bei der kurzen und der mittleren Rechenlast fünfmal wiederholt, bei der langen Rechenlast aufgrund des deutlich höheren Zeitbedarfs je Lauf dreimal. Damit stellt die Zahl der Wiederholungen einen Kompromiss zwischen Messaufwand und praktischer Durchführbarkeit dar.
+Versuchsplan: zwölf Konfigurationen je System, drei für das Pipeline-Muster und neun für das Scatter-Gather-Muster. Jede Konfiguration wurde bei der kurzen und der mittleren Rechenlast fünfmal wiederholt, bei der langen Rechenlast aufgrund des deutlich höheren Zeitbedarfs je Lauf dreimal. Daraus ergeben sich insgesamt 52 Läufe je System und 52 Läufe ohne System. Damit stellt die Zahl der Wiederholungen einen Kompromiss zwischen Messaufwand und praktischer Durchführbarkeit dar.
 
 
 \section{Messverfahren}
@@ -382,8 +382,8 @@ Prozesse. Beim Pipeline-Muster laufen die vier Schritte
 nacheinander ab. Beim Scatter-Gather-Muster folgen auf die
 Vorverarbeitung und die Zerlegung so viele gleichzeitig gestartete
 Verarbeitungsprozesse, wie Teilstücke vorgesehen sind, anschließend
-das Zusammenführen und die Nachbereitung. Da die Eingabe über einen
-festen Startwert erzeugt wird, verarbeiten Referenz- und Systemlauf
+das Zusammenführen und die Nachbereitung. Da die Eingabe mit einem
+festen Seed erzeugt wird, verarbeiten Referenz- und Systemlauf
 dieselben Werte. Der Referenzlauf bildet damit dieselbe Rechenlogik
 sowie dieselbe Abfolge und Parallelität der Rechenschritte ab wie
 der Systemlauf, jedoch ohne die Steuerung durch ein
