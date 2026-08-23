@@ -16,7 +16,7 @@ gegenübergestellt. Den Abschluss bilden die gemessenen Laufzeiten.
 
 Alle Modellierungen und die lokale Messreihe wurden auf einem MacBook
 Pro (2021) mit Apple-M1-Pro-Prozessor (arm64) und 16\,GB
-Arbeitsspeicher unter macOS~26.5.1 ausgeführt. Die Angaben zur Hardware werden genannt, weil die absoluten Laufzeiten an die verwendete Umgebung gebunden sind. Für jedes der Python-basierten Systeme wurde eine eigene Umgebung angelegt (conda oder venv), um wechselseitige Abhängigkeitskonflikte auszuschließen. Eine HPC-Ausführung wird damit nicht abgebildet, die lokale Ebene
+Arbeitsspeicher unter macOS~26.5.1 ausgeführt. Die Angaben zur Hardware werden genannt, weil die absoluten Laufzeiten an die verwendete Umgebung gebunden sind. Für die Systeme wurden getrennte Umgebungen angelegt (conda oder venv), um wechselseitige Abhängigkeitskonflikte auszuschließen. Eine HPC-Ausführung wird damit nicht abgebildet, die lokale Ebene
 dient der Modellierung und der Messung unter kontrollierten
 Bedingungen. Wie sich die
 Systeme auf einem Slurm-basierten HPC-System betreiben lassen,
@@ -76,9 +76,7 @@ Tabelle~\ref{tab:lokal:dienste} fasst die für die lokale
 Bereitstellung nötigen Komponenten und Schritte zusammen. Die
 Gegenüberstellung bleibt beschreibend, eine Aufwandsrangfolge wird
 nicht gebildet, weil sich die Schritte in Art und Umfang
-unterscheiden. Die Einordnung aus Einsteigerperspektive folgt in den
-nachfolgenden Abschnitten anhand der Vergleichsaspekte aus
-Abschnitt~\ref{sec:methodik:qualitativ}.
+unterscheiden.
 
 \begin{table}[ht]
   \caption{Lokale Bereitstellung je System: zusätzliche Komponenten, einmalige Konfiguration und vor der Ausführung erforderliche Schritte}
@@ -346,10 +344,14 @@ compute_job.add_outputs(result_file, stage_out=False, register_replica=False)
 Workflow-Beschreibung und -Konfiguration wurden vier Dateien
 manuell erstellt: \texttt{build\_workflow.py}, \texttt{sites.yml},
 \texttt{pegasus.properties} und \texttt{plan.sh}. Das
-Erzeugungsskript erzeugt die Workflow-Datei und den
-Transformationskatalog. Eine Änderung der Rechenlast betrifft allein
-den Pfad des Berechnungsskripts im Erzeugungsskript. Die erzeugten
-Workflow-Dateien der drei Rechenlasten sind identisch.
+Erzeugungsskript \texttt{build\_workflow.py} beschreibt den Workflow
+und erzeugt die Workflow-Datei sowie den Transformationskatalog.
+\texttt{sites.yml} beschreibt die Ausführungsumgebung,
+\texttt{pegasus.properties} enthält die Pegasus-Konfiguration und
+\texttt{plan.sh} dient der Planung des Workflows. Eine Änderung der
+Rechenlast betrifft allein den Pfad des Berechnungsskripts im
+Erzeugungsskript. Die erzeugten Workflow-Dateien der drei
+Rechenlasten sind identisch.
 \end{sloppypar}
 
 \emph{Sichtbarkeit von Datenfluss und Abhängigkeiten:} Die
@@ -946,7 +948,7 @@ Phase darin abbildet.
     \hline
     Ausdruck des Musters & \texttt{flatten} und \texttt{collect} & \texttt{scatter}-Attribut & Parameter \texttt{CHUNK}, \texttt{compute\_*} & Schleife im Erzeugungs\-skript & Schleife im Outline-Schritt, \texttt{ToContext} \\
     Änderung der Teilstückzahl & ein Parameter & Eingabewert und Namensliste in \texttt{config.yml} & zwei Stellen der Spezifikation & Aufruf\-argument, Workflow-Datei wird neu erzeugt & Aufruf\-argument, WorkChain bleibt unverändert \\
-    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schritt\-ausgaben und Datei-/Feldtypen & \texttt{depends} und Pfade in den Befehlen & \texttt{File}-Objekte als Ein- und Ausgaben & Quellordner und Zuordnungen je Instanz, \texttt{ToContext} \\
+    Datenfluss und Abhängigkeiten & \texttt{path}-Angaben und Channels & Verweise auf Schrittausgaben & \texttt{depends} und Pfade in den Befehlen & \texttt{File}-Objekte als Ein- und Ausgaben & Quellordner und Zuordnungen je Instanz, \texttt{ToContext} \\
     Ausführung und Steuerung & Nextflow-Laufzeit, eine Instanz je Teilstück & StreamFlow-Laufzeit, eine Instanz je Teilstück & Celery-Worker, eine Aufgabe je Instanz & HTCondor, ein Job je Teilstück & Daemon/Runner, ein CalcJob je Teilstück \\
     Trennung Logik und Umgebung & Konfigurations\-datei & Deployment-Datei & Warteschlange & abstrakte Beschreibung und Kataloge & Rechner und Code \\
     Nachvollziehbarkeit & Instanzen als Aufgaben desselben Prozesses & Instanzen einzeln in der Terminal\-ausgabe & Instanzen einzeln in den Worker-Ausgaben & Instanzen einzeln in der Status\-abfrage & Instanzen einzeln in Status\-abfrage und Graph \\
