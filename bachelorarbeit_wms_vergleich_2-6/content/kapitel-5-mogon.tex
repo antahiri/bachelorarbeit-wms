@@ -59,7 +59,7 @@ Für die Datenhaltung stehen zwei Ablageorte zur Verfügung. Das gemeinsame Date
 erreichbar. Zusätzlich verfügt jeder Rechenknoten über lokalen Speicher unter
 \texttt{/localscratch}. Dieser steht während eines Rechenauftrags
 zur Verfügung, wird nach dessen Ende wieder gelöscht und ist nur
-auf dem jeweiligen Knoten sichtbar. Die Benchmark-Workflows und ihre Arbeitsverzeichnisse
+auf dem jeweiligen Knoten sichtbar~\cite{mogondocs}. Die Benchmark-Workflows und ihre Arbeitsverzeichnisse
 lagen im gemeinsamen Dateisystem, da Workflow-Schritte auf
 unterschiedlichen Rechenknoten ausgeführt werden können und ihre
 Zwischenergebnisse deshalb über einen von allen Knoten
@@ -96,9 +96,10 @@ Die Workflow-Beschreibungen beider Muster wurden unverändert aus der lokalen Um
 Während Nextflow die Schritte in der lokalen Ausführungsumgebung unmittelbar als Prozesse auf dem ausführenden Rechner startet, legt die Konfigurationsdatei auf dem Cluster fest, dass die Ausführung über Slurm erfolgt und mit welchen Ressourcen die einzelnen Workflow-Schritte angefordert werden.
 
 Listing~\ref{lst:mogon:nfconfig} zeigt die verwendete
-Konfiguration. Die Zeile \texttt{executor = 'slurm'} legt fest, dass Nextflow die Workflow-Schritte über Slurm ausführt, alle weiteren Angaben betreffen die einzelnen Slurm-Jobs. Partition und Konto werden an Slurm übergeben, die
-Angaben zu Rechenkernen, Hauptspeicher und Zeitlimit gelten je
-Schritt und nicht für den Workflow als Ganzes. Der Eintrag
+Konfiguration. Die Zeile \texttt{executor = 'slurm'} legt fest, dass Nextflow die Workflow-Schritte über Slurm ausführt, alle weiteren Angaben betreffen die einzelnen Slurm-Jobs. Die Angaben zu Partition,
+Konto, Rechenkernen, Hauptspeicher und Zeitlimit werden für die
+einzelnen Slurm-Jobs verwendet und gelten damit je Schritt und nicht
+für den Workflow als Ganzes. Der Eintrag
 \texttt{queueSize} begrenzt darüber hinaus, wie viele Jobs Nextflow
 gleichzeitig bei Slurm einreicht. 
 
