@@ -444,14 +444,19 @@ Um diese Aufteilung näher zu untersuchen, wurde der zuvor bestimmte mittlere Ze
 zwischen den Systemen unterscheiden, erfolgte diese Untersuchung
 systemspezifisch.
 
-Der so bestimmte Anteil liegt bei den drei Systemen, die Jobs je
-Schritt einreichen, im Bereich von 55 bis 104 Millisekunden. Damit liegt der systemeigene Anteil um mehrere Größenordnungen unter dem zuvor beobachteten mittleren Zeitanteil von über 40 Sekunden je Job. Bei Merlin fällt die Vorbereitung innerhalb des Slurm-Jobs nicht für jeden Workflow-Schritt einzeln an, sondern beim Start der Worker-Allokation.
+Bei Nextflow und StreamFlow führt das erzeugte Jobskript vor der
+Nutzlast noch systemeigene Vorbereitungsschritte aus. Der Zeitraum zwischen der
+jeweils frühesten im Job verfügbaren Marke und dem ersten
+Zeitstempel der Nutzlast beträgt dort 55 beziehungsweise
+102 Millisekunden. Bei AiiDA folgt im erzeugten Jobskript unmittelbar der Aufruf der Nutzlast. Bei Merlin fällt die Vorbereitung innerhalb des Slurm-Jobs nicht für jeden
+Workflow-Schritt einzeln an, sondern beim Start der Worker-Allokation.
 
 
-Die Zerlegung zeigt damit, dass der systemeigene Anteil im
-Millisekundenbereich liegt und gegenüber den durch den Cluster
-verursachten Zeitanteilen vernachlässigbar klein ist. Seine
-Bestimmung erfordert zudem systemspezifische Untersuchungen der
+Die Zerlegung zeigt damit, dass die innerhalb der Jobs vor der
+Nutzlast verbleibenden systemeigenen Vorbereitungsschritte in einem
+Zeitfenster im Millisekundenbereich liegen und
+gegenüber dem zuvor beobachteten Zeitanteil von über 40 Sekunden je
+Job klein ausfallen. Ihre Bestimmung erfordert zudem systemspezifische Untersuchungen der
 jeweiligen Jobabläufe und stellt daher keine einheitliche
 Vergleichsgröße dar. Aus diesem Grund wurde der Einfluss des
 Clusterbetriebs in der folgenden Messreihe durch eine dedizierte Ausführung experimentell ausgeschlossen.
@@ -477,8 +482,8 @@ Untersuchungen~\cite[S.~103]{wfbench2022}.
 Dieser Aufbau folgt unmittelbar aus dem Befund des vorangegangenen
 Abschnitts. Im regulären Clusterbetrieb entsteht der überwiegende
 Teil der Laufzeit durch Warteschlange und die Zeit vor der
-Nutzlast, während der systemeigene Anteil im Millisekundenbereich
-liegt. Ein Vergleich unter diesen Bedingungen würde deshalb
+Nutzlast, während die innerhalb der Jobs verbleibenden Schritte im
+Millisekundenbereich liegen. Ein Vergleich unter diesen Bedingungen würde deshalb
 überwiegend den Zustand des Clusters abbilden. Innerhalb einer
 bereits bestehenden Allokation entfallen diese Anteile für die
 einzelnen Workflow-Schritte, sodass Unterschiede zwischen den

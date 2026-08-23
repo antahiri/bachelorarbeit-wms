@@ -82,10 +82,9 @@ Beobachtungsläufen schwankte die Wartezeit in der
 Slurm-Warteschlange zwischen 6 und 17 Sekunden je Job. Hinzu kamen
 vor Beginn der eigentlichen Nutzlast durchgehend mehr als
 40 Sekunden. Die anschließende systemspezifische Untersuchung
-zeigte dagegen, dass der innerhalb dieses Zeitraums
-identifizierbare Anteil der Workflow-Management-Systeme bei den
-Systemen mit einzelnen Slurm-Jobs lediglich zwischen 55 und
-104 Millisekunden lag. Eine Messung im regulären Clusterbetrieb würde damit überwiegend Wartezeit und die Zeit vor Beginn der Nutzlast erfassen und die Unterschiede zwischen den Systemen überlagern. Für den eigentlichen Systemvergleich wurde deshalb eine bereits bestehende Slurm-Allokation verwendet, innerhalb derer
+zeigte dagegen, dass die innerhalb dieses Zeitraums von den
+Workflow-Management-Systemen mit einzelnen Slurm-Jobs ausgeführten Vorbereitungsschritte
+im Millisekundenbereich liegen. Eine Messung im regulären Clusterbetrieb würde damit überwiegend Wartezeit und die Zeit vor Beginn der Nutzlast erfassen und die Unterschiede zwischen den Systemen überlagern. Für den eigentlichen Systemvergleich wurde deshalb eine bereits bestehende Slurm-Allokation verwendet, innerhalb derer
 Warteschlange und Jobstart nicht erneut für jeden Workflow-Schritt
 anfielen.
 

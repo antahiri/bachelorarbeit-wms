@@ -1,4 +1,0 @@
-JobID|JobName|Submit|Start|End|Elapsed|WorkDir
-455287|merlin-worker|2026-07-15T20:38:53|2026-07-15T20:38:54|2026-07-15T20:54:15|00:15:21|/fshpc/antahiri/slurm_modus/merlin/scatter_gather
-455287.batch|batch|2026-07-15T20:38:54|2026-07-15T20:38:54|2026-07-15T20:54:17|00:15:23|
-455287.extern|extern|2026-07-15T20:38:54|2026-07-15T20:38:54|2026-07-15T20:54:17|00:15:23|
